@@ -1,0 +1,128 @@
+.questionnaire-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--space-6);
+}
+
+.questionnaire-card {
+  width: 100%;
+  max-width: 880px;
+  display: flex;
+  background: var(--color-bg);
+  border: 1px solid var(--color-divider);
+}
+
+.questionnaire-sidebar {
+  width: 190px;
+  flex: 0 0 auto;
+  border-right: 2px solid var(--color-divider);
+  padding: var(--space-8) 0 var(--space-8) 26px;
+  display: flex;
+  flex-direction: column;
+  font-size: 12.5px;
+}
+.questionnaire-sidebar h6 {
+  color: var(--color-accent);
+  margin: 0 0 var(--space-3);
+}
+
+.questionnaire-sections {
+  display: flex;
+  flex-direction: column;
+}
+.questionnaire-sections span {
+  padding: 5px 0;
+}
+.questionnaire-sections span.is-current {
+  color: var(--color-accent);
+  font-weight: 800;
+}
+
+.questionnaire-progress {
+  margin-top: var(--space-6);
+  padding-right: 26px;
+}
+.questionnaire-progress-label {
+  font-size: 11px;
+  color: var(--color-neutral-600);
+  margin-bottom: 6px;
+}
+.questionnaire-progress-track {
+  height: 4px;
+  background: var(--color-neutral-300);
+}
+.questionnaire-progress-fill {
+  height: 100%;
+  background: var(--color-accent);
+}
+
+.questionnaire-body {
+  flex: 1;
+  padding: var(--space-8) 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.questionnaire-intro {
+  font-size: 13px;
+  margin: 0;
+}
+
+.questionnaire-question {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.questionnaire-question-title {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.questionnaire-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.questionnaire-tags .tag-select {
+  padding: 7px 12px;
+  font-size: 12px;
+}
+.questionnaire-tags .tag-neutral {
+  border: 1px solid var(--color-neutral-300);
+}
+
+.questionnaire-radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.questionnaire-photos {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.questionnaire-photo {
+  aspect-ratio: 1 / 1;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.questionnaire-photo.is-selected {
+  border-color: var(--color-accent);
+}
+
+.questionnaire-actions {
+  border-top: 2px solid var(--color-divider);
+  padding-top: 18px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.questionnaire-more {
+  font-size: 12px;
+  margin-left: auto;
+}

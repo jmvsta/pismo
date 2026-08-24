@@ -1,0 +1,133 @@
+.profile-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: var(--space-6);
+}
+
+.profile-card {
+  width: 100%;
+  max-width: 960px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-divider);
+}
+
+.profile-back {
+  display: inline-block;
+  font-size: 13px;
+  padding: var(--space-3) 40px 0;
+}
+
+.profile-header {
+  padding: 28px 40px 28px;
+  display: flex;
+  gap: 28px;
+  border-bottom: 2px solid var(--color-divider);
+}
+
+.profile-avatar {
+  width: 120px;
+  height: 120px;
+  flex: 0 0 auto;
+}
+
+.profile-identity {
+  flex: 1;
+}
+.profile-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.profile-name-row h2 {
+  margin: 0;
+}
+.profile-name-row span {
+  font-size: 13px;
+}
+.profile-bio {
+  font-size: 14px;
+  line-height: 1.55;
+  max-width: 480px;
+  margin: 10px 0 14px;
+}
+.profile-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.profile-match {
+  width: 220px;
+  flex: 0 0 auto;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  padding: var(--space-4);
+}
+.profile-match-pct {
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1;
+}
+.profile-match-label {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 4px 0 12px;
+}
+.profile-match-shared {
+  font-size: 11.5px;
+  line-height: 1.6;
+  opacity: 0.92;
+}
+.profile-request-btn {
+  background: var(--color-bg);
+  color: var(--color-text);
+  margin-top: 14px;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.profile-stats {
+  display: flex;
+  border-bottom: 2px solid var(--color-divider);
+}
+.profile-stat {
+  flex: 1;
+  padding: 16px 40px;
+  border-right: 1px solid var(--color-divider);
+}
+.profile-stat-last {
+  border-right: none;
+}
+.profile-stat-value {
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.profile-tabs-panel {
+  padding: 24px 40px 36px;
+}
+.profile-tabs {
+  display: flex;
+  gap: 24px;
+  border-bottom: 2px solid var(--color-divider);
+  margin-bottom: 18px;
+  font-size: 14px;
+}
+.profile-tabs span {
+  padding-bottom: 10px;
+  cursor: pointer;
+  margin-bottom: -2px;
+}
+.profile-tabs span.is-active {
+  font-weight: 800;
+  color: var(--color-accent);
+  border-bottom: 2px solid var(--color-accent);
+}
+.profile-letter-name {
+  font-weight: 600;
+}
+.profile-empty {
+  margin: 0;
+  padding: var(--space-4) 0;
+}
