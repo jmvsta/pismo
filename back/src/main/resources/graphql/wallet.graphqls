@@ -3,6 +3,7 @@ extend type Query {
     subscriptionPlans: [SubscriptionPlan!]!
     mySubscription: PlanSubscription
     myMonthlyAllowance: UserMonthlyAllowance
+    myPaymentMethods: [PaymentMethod!]!
 }
 
 extend type Mutation {
@@ -11,6 +12,10 @@ extend type Mutation {
     cancelSubscription(id: ID!): PlanSubscription!
     addSubscriptionMember(subscriptionId: ID!, userId: ID!, isMinor: Boolean!): SubscriptionMember!
     removeSubscriptionMember(subscriptionId: ID!, userId: ID!): SubscriptionMember!
+    setAutoRenew(subscriptionId: ID!, autoRenew: Boolean!): PlanSubscription!
+    createSetupIntent: String!
+    addCard(paymentMethodId: String!): PaymentMethod!
+    removeCard(id: ID!): Boolean!
 }
 
 """balanceMinor is in minor units (cents); "EUR 4.50" is stored/returned as 450."""
@@ -85,6 +90,7 @@ type PlanSubscription {
     currentPeriodEnd: String!
     cancelledAt: String
     externalRef: String
+    autoRenew: Boolean!
     members: [SubscriptionMember!]!
     createdAt: String!
     updatedAt: String!
@@ -124,4 +130,15 @@ type UserMonthlyAllowance {
     bonusAddresses: Int!
     createdAt: String!
     updatedAt: String!
+}
+
+"""Only a Stripe PaymentMethod reference and display metadata -- raw card numbers never pass through this API."""
+type PaymentMethod {
+    id: ID!
+    brand: String
+    last4: String
+    expMonth: Int
+    expYear: Int
+    isDefault: Boolean!
+    createdAt: String!
 }

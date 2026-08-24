@@ -1,0 +1,75 @@
+.wallet-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: var(--space-6);
+}
+
+.wallet-card {
+  width: 100%;
+  max-width: 640px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-divider);
+  padding: 28px 40px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.wallet-balance {
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--color-divider);
+}
+.wallet-balance-label {
+  font-size: 12px;
+  color: color-mix(in srgb, var(--color-text) 60%, transparent);
+}
+.wallet-balance-value {
+  font-size: 40px;
+  font-weight: 800;
+}
+
+.wallet-topup {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+.wallet-topup .field {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.wallet-amount-credit {
+  color: var(--color-accent-700);
+  font-weight: 600;
+}
+.wallet-amount-debit {
+  color: var(--color-text);
+}
+
+.wallet-empty {
+  padding: var(--space-4) 0;
+}
+
+.wallet-subscription {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.wallet-subscription-plan {
+  font-size: 18px;
+  font-weight: 800;
+}
+.wallet-plan-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+.wallet-plan-row:last-child {
+  border-bottom: none;
+}
+.wallet-plan-name {
+  font-weight: 700;
+}

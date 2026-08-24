@@ -31,9 +31,10 @@ its body once found.
   guessing — implementing the wrong task is worse than asking.
 - Read the full page content, not just the title — acceptance criteria,
   notes, or linked context often live in the body, not a summary property.
-- This is read-only. Don't change the task's status, add comments, or edit
-  the Notion page — pulling the description is the only thing this step
-  does.
+- Hold onto the matched page's id/url. This lookup step itself stays
+  read-only — don't change status, add comments, or edit the page yet —
+  but you'll need that id later to close the task out once the work is
+  actually done (see "Close the Notion task" below).
 
 ## Is this actually a layout conversion?
 
@@ -124,6 +125,34 @@ npm run lint
 Both must pass clean — a failing build or lint error is not a caveat to
 mention, it's something to fix before calling the task done.
 
+## Close the Notion task
+
+If the task came from Notion (you did the lookup in "Getting the task's
+real content" above), close it out now that build and lint both pass —
+skip this section entirely if you were given the task inline and never
+looked anything up in Notion. Use the page id/url you held onto earlier;
+find/load the Notion update tool via ToolSearch if it isn't already loaded.
+
+Task pages commonly break the work into subtasks as a checklist in the page
+**body** (`- [ ] ...` to-do items), not as a separate property or linked
+page. Check off (`- [x]`) every item the implementation actually covers —
+don't just flip the Status property and leave the checklist stale. If a
+checklist item genuinely isn't covered by what you built, leave it
+unchecked and treat the task as partially done (see below) rather than
+checking it off anyway.
+
+Once every checklist item in the body is checked, set the page's
+**Status** property to **Done** (the Todo List database's status options
+are "Not started" / "In progress" / "Done"). Checking off body items and
+setting Status are the only edits allowed here — don't add comments,
+don't touch anything else in the page body, don't rename anything.
+
+Don't mark the task Done — and leave any unchecked subtask unchecked — if
+build or lint failed, if the task is only partially done, or if you had to
+stop and ask the user something that's still unresolved. An incomplete
+task marked Done, or a Done task with unchecked subtasks left behind, is
+worse than one left visibly open.
+
 ## Summary to the user
 
 Close with: which files were added/changed, the domain/layer they live in
@@ -131,5 +160,4 @@ Close with: which files were added/changed, the domain/layer they live in
 calls, and any judgment call worth flagging (e.g. a service interface added
 because a second data source is realistically coming, or a component
 extracted because a second page needed it). If the task came from Notion,
-say which page you matched it to — useful confirmation if the name was
-ambiguous.
+say which page you matched it to and confirm you marked it Done.

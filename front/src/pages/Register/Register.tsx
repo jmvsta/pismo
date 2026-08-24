@@ -1,5 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { API_BASE_URL } from '../../config/env.ts'
 import './Register.css'
 
 function Register() {
@@ -28,6 +29,10 @@ function Register() {
     // Registration has no backend yet — move straight to the next
     // onboarding step, matching the "01 Register -> 02 Questionnaire" flow.
     navigate('/questionnaire')
+  }
+
+  const handleGoogleOAuth = () => {
+    window.location.href = `${API_BASE_URL}/oauth2/authorization/google`
   }
 
   return (
@@ -152,7 +157,7 @@ function Register() {
             </div>
 
             <div className="register-oauth">
-              <button type="button" className="btn btn-secondary">
+              <button type="button" className="btn btn-secondary" onClick={handleGoogleOAuth}>
                 Continue with Google
               </button>
               <button type="button" className="btn btn-secondary">

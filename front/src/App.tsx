@@ -3,6 +3,8 @@ import Forum from './pages/Forum/Forum.tsx'
 import Register from './pages/Register/Register.tsx'
 import Questionnaire from './pages/Questionnaire/Questionnaire.tsx'
 import Profile from './pages/Profile/Profile.tsx'
+import Admin from './pages/Admin/Admin.tsx'
+import Wallet from './pages/Wallet/Wallet.tsx'
 
 function App() {
   return (
@@ -11,6 +13,8 @@ function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/questionnaire" element={<Questionnaire />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/admin" element={<Admin />} />
+      <Route path="/wallet" element={<Wallet />} />
     </Routes>
   )
 }

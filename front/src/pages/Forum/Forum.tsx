@@ -1,59 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { forumService } from '../../services/forum/index.ts'
+import type { ForumPost, ForumTopic } from '../../services/forum/index.ts'
+import { useWalletStore } from '../../store/walletStore.ts'
+import { formatMinorAmount } from '../../lib/money.ts'
+import ForumPostCard from './ForumPostCard.tsx'
+import ForumNewPostDialog from './ForumNewPostDialog.tsx'
 import './Forum.css'
 
-type Topic = 'Letter writing' | 'Received letters' | 'Pen pal search' | 'Announcements'
 type SortMode = 'latest' | 'top' | 'unanswered'
 
-interface Post {
-  id: string
-  topic: Topic
-  author: string
-  time: string
-  title: string
-  excerpt: string
-  photo?: boolean
-  replies: number
-  thanks?: number
-  matchPct?: number
-}
-
-const TOPICS: Topic[] = ['Letter writing', 'Received letters', 'Pen pal search', 'Announcements']
-
-const POSTS: Post[] = [
-  {
-    id: 'p1',
-    topic: 'Received letters',
-    author: 'Kenji · Osaka',
-    time: '2 h ago',
-    title: "Marta's letter crossed 10,000 km — look at these stamps",
-    excerpt:
-      'Three weeks in transit, arrived smelling faintly of coffee. The wax seal survived. This is why I quit Instagram.',
-    photo: true,
-    replies: 64,
-    thanks: 128,
-  },
-  {
-    id: 'p2',
-    topic: 'Pen pal search',
-    author: 'Louise · Lyon',
-    time: '5 h ago',
-    title: 'Looking for a pen pal who also thinks cheese is a personality trait',
-    excerpt: 'One letter a fortnight, real paper, no pressure. Comté enthusiasts to the front.',
-    replies: 18,
-    matchPct: 74,
-  },
-  {
-    id: 'p3',
-    topic: 'Letter writing',
-    author: 'Tomás · Buenos Aires',
-    time: 'yesterday',
-    title: 'How do you start a first letter to a total stranger?',
-    excerpt: "Matched at 88% with someone in Helsinki and I've been staring at a blank page for two days.",
-    replies: 31,
-    thanks: 42,
-  },
-]
+const PAGE_SIZE = 10
 
 const SUGGESTED = [
   { name: 'Kenji · Osaka', pct: 91 },
@@ -62,18 +19,74 @@ const SUGGESTED = [
 ]
 
 function Forum() {
-  const [activeTopic, setActiveTopic] = useState<Topic | 'all'>('all')
+  const [topics, setTopics] = useState<ForumTopic[]>([])
+  const [activeTopic, setActiveTopic] = useState<string | 'all'>('all')
   const [sortMode, setSortMode] = useState<SortMode>('latest')
+  const [posts, setPosts] = useState<ForumPost[]>([])
+  const [offset, setOffset] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [feedError, setFeedError] = useState<string | null>(null)
+  const [isNewPostOpen, setIsNewPostOpen] = useState(false)
+  const { wallet, loadWallet } = useWalletStore()
+
+  useEffect(() => {
+    loadWallet()
+  }, [loadWallet])
+
+  useEffect(() => {
+    forumService
+      .forumTopics()
+      .then(setTopics)
+      .catch((err) => setFeedError(err instanceof Error ? err.message : 'Could not load topics.'))
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    const topicId = activeTopic === 'all' ? undefined : activeTopic
+
+    forumService
+      .forumPosts(topicId, PAGE_SIZE, 0)
+      .then((page) => {
+        if (cancelled) return
+        setPosts(page)
+        setOffset(page.length)
+        setHasMore(page.length === PAGE_SIZE)
+        setFeedError(null)
+      })
+      .catch((err) => {
+        if (!cancelled) setFeedError(err instanceof Error ? err.message : 'Could not load posts.')
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [activeTopic])
+
+  const handleLoadMore = async () => {
+    setLoadingMore(true)
+    try {
+      const topicId = activeTopic === 'all' ? undefined : activeTopic
+      const page = await forumService.forumPosts(topicId, PAGE_SIZE, offset)
+      setPosts((prev) => [...prev, ...page])
+      setOffset((prev) => prev + page.length)
+      setHasMore(page.length === PAGE_SIZE)
+    } catch (err) {
+      setFeedError(err instanceof Error ? err.message : 'Could not load more posts.')
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   const visiblePosts = useMemo(() => {
-    let posts = activeTopic === 'all' ? POSTS : POSTS.filter((p) => p.topic === activeTopic)
     if (sortMode === 'top') {
-      posts = [...posts].sort((a, b) => b.replies - a.replies)
-    } else if (sortMode === 'unanswered') {
-      posts = posts.filter((p) => p.replies === 0)
+      return [...posts].sort((a, b) => b.replyCount - a.replyCount)
+    }
+    if (sortMode === 'unanswered') {
+      return posts.filter((post) => post.replyCount === 0)
     }
     return posts
-  }, [activeTopic, sortMode])
+  }, [posts, sortMode])
 
   return (
     <div className="forum-page">
@@ -86,13 +99,19 @@ function Forum() {
         </Link>
         <span className="nav-link nav-link-static">Find a pen pal</span>
         <span className="nav-link nav-link-static">My letters</span>
-        <span className="forum-wallet-pill">Wallet · € 4.50</span>
+        <span className="forum-wallet-pill">
+          Wallet · {wallet ? formatMinorAmount(wallet.balanceMinor, wallet.currency) : '—'}
+        </span>
         <Link to="/profile" className="photo-placeholder forum-nav-avatar" aria-label="My profile" />
       </div>
 
       <div className="forum-body">
         <aside className="forum-sidebar-left">
-          <button type="button" className="btn btn-primary btn-block forum-new-post">
+          <button
+            type="button"
+            className="btn btn-primary btn-block forum-new-post"
+            onClick={() => setIsNewPostOpen(true)}
+          >
             + New post
           </button>
           <div className="forum-topics">
@@ -103,13 +122,13 @@ function Forum() {
             >
               All posts
             </span>
-            {TOPICS.map((topic) => (
+            {topics.map((topic) => (
               <span
-                key={topic}
-                className={activeTopic === topic ? 'is-active' : undefined}
-                onClick={() => setActiveTopic(topic)}
+                key={topic.id}
+                className={activeTopic === topic.id ? 'is-active' : undefined}
+                onClick={() => setActiveTopic(topic.id)}
               >
-                {topic}
+                {topic.title}
               </span>
             ))}
           </div>
@@ -131,42 +150,23 @@ function Forum() {
             </span>
           </div>
 
-          {visiblePosts.length === 0 && (
+          {feedError && <p className="text-muted forum-empty">{feedError}</p>}
+
+          {!feedError && visiblePosts.length === 0 && (
             <p className="text-muted forum-empty">Nothing here yet — check back later.</p>
           )}
 
           {visiblePosts.map((post) => (
-            <article key={post.id} className="forum-post">
-              <div className="forum-post-meta">
-                <span className="tag tag-accent">{post.topic}</span>
-                <span className="text-muted">
-                  {post.author} · {post.time}
-                </span>
-              </div>
-              <div className="forum-post-title">{post.title}</div>
-              <div className="forum-post-content">
-                <p className="text-muted forum-post-excerpt">{post.excerpt}</p>
-                {post.photo && (
-                  <div className="photo-placeholder forum-post-photo">
-                    <span>letter photo</span>
-                  </div>
-                )}
-              </div>
-              <div className="forum-post-footer text-muted">
-                <span>{post.replies} replies</span>
-                {post.thanks !== undefined && <span>{post.thanks} thanks</span>}
-                {post.matchPct !== undefined && (
-                  <span className="tag tag-outline forum-post-match">{post.matchPct}% match with you</span>
-                )}
-              </div>
-            </article>
+            <ForumPostCard key={post.id} post={post} />
           ))}
 
-          <div className="forum-load-more">
-            <button type="button" className="btn btn-ghost">
-              Load more posts ↓
-            </button>
-          </div>
+          {hasMore && sortMode !== 'unanswered' && (
+            <div className="forum-load-more">
+              <button type="button" className="btn btn-ghost" onClick={handleLoadMore} disabled={loadingMore}>
+                {loadingMore ? 'Loading…' : 'Load more posts ↓'}
+              </button>
+            </div>
+          )}
         </main>
 
         <aside className="forum-sidebar-right">
@@ -197,14 +197,24 @@ function Forum() {
 
           <div className="forum-wallet-box">
             <h6>Wallet</h6>
-            <div className="forum-wallet-amount">€ 4.50</div>
+            <div className="forum-wallet-amount">
+              {wallet ? formatMinorAmount(wallet.balanceMinor, wallet.currency) : '—'}
+            </div>
             <div className="text-muted forum-wallet-hint">covers ~3 international stamps</div>
-            <button type="button" className="btn btn-secondary forum-wallet-btn">
+            <Link to="/wallet" className="btn btn-secondary forum-wallet-btn">
               Top up →
-            </button>
+            </Link>
           </div>
         </aside>
       </div>
+
+      {isNewPostOpen && (
+        <ForumNewPostDialog
+          topics={topics}
+          onClose={() => setIsNewPostOpen(false)}
+          onCreated={(post) => setPosts((prev) => [post, ...prev])}
+        />
+      )}
     </div>
   )
 }

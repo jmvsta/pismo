@@ -1,3 +1,5 @@
+import { API_BASE_URL } from '../config/env.ts'
+
 export interface GraphqlError {
   message: string
 }
@@ -11,8 +13,6 @@ export class GraphqlRequestError extends Error {
   }
 }
 
-const DEFAULT_ENDPOINT = 'http://localhost:8080/graphql'
-
 interface GraphqlResponseBody<TData> {
   data?: TData
   errors?: GraphqlError[]
@@ -21,7 +21,7 @@ interface GraphqlResponseBody<TData> {
 export class GraphqlClient {
   private readonly endpoint: string
 
-  constructor(endpoint: string = import.meta.env.VITE_GRAPHQL_URL ?? DEFAULT_ENDPOINT) {
+  constructor(endpoint: string = `${API_BASE_URL}/graphql`) {
     this.endpoint = endpoint
   }
 

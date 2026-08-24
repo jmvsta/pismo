@@ -28,6 +28,7 @@ dependencies {
 	implementation 'org.flywaydb:flyway-database-postgresql'
 	implementation 'org.jetbrains.kotlin:kotlin-reflect'
 	implementation 'tools.jackson.module:jackson-module-kotlin'
+	implementation 'com.stripe:stripe-java:29.0.0'
 	runtimeOnly 'org.postgresql:postgresql'
 }
 

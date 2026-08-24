@@ -1,0 +1,41 @@
+.admin-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: var(--space-6);
+}
+
+.admin-card {
+  width: 100%;
+  max-width: 880px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-divider);
+  padding: 28px 40px 36px;
+}
+
+.admin-header h2 {
+  margin: 0 0 4px;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 24px;
+  border-bottom: 2px solid var(--color-divider);
+  margin: 20px 0 22px;
+  font-size: 14px;
+}
+.admin-tabs span {
+  padding-bottom: 10px;
+  cursor: pointer;
+  margin-bottom: -2px;
+}
+.admin-tabs span.is-active {
+  font-weight: 800;
+  color: var(--color-accent);
+  border-bottom: 2px solid var(--color-accent);
+}
+
+.admin-empty {
+  padding: 32px 0;
+  max-width: 480px;
+}
