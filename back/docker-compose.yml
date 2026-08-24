@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:14.24-alpine3.23
+    environment:
+      POSTGRES_DB: pismo
+      POSTGRES_USER: pismo
+      POSTGRES_PASSWORD: pismo
+    ports:
+      - "5432:5432"
+    volumes:
+      - pismo-postgres-data:/var/lib/postgresql/data
+    networks:
+      - pismo
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pismo -d pismo"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+    restart: "no"
+
+  app:
+    build: .
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      DB_URL: jdbc:postgresql://postgres:5432/pismo
+      DB_USERNAME: pismo
+      DB_PASSWORD: pismo
+    ports:
+      - "8080:8080"
+    networks:
+      - pismo
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: "no"
+
+networks:
+  pismo:
+
+volumes:
+  pismo-postgres-data:

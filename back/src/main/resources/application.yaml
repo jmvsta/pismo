@@ -1,3 +1,16 @@
 spring:
   application:
     name: back
+  flyway:
+    locations: classpath:db/migration
+  jooq:
+    sql-dialect: postgres
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized

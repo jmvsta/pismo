@@ -1,0 +1,41 @@
+extend type Query {
+    activeQuestionnaire(kind: QuestionnaireKind!): QuestionnaireVersion
+    questionnaireVersion(id: ID!): QuestionnaireVersion
+    myQuestionnaireResponse(questionnaireVersionId: ID!): UserQuestionnaireResponse
+}
+
+extend type Mutation {
+    saveQuestionnaireResponse(input: SaveQuestionnaireResponseInput!): UserQuestionnaireResponse!
+    submitQuestionnaireResponse(id: ID!): UserQuestionnaireResponse!
+}
+
+"""Definition is the JSON document described in questionnaire_versions.definition: {version, sections, questions}."""
+type QuestionnaireVersion {
+    id: ID!
+    kind: QuestionnaireKind!
+    version: Int!
+    definition: String!
+    isActive: Boolean!
+    createdAt: String!
+}
+
+enum QuestionnaireKind {
+    REGISTRATION
+    EXPERIENCE
+}
+
+"""Answers is a JSON object keyed by question key, e.g. {"q01_ideal_now": "terrace_book_coffee"}."""
+type UserQuestionnaireResponse {
+    id: ID!
+    user: User!
+    questionnaireVersion: QuestionnaireVersion!
+    answers: String!
+    submittedAt: String
+    createdAt: String!
+    updatedAt: String!
+}
+
+input SaveQuestionnaireResponseInput {
+    questionnaireVersionId: ID!
+    answers: String!
+}

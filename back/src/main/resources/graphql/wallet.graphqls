@@ -1,0 +1,127 @@
+extend type Query {
+    myWallet: Wallet
+    subscriptionPlans: [SubscriptionPlan!]!
+    mySubscription: PlanSubscription
+    myMonthlyAllowance: UserMonthlyAllowance
+}
+
+extend type Mutation {
+    initiateWalletTopUp(amountMinor: Int!, currency: String!): WalletTransaction!
+    subscribeToPlan(planId: ID!): PlanSubscription!
+    cancelSubscription(id: ID!): PlanSubscription!
+    addSubscriptionMember(subscriptionId: ID!, userId: ID!, isMinor: Boolean!): SubscriptionMember!
+    removeSubscriptionMember(subscriptionId: ID!, userId: ID!): SubscriptionMember!
+}
+
+"""balanceMinor is in minor units (cents); "EUR 4.50" is stored/returned as 450."""
+type Wallet {
+    id: ID!
+    user: User!
+    balanceMinor: Int!
+    currency: String!
+    createdAt: String!
+    updatedAt: String!
+    transactions: [WalletTransaction!]!
+}
+
+"""amountMinor is signed: credits are positive, debits negative."""
+type WalletTransaction {
+    id: ID!
+    amountMinor: Int!
+    currency: String!
+    type: WalletTransactionType!
+    status: WalletTransactionStatus!
+    letter: Letter
+    externalRef: String
+    description: String
+    createdAt: String!
+    settledAt: String
+}
+
+enum WalletTransactionType {
+    TOP_UP
+    STAMP_PURCHASE
+    SUBSCRIPTION
+    REFUND
+    BONUS
+    ADJUSTMENT
+}
+
+enum WalletTransactionStatus {
+    PENDING
+    COMPLETED
+    FAILED
+    CANCELLED
+}
+
+type SubscriptionPlan {
+    id: ID!
+    code: String!
+    name: String!
+    description: String
+    priceMinor: Int!
+    currency: String!
+    billingPeriod: BillingPeriod!
+    active: Boolean!
+    lettersSendPerMonth: Int!
+    lettersReceivePerMonth: Int!
+    addressAllowance: Int!
+    maxMembers: Int!
+}
+
+enum BillingPeriod {
+    MONTHLY
+    YEARLY
+}
+
+"""Named PlanSubscription (not "Subscription") to avoid colliding with GraphQL's reserved root Subscription operation type."""
+type PlanSubscription {
+    id: ID!
+    user: User!
+    plan: SubscriptionPlan!
+    status: SubscriptionStatus!
+    startedAt: String!
+    currentPeriodStart: String!
+    currentPeriodEnd: String!
+    cancelledAt: String
+    externalRef: String
+    members: [SubscriptionMember!]!
+    createdAt: String!
+    updatedAt: String!
+}
+
+enum SubscriptionStatus {
+    ACTIVE
+    PAST_DUE
+    CANCELLED
+    EXPIRED
+}
+
+"""The owner also has a MEMBER-shaped row with role OWNER; isMinor applies the family plan's stricter rules (no address access, no photos)."""
+type SubscriptionMember {
+    subscription: PlanSubscription!
+    user: User!
+    role: SubscriptionMemberRole!
+    isMinor: Boolean!
+    addedAt: String!
+    removedAt: String
+}
+
+enum SubscriptionMemberRole {
+    OWNER
+    MEMBER
+}
+
+"""Effective monthly limit = plan quota + bonus columns for that period."""
+type UserMonthlyAllowance {
+    user: User!
+    period: String!
+    lettersSent: Int!
+    lettersReceived: Int!
+    addressesUnlocked: Int!
+    bonusSendQuota: Int!
+    bonusReceiveQuota: Int!
+    bonusAddresses: Int!
+    createdAt: String!
+    updatedAt: String!
+}

@@ -1,0 +1,48 @@
+extend type Query {
+    myMatches(limit: Int): [UserMatch!]!
+    penPalRequests(status: PenPalRequestStatus): [PenPalRequest!]!
+    myConnections: [PenPalConnection!]!
+}
+
+extend type Mutation {
+    sendPenPalRequest(addresseeId: ID!, message: String): PenPalRequest!
+    respondToPenPalRequest(id: ID!, accept: Boolean!): PenPalRequest!
+    cancelPenPalRequest(id: ID!): PenPalRequest!
+    endConnection(id: ID!): PenPalConnection!
+}
+
+"""One row per unordered pair of users; no synthetic id, the pair itself is the key."""
+type UserMatch {
+    userA: User!
+    userB: User!
+    score: Float!
+    sharedInterests: [String!]!
+    computedAt: String!
+}
+
+type PenPalRequest {
+    id: ID!
+    requester: User!
+    addressee: User!
+    status: PenPalRequestStatus!
+    message: String
+    createdAt: String!
+    respondedAt: String
+}
+
+enum PenPalRequestStatus {
+    PENDING
+    ACCEPTED
+    DECLINED
+    CANCELLED
+}
+
+type PenPalConnection {
+    id: ID!
+    userA: User!
+    userB: User!
+    request: PenPalRequest
+    establishedAt: String!
+    endedAt: String
+    endedBy: User
+}

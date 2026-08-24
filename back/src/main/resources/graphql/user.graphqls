@@ -1,0 +1,60 @@
+type Query {
+    me: User
+    user(id: ID!): User
+}
+
+type Mutation {
+    updateProfile(input: UpdateProfileInput!): User!
+}
+
+type User {
+    id: ID!
+    nickname: String!
+    email: String!
+    dateOfBirth: String
+    avatarUrl: String
+    bio: String
+    city: String
+    countryCode: String
+    role: UserRole!
+    status: UserStatus!
+    rulesAcceptedAt: String!
+    emailVerifiedAt: String
+    lastSeenAt: String
+    createdAt: String!
+    updatedAt: String!
+    oauthAccounts: [UserOauthAccount!]!
+}
+
+enum UserRole {
+    USER
+    MODERATOR
+    ADMIN
+}
+
+enum UserStatus {
+    ACTIVE
+    SUSPENDED
+    DELETED
+}
+
+type UserOauthAccount {
+    id: ID!
+    provider: OauthProvider!
+    providerUserId: String!
+    email: String
+    linkedAt: String!
+}
+
+enum OauthProvider {
+    GOOGLE
+    APPLE
+}
+
+input UpdateProfileInput {
+    nickname: String
+    avatarUrl: String
+    bio: String
+    city: String
+    countryCode: String
+}

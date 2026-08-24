@@ -1,0 +1,20 @@
+extend type Query {
+    badges: [Badge!]!
+    myBadges: [UserBadge!]!
+}
+
+type Badge {
+    id: ID!
+    code: String!
+    title: String!
+    description: String
+    iconUrl: String
+    position: Int!
+    active: Boolean!
+}
+
+type UserBadge {
+    user: User!
+    badge: Badge!
+    awardedAt: String!
+}

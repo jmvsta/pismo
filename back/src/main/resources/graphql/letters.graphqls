@@ -1,0 +1,78 @@
+extend type Query {
+    letter(id: ID!): Letter
+    lettersForConnection(connectionId: ID!): [Letter!]!
+    sentLetters: [Letter!]!
+    receivedLetters: [Letter!]!
+}
+
+extend type Mutation {
+    createLetter(input: CreateLetterInput!): Letter!
+    updateLetterStatus(id: ID!, status: LetterStatus!, location: String, note: String): Letter!
+    submitLetterFeedback(input: SubmitLetterFeedbackInput!): LetterFeedback!
+}
+
+"""Metadata only -- the letter itself travels by post, its contents are never stored."""
+type Letter {
+    id: ID!
+    connection: PenPalConnection!
+    sender: User!
+    recipient: User!
+    status: LetterStatus!
+    trackingCode: String
+    note: String
+    language: Language
+    sentAt: String
+    deliveredAt: String
+    createdAt: String!
+    updatedAt: String!
+    statusEvents: [LetterStatusEvent!]!
+    feedback: LetterFeedback
+}
+
+enum LetterStatus {
+    DRAFT
+    SENT
+    IN_TRANSIT
+    DELIVERED
+    LOST
+}
+
+type LetterStatusEvent {
+    id: ID!
+    status: LetterStatus!
+    location: String
+    note: String
+    occurredAt: String!
+    createdAt: String!
+}
+
+"""One rating per letter, left by its recipient once the letter is DELIVERED."""
+type LetterFeedback {
+    id: ID!
+    letter: Letter!
+    rater: User!
+    letterScore: Int!
+    senderScore: Int
+    comment: String
+    questionnaireVersion: QuestionnaireVersion
+    experienceSurvey: String!
+    isPublished: Boolean!
+    createdAt: String!
+    updatedAt: String!
+}
+
+input CreateLetterInput {
+    connectionId: ID!
+    recipientId: ID!
+    languageCode: String
+    note: String
+}
+
+input SubmitLetterFeedbackInput {
+    letterId: ID!
+    letterScore: Int!
+    senderScore: Int
+    comment: String
+    questionnaireVersionId: ID
+    experienceSurvey: String
+}

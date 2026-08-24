@@ -1,11 +1,10 @@
 -- Core identity: accounts, linked OAuth providers, shared audit plumbing.
-
-CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger AS $$
-BEGIN
-    NEW.updated_at = now();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+--
+-- No triggers or stored procedures anywhere in this schema by policy.
+-- "updated_at" columns are plain timestamps that the application sets on
+-- every UPDATE (e.g. via jOOQ's record.store(), or an explicit SET clause) --
+-- there is no set_updated_at() function or BEFORE UPDATE trigger to do it
+-- implicitly.
 
 CREATE TABLE users (
     id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -36,10 +35,6 @@ COMMENT ON COLUMN users.password_hash IS 'NULL for accounts that only sign in th
 -- Case-insensitive uniqueness without depending on the citext extension.
 CREATE UNIQUE INDEX users_nickname_lower_uk ON users (lower(nickname));
 CREATE UNIQUE INDEX users_email_lower_uk    ON users (lower(email));
-
-CREATE TRIGGER users_set_updated_at
-    BEFORE UPDATE ON users
-    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 CREATE TABLE user_oauth_accounts (
     id               UUID         PRIMARY KEY DEFAULT gen_random_uuid(),

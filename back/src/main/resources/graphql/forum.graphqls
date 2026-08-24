@@ -1,0 +1,68 @@
+extend type Query {
+    forumTopics: [ForumTopic!]!
+    forumPosts(topicId: ID, limit: Int, offset: Int): [ForumPost!]!
+    forumPost(id: ID!): ForumPost
+}
+
+extend type Mutation {
+    createForumPost(input: CreateForumPostInput!): ForumPost!
+    createForumReply(input: CreateForumReplyInput!): ForumReply!
+    thankForumPost(postId: ID!): ForumPost!
+    thankForumReply(replyId: ID!): ForumReply!
+}
+
+type ForumTopic {
+    id: ID!
+    code: String!
+    title: String!
+    description: String
+    position: Int!
+    active: Boolean!
+}
+
+type ForumPost {
+    id: ID!
+    topic: ForumTopic!
+    author: User!
+    title: String!
+    body: String!
+    replyCount: Int!
+    thanksCount: Int!
+    pinned: Boolean!
+    photos: [ForumPostPhoto!]!
+    replies: [ForumReply!]!
+    createdAt: String!
+    updatedAt: String!
+}
+
+type ForumPostPhoto {
+    id: ID!
+    url: String!
+    caption: String
+    position: Int!
+    createdAt: String!
+}
+
+"""parentReply is set for a threaded reply-to-a-reply; null for a top-level reply to the post."""
+type ForumReply {
+    id: ID!
+    parentReply: ForumReply
+    author: User!
+    body: String!
+    thanksCount: Int!
+    createdAt: String!
+    updatedAt: String!
+}
+
+input CreateForumPostInput {
+    topicId: ID!
+    title: String!
+    body: String!
+    photoUrls: [String!]
+}
+
+input CreateForumReplyInput {
+    postId: ID!
+    parentReplyId: ID
+    body: String!
+}

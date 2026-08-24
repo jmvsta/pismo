@@ -1,0 +1,39 @@
+extend type Query {
+    languages(activeOnly: Boolean): [Language!]!
+    myLanguages: [UserLanguage!]!
+}
+
+extend type Mutation {
+    setUserLanguage(languageCode: String!, purpose: LanguagePurpose!, proficiency: LanguageProficiency): UserLanguage!
+    removeUserLanguage(languageCode: String!, purpose: LanguagePurpose!): Boolean!
+}
+
+type Language {
+    code: ID!
+    name: String!
+    nativeName: String!
+    position: Int!
+    active: Boolean!
+}
+
+"""WRITE = can write letters in it, RECEIVE = wants letters in it, LEARNING = studying it."""
+type UserLanguage {
+    user: User!
+    language: Language!
+    purpose: LanguagePurpose!
+    proficiency: LanguageProficiency
+    createdAt: String!
+}
+
+enum LanguagePurpose {
+    WRITE
+    RECEIVE
+    LEARNING
+}
+
+enum LanguageProficiency {
+    BEGINNER
+    INTERMEDIATE
+    ADVANCED
+    NATIVE
+}
