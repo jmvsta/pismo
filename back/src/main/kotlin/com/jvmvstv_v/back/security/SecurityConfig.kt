@@ -6,7 +6,11 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.invoke
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository
+import org.springframework.security.web.context.SecurityContextRepository
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler
 import org.springframework.web.cors.CorsConfiguration
@@ -31,11 +35,18 @@ class SecurityConfig(
     }
 
     @Bean
+    fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
+
+    @Bean
+    fun securityContextRepository(): SecurityContextRepository = HttpSessionSecurityContextRepository()
+
+    @Bean
     @Profile("local")
-    fun localSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
+    fun localSecurityFilterChain(http: HttpSecurity, securityContextRepository: SecurityContextRepository): SecurityFilterChain {
         http {
             cors { }
             csrf { disable() }
+            securityContext { this.securityContextRepository = securityContextRepository }
             authorizeHttpRequests {
                 authorize(anyRequest, permitAll)
             }
@@ -45,7 +56,7 @@ class SecurityConfig(
 
     @Bean
     @Profile("!local")
-    fun secureSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
+    fun secureSecurityFilterChain(http: HttpSecurity, securityContextRepository: SecurityContextRepository): SecurityFilterChain {
         val requestHandler = CsrfTokenRequestAttributeHandler()
         http {
             cors { }
@@ -53,6 +64,7 @@ class SecurityConfig(
                 csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse()
                 csrfTokenRequestHandler = requestHandler
             }
+            securityContext { this.securityContextRepository = securityContextRepository }
             authorizeHttpRequests {
                 authorize("/actuator/health", permitAll)
                 authorize(anyRequest, authenticated)

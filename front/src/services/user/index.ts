@@ -10,6 +10,8 @@ export type {
   UserStatus,
   OauthProvider,
   UpdateProfileInput,
+  RegisterInput,
+  LoginInput,
 } from './types.ts'
 
 export const userService = new GraphqlUserService(graphqlClient)

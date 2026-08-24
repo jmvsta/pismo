@@ -1,10 +1,12 @@
 import { useRef, useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { API_BASE_URL } from '../../config/env.ts'
+import { useUserStore } from '../../store/userStore.ts'
 import './Register.css'
 
 function Register() {
   const navigate = useNavigate()
+  const register = useUserStore((state) => state.register)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [nickname, setNickname] = useState('')
@@ -13,6 +15,8 @@ function Register() {
   const [password, setPassword] = useState('')
   const [acceptedRules, setAcceptedRules] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const canSubmit =
     nickname.trim() !== '' && email.trim() !== '' && password.trim().length >= 8 && acceptedRules
@@ -23,12 +27,25 @@ function Register() {
     setAvatarPreview(URL.createObjectURL(file))
   }
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!canSubmit) return
-    // Registration has no backend yet — move straight to the next
-    // onboarding step, matching the "01 Register -> 02 Questionnaire" flow.
-    navigate('/questionnaire')
+    if (!canSubmit || isSubmitting) return
+    setError(null)
+    setIsSubmitting(true)
+    try {
+      await register({
+        nickname,
+        email,
+        password,
+        dateOfBirth: dob || undefined,
+        acceptedRules,
+      })
+      navigate('/questionnaire')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Registration failed.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleGoogleOAuth = () => {
@@ -102,10 +119,10 @@ function Register() {
                 <label htmlFor="dob">Date of birth</label>
                 <input
                   id="dob"
+                  type="date"
                   className="input"
                   value={dob}
                   onChange={(e) => setDob(e.target.value)}
-                  placeholder="DD / MM / YYYY"
                 />
               </div>
             </div>
@@ -146,8 +163,10 @@ function Register() {
               <span>I accept the community rules and privacy policy</span>
             </label>
 
-            <button type="submit" className="btn btn-primary btn-block" disabled={!canSubmit}>
-              Create account →
+            {error && <div className="field-hint">{error}</div>}
+
+            <button type="submit" className="btn btn-primary btn-block" disabled={!canSubmit || isSubmitting}>
+              {isSubmitting ? 'Creating account…' : 'Create account →'}
             </button>
 
             <div className="register-divider">
@@ -165,7 +184,9 @@ function Register() {
               </button>
             </div>
 
-            <div className="register-signin">Already a member? Sign in</div>
+            <div className="register-signin">
+              Already a member? <Link to="/login">Sign in</Link>
+            </div>
           </div>
         </form>
       </div>

@@ -42,3 +42,21 @@ data class UpdateProfileInput(
     val city: String?,
     val countryCode: String?,
 )
+
+data class RegisterInput(
+    val nickname: String,
+    val email: String,
+    val password: String,
+    val dateOfBirth: String?,
+    val acceptedRules: Boolean,
+)
+
+data class LoginInput(
+    val email: String,
+    val password: String,
+)
+
+data class UserCredentials(
+    val id: UUID,
+    val passwordHash: String?,
+)

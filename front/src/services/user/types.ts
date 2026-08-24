@@ -39,3 +39,16 @@ export interface UpdateProfileInput {
   city?: string
   countryCode?: string
 }
+
+export interface RegisterInput {
+  nickname: string
+  email: string
+  password: string
+  dateOfBirth?: string
+  acceptedRules: boolean
+}
+
+export interface LoginInput {
+  email: string
+  password: string
+}

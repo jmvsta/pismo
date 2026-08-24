@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { userService } from '../services/user/index.ts'
-import type { User } from '../services/user/index.ts'
+import type { LoginInput, RegisterInput, User } from '../services/user/index.ts'
 
 type UserStatus = 'idle' | 'loading' | 'ready' | 'error'
 
@@ -9,6 +9,9 @@ interface UserState {
   status: UserStatus
   error: string | null
   loadCurrentUser: () => Promise<void>
+  register: (input: RegisterInput) => Promise<void>
+  login: (input: LoginInput) => Promise<void>
+  logout: () => Promise<void>
 }
 
 function toErrorMessage(error: unknown): string {
@@ -28,5 +31,32 @@ export const useUserStore = create<UserState>((set) => ({
     } catch (error) {
       set({ status: 'error', error: toErrorMessage(error) })
     }
+  },
+
+  register: async (input) => {
+    set({ status: 'loading', error: null })
+    try {
+      const currentUser = await userService.register(input)
+      set({ currentUser, status: 'ready', error: null })
+    } catch (error) {
+      set({ status: 'error', error: toErrorMessage(error) })
+      throw error
+    }
+  },
+
+  login: async (input) => {
+    set({ status: 'loading', error: null })
+    try {
+      const currentUser = await userService.login(input)
+      set({ currentUser, status: 'ready', error: null })
+    } catch (error) {
+      set({ status: 'error', error: toErrorMessage(error) })
+      throw error
+    }
+  },
+
+  logout: async () => {
+    await userService.logout()
+    set({ currentUser: null, status: 'idle', error: null })
   },
 }))

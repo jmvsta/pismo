@@ -5,6 +5,9 @@ type Query {
 
 type Mutation {
     updateProfile(input: UpdateProfileInput!): User!
+    register(input: RegisterInput!): User!
+    login(input: LoginInput!): User!
+    logout: Boolean!
 }
 
 type User {
@@ -57,4 +60,17 @@ input UpdateProfileInput {
     bio: String
     city: String
     countryCode: String
+}
+
+input RegisterInput {
+    nickname: String!
+    email: String!
+    password: String!
+    dateOfBirth: String
+    acceptedRules: Boolean!
+}
+
+input LoginInput {
+    email: String!
+    password: String!
 }

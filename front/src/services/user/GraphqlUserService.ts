@@ -1,5 +1,5 @@
 import type { GraphqlClient } from '../graphqlClient.ts'
-import type { UpdateProfileInput, User } from './types.ts'
+import type { LoginInput, RegisterInput, UpdateProfileInput, User } from './types.ts'
 import type { UserService } from './UserService.ts'
 
 export const USER_SUMMARY_FIELDS = `
@@ -55,6 +55,28 @@ const UPDATE_PROFILE_MUTATION = `
   }
 `
 
+const REGISTER_MUTATION = `
+  mutation Register($input: RegisterInput!) {
+    register(input: $input) {
+      ${USER_FIELDS}
+    }
+  }
+`
+
+const LOGIN_MUTATION = `
+  mutation Login($input: LoginInput!) {
+    login(input: $input) {
+      ${USER_FIELDS}
+    }
+  }
+`
+
+const LOGOUT_MUTATION = `
+  mutation Logout {
+    logout
+  }
+`
+
 export class GraphqlUserService implements UserService {
   private readonly client: GraphqlClient
 
@@ -78,5 +100,24 @@ export class GraphqlUserService implements UserService {
       { input: UpdateProfileInput }
     >(UPDATE_PROFILE_MUTATION, { input })
     return data.updateProfile
+  }
+
+  async register(input: RegisterInput): Promise<User> {
+    const data = await this.client.request<{ register: User }, { input: RegisterInput }>(
+      REGISTER_MUTATION,
+      { input },
+    )
+    return data.register
+  }
+
+  async login(input: LoginInput): Promise<User> {
+    const data = await this.client.request<{ login: User }, { input: LoginInput }>(LOGIN_MUTATION, {
+      input,
+    })
+    return data.login
+  }
+
+  async logout(): Promise<void> {
+    await this.client.request<{ logout: boolean }>(LOGOUT_MUTATION)
   }
 }

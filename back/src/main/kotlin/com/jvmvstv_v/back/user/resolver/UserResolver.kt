@@ -1,5 +1,7 @@
 package com.jvmvstv_v.back.user.resolver
 
+import com.jvmvstv_v.back.user.model.LoginInput
+import com.jvmvstv_v.back.user.model.RegisterInput
 import com.jvmvstv_v.back.user.model.UpdateProfileInput
 import com.jvmvstv_v.back.user.model.User
 import com.jvmvstv_v.back.user.service.UserService
@@ -19,4 +21,16 @@ class UserResolver(private val userService: UserService) {
 
     @MutationMapping
     fun updateProfile(@Argument input: UpdateProfileInput): User = userService.updateProfile(input)
+
+    @MutationMapping
+    fun register(@Argument input: RegisterInput): User = userService.register(input)
+
+    @MutationMapping
+    fun login(@Argument input: LoginInput): User = userService.login(input)
+
+    @MutationMapping
+    fun logout(): Boolean {
+        userService.logout()
+        return true
+    }
 }

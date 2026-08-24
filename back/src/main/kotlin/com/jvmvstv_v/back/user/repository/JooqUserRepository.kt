@@ -1,8 +1,10 @@
 package com.jvmvstv_v.back.user.repository
 
 import com.jvmvstv_v.back.user.model.OauthProvider
+import com.jvmvstv_v.back.user.model.RegisterInput
 import com.jvmvstv_v.back.user.model.UpdateProfileInput
 import com.jvmvstv_v.back.user.model.User
+import com.jvmvstv_v.back.user.model.UserCredentials
 import com.jvmvstv_v.back.user.model.UserOauthAccount
 import com.jvmvstv_v.back.user.model.UserRole
 import com.jvmvstv_v.back.user.model.UserStatus
@@ -11,6 +13,7 @@ import org.jooq.Record
 import org.jooq.impl.DSL
 import org.jooq.impl.SQLDataType
 import org.springframework.stereotype.Repository
+import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -27,6 +30,7 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     private val COUNTRY_CODE = DSL.field("country_code", SQLDataType.VARCHAR)
     private val ROLE = DSL.field("role", SQLDataType.VARCHAR)
     private val STATUS = DSL.field("status", SQLDataType.VARCHAR)
+    private val PASSWORD_HASH = DSL.field("password_hash", SQLDataType.VARCHAR)
     private val RULES_ACCEPTED_AT = DSL.field("rules_accepted_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
     private val EMAIL_VERIFIED_AT = DSL.field("email_verified_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
     private val LAST_SEEN_AT = DSL.field("last_seen_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
@@ -59,6 +63,27 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
         step.where(ID.eq(id)).execute()
         return findById(id) ?: error("User $id not found")
     }
+
+    override fun create(input: RegisterInput, passwordHash: String): User {
+        val id = UUID.randomUUID()
+        dsl.insertInto(USERS)
+            .columns(ID, NICKNAME, EMAIL, PASSWORD_HASH, DATE_OF_BIRTH, RULES_ACCEPTED_AT)
+            .values(id, input.nickname, input.email, passwordHash, input.dateOfBirth?.let { LocalDate.parse(it) }, OffsetDateTime.now())
+            .execute()
+        return findById(id) ?: error("User $id not found after registration")
+    }
+
+    override fun existsByEmailOrNickname(email: String, nickname: String): Boolean =
+        dsl.fetchExists(
+            dsl.selectOne().from(USERS)
+                .where(DSL.lower(EMAIL).eq(email.lowercase())).or(DSL.lower(NICKNAME).eq(nickname.lowercase()))
+        )
+
+    override fun findCredentialsByEmail(email: String): UserCredentials? =
+        dsl.select(ID, PASSWORD_HASH)
+            .from(USERS)
+            .where(DSL.lower(EMAIL).eq(email.lowercase())).and(DELETED_AT.isNull)
+            .fetchOne { UserCredentials(id = it[ID]!!, passwordHash = it[PASSWORD_HASH]) }
 
     private fun toUser(record: Record): User = User(
         id = record[ID]!!,
