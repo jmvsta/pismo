@@ -27,6 +27,7 @@ type User {
     createdAt: String!
     updatedAt: String!
     oauthAccounts: [UserOauthAccount!]!
+    authToken: String
 }
 
 enum UserRole {

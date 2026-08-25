@@ -1,16 +1,17 @@
 package com.jvmvstv_v.back.security
 
+import com.jvmvstv_v.back.user.repository.UserRepository
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.invoke
+import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository
-import org.springframework.security.web.context.SecurityContextRepository
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler
 import org.springframework.web.cors.CorsConfiguration
@@ -20,6 +21,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 @Configuration
 class SecurityConfig(
     @Value("\${app.cors.allowed-origins}") private val allowedOrigins: List<String>,
+    private val userRepository: UserRepository,
 ) {
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
@@ -38,25 +40,25 @@ class SecurityConfig(
     fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
 
     @Bean
-    fun securityContextRepository(): SecurityContextRepository = HttpSessionSecurityContextRepository()
-
-    @Bean
     @Profile("local")
-    fun localSecurityFilterChain(http: HttpSecurity, securityContextRepository: SecurityContextRepository): SecurityFilterChain {
+    fun localSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http {
             cors { }
             csrf { disable() }
-            securityContext { this.securityContextRepository = securityContextRepository }
+            sessionManagement { sessionCreationPolicy = SessionCreationPolicy.STATELESS }
             authorizeHttpRequests {
                 authorize(anyRequest, permitAll)
             }
+            addFilterBefore<UsernamePasswordAuthenticationFilter>(
+                BearerTokenAuthenticationFilter(userRepository),
+            )
         }
         return http.build()
     }
 
     @Bean
     @Profile("!local")
-    fun secureSecurityFilterChain(http: HttpSecurity, securityContextRepository: SecurityContextRepository): SecurityFilterChain {
+    fun secureSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
         val requestHandler = CsrfTokenRequestAttributeHandler()
         http {
             cors { }
@@ -64,7 +66,6 @@ class SecurityConfig(
                 csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse()
                 csrfTokenRequestHandler = requestHandler
             }
-            securityContext { this.securityContextRepository = securityContextRepository }
             authorizeHttpRequests {
                 authorize("/actuator/health", permitAll)
                 authorize(anyRequest, authenticated)

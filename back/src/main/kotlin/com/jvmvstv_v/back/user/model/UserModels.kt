@@ -25,6 +25,7 @@ data class User(
     val createdAt: String,
     val updatedAt: String,
     val oauthAccounts: List<UserOauthAccount>,
+    val authToken: String? = null,
 )
 
 data class UserOauthAccount(

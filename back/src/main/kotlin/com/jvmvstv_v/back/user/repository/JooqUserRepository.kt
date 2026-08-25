@@ -1,5 +1,6 @@
 package com.jvmvstv_v.back.user.repository
 
+import com.jvmvstv_v.back.common.AuthenticatedPrincipal
 import com.jvmvstv_v.back.user.model.OauthProvider
 import com.jvmvstv_v.back.user.model.RegisterInput
 import com.jvmvstv_v.back.user.model.UpdateProfileInput
@@ -37,6 +38,8 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     private val CREATED_AT = DSL.field("created_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
     private val UPDATED_AT = DSL.field("updated_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
     private val DELETED_AT = DSL.field("deleted_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
+    private val AUTH_TOKEN = DSL.field("auth_token", SQLDataType.VARCHAR)
+    private val AUTH_TOKEN_EXPIRES_AT = DSL.field("auth_token_expires_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
 
     private val OAUTH_ACCOUNTS = DSL.table("user_oauth_accounts")
     private val OAUTH_ID = DSL.field("id", SQLDataType.UUID)
@@ -84,6 +87,30 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
             .from(USERS)
             .where(DSL.lower(EMAIL).eq(email.lowercase())).and(DELETED_AT.isNull)
             .fetchOne { UserCredentials(id = it[ID]!!, passwordHash = it[PASSWORD_HASH]) }
+
+    override fun setAuthToken(userId: UUID, token: String, expiresAt: OffsetDateTime) {
+        dsl.update(USERS)
+            .set(AUTH_TOKEN, token)
+            .set(AUTH_TOKEN_EXPIRES_AT, expiresAt)
+            .where(ID.eq(userId))
+            .execute()
+    }
+
+    override fun clearAuthToken(userId: UUID) {
+        dsl.update(USERS)
+            .set(AUTH_TOKEN, null as String?)
+            .set(AUTH_TOKEN_EXPIRES_AT, null as OffsetDateTime?)
+            .where(ID.eq(userId))
+            .execute()
+    }
+
+    override fun findActiveUserByToken(token: String): AuthenticatedPrincipal? =
+        dsl.select(ID, EMAIL)
+            .from(USERS)
+            .where(AUTH_TOKEN.eq(token))
+            .and(AUTH_TOKEN_EXPIRES_AT.gt(OffsetDateTime.now()))
+            .and(DELETED_AT.isNull)
+            .fetchOne { AuthenticatedPrincipal(id = it[ID]!!, email = it[EMAIL]!!) }
 
     private fun toUser(record: Record): User = User(
         id = record[ID]!!,
