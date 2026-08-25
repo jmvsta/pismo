@@ -2,10 +2,12 @@ package com.jvmvstv_v.back.forum.repository
 
 import com.jvmvstv_v.back.forum.model.CreateForumPostInput
 import com.jvmvstv_v.back.forum.model.CreateForumReplyInput
+import com.jvmvstv_v.back.forum.model.CreateForumTopicInput
 import com.jvmvstv_v.back.forum.model.ForumPost
 import com.jvmvstv_v.back.forum.model.ForumPostPhoto
 import com.jvmvstv_v.back.forum.model.ForumReply
 import com.jvmvstv_v.back.forum.model.ForumTopic
+import com.jvmvstv_v.back.forum.model.UpdateForumPostInput
 import com.jvmvstv_v.back.user.repository.UserRepository
 import org.jooq.DSLContext
 import org.jooq.Record
@@ -125,6 +127,23 @@ class JooqForumRepository(
         return findReplyById(id) ?: error("Forum reply $id not found")
     }
 
+    override fun updatePost(id: UUID, input: UpdateForumPostInput): ForumPost {
+        val step = dsl.update(POSTS).set(P_UPDATED_AT, OffsetDateTime.now())
+        input.title?.let { step.set(P_TITLE, it) }
+        input.body?.let { step.set(P_BODY, it) }
+        step.where(P_ID.eq(id)).execute()
+        return findPostById(id) ?: error("Forum post $id not found")
+    }
+
+    override fun updateReply(id: UUID, body: String): ForumReply {
+        dsl.update(REPLIES)
+            .set(RP_BODY, body)
+            .set(RP_UPDATED_AT, OffsetDateTime.now())
+            .where(RP_ID.eq(id))
+            .execute()
+        return findReplyById(id) ?: error("Forum reply $id not found")
+    }
+
     override fun thankPost(postId: UUID, userId: UUID): ForumPost {
         val inserted = dsl.insertInto(POST_THANKS)
             .columns(PT_POST_ID, PT_USER_ID, PT_CREATED_AT)
@@ -149,11 +168,33 @@ class JooqForumRepository(
         return findReplyById(replyId) ?: error("Forum reply $replyId not found")
     }
 
-    private fun findTopicById(id: Int): ForumTopic? =
+    override fun findTopicById(id: Int): ForumTopic? =
         dsl.select(T_ID, T_CODE, T_TITLE, T_DESCRIPTION, T_POSITION, T_ACTIVE)
             .from(TOPICS)
             .where(T_ID.eq(id))
             .fetchOne { toTopic(it) }
+
+    override fun createTopic(input: CreateForumTopicInput): ForumTopic {
+        val nextId = (dsl.select(DSL.max(T_ID)).from(TOPICS).fetchOne(DSL.max(T_ID)) ?: 0) + 1
+        val nextPosition = (dsl.select(DSL.max(T_POSITION)).from(TOPICS).fetchOne(DSL.max(T_POSITION)) ?: 0) + 1
+        dsl.insertInto(TOPICS)
+            .columns(T_ID, T_CODE, T_TITLE, T_DESCRIPTION, T_POSITION, T_ACTIVE)
+            .values(nextId, input.code, input.title, input.description, nextPosition, true)
+            .execute()
+        return findTopicById(nextId) ?: error("Forum topic $nextId not found")
+    }
+
+    override fun setTopicActive(topicId: Int, active: Boolean): ForumTopic {
+        dsl.update(TOPICS).set(T_ACTIVE, active).where(T_ID.eq(topicId)).execute()
+        return findTopicById(topicId) ?: error("Forum topic $topicId not found")
+    }
+
+    override fun hasPosts(topicId: Int): Boolean =
+        dsl.fetchExists(dsl.selectOne().from(POSTS).where(P_TOPIC_ID.eq(topicId)))
+
+    override fun deleteTopic(topicId: Int) {
+        dsl.deleteFrom(TOPICS).where(T_ID.eq(topicId)).execute()
+    }
 
     private fun findPhotosForPost(postId: UUID): List<ForumPostPhoto> =
         dsl.select(PH_ID, PH_URL, PH_CAPTION, PH_POSITION, PH_CREATED_AT)
@@ -177,7 +218,7 @@ class JooqForumRepository(
             .orderBy(RP_CREATED_AT)
             .fetch { toReply(it) }
 
-    private fun findReplyById(id: UUID): ForumReply? =
+    override fun findReplyById(id: UUID): ForumReply? =
         dsl.select(RP_ID, RP_PARENT_ID, RP_AUTHOR_ID, RP_BODY, RP_THANKS_COUNT, RP_CREATED_AT, RP_UPDATED_AT)
             .from(REPLIES)
             .where(RP_ID.eq(id)).and(RP_DELETED_AT.isNull)

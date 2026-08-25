@@ -7,6 +7,8 @@ import com.jvmvstv_v.back.user.model.LoginInput
 import com.jvmvstv_v.back.user.model.RegisterInput
 import com.jvmvstv_v.back.user.model.UpdateProfileInput
 import com.jvmvstv_v.back.user.model.User
+import com.jvmvstv_v.back.user.model.UserRole
+import com.jvmvstv_v.back.user.model.UserStatus
 import com.jvmvstv_v.back.user.repository.UserRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
@@ -47,6 +49,21 @@ class UserServiceImpl(
     }
 
     override fun logout() = userRepository.clearAuthToken(CurrentUser.id)
+
+    override fun listUsers(): List<User> {
+        CurrentUser.requireAdmin()
+        return userRepository.findAll()
+    }
+
+    override fun setUserStatus(userId: UUID, status: UserStatus): User {
+        CurrentUser.requireAdmin()
+        return userRepository.setStatus(userId, status)
+    }
+
+    override fun setUserRole(userId: UUID, role: UserRole): User {
+        CurrentUser.requireAdmin()
+        return userRepository.setRole(userId, role)
+    }
 
     private fun issueToken(userId: UUID): String {
         val token = SecureTokenGenerator.generate()

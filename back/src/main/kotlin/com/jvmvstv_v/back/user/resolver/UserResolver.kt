@@ -4,6 +4,8 @@ import com.jvmvstv_v.back.user.model.LoginInput
 import com.jvmvstv_v.back.user.model.RegisterInput
 import com.jvmvstv_v.back.user.model.UpdateProfileInput
 import com.jvmvstv_v.back.user.model.User
+import com.jvmvstv_v.back.user.model.UserRole
+import com.jvmvstv_v.back.user.model.UserStatus
 import com.jvmvstv_v.back.user.service.UserService
 import org.springframework.graphql.data.method.annotation.Argument
 import org.springframework.graphql.data.method.annotation.MutationMapping
@@ -33,4 +35,15 @@ class UserResolver(private val userService: UserService) {
         userService.logout()
         return true
     }
+
+    @QueryMapping
+    fun users(): List<User> = userService.listUsers()
+
+    @MutationMapping
+    fun setUserStatus(@Argument userId: UUID, @Argument status: UserStatus): User =
+        userService.setUserStatus(userId, status)
+
+    @MutationMapping
+    fun setUserRole(@Argument userId: UUID, @Argument role: UserRole): User =
+        userService.setUserRole(userId, role)
 }

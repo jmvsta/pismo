@@ -3,6 +3,7 @@ package com.jvmvstv_v.back.questionnaire.resolver
 import com.jvmvstv_v.back.questionnaire.model.QuestionnaireKind
 import com.jvmvstv_v.back.questionnaire.model.QuestionnaireVersion
 import com.jvmvstv_v.back.questionnaire.model.SaveQuestionnaireResponseInput
+import com.jvmvstv_v.back.questionnaire.model.SaveQuestionnaireTemplateInput
 import com.jvmvstv_v.back.questionnaire.model.UserQuestionnaireResponse
 import com.jvmvstv_v.back.questionnaire.service.QuestionnaireService
 import org.springframework.graphql.data.method.annotation.Argument
@@ -25,6 +26,10 @@ class QuestionnaireResolver(private val questionnaireService: QuestionnaireServi
     fun myQuestionnaireResponse(@Argument questionnaireVersionId: Int): UserQuestionnaireResponse? =
         questionnaireService.myResponse(questionnaireVersionId)
 
+    @QueryMapping
+    fun questionnaireVersions(@Argument kind: QuestionnaireKind): List<QuestionnaireVersion> =
+        questionnaireService.allVersions(kind)
+
     @MutationMapping
     fun saveQuestionnaireResponse(@Argument input: SaveQuestionnaireResponseInput): UserQuestionnaireResponse =
         questionnaireService.saveResponse(input)
@@ -32,4 +37,8 @@ class QuestionnaireResolver(private val questionnaireService: QuestionnaireServi
     @MutationMapping
     fun submitQuestionnaireResponse(@Argument id: UUID): UserQuestionnaireResponse =
         questionnaireService.submitResponse(id)
+
+    @MutationMapping
+    fun saveQuestionnaireTemplate(@Argument input: SaveQuestionnaireTemplateInput): QuestionnaireVersion =
+        questionnaireService.saveTemplate(input)
 }

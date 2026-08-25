@@ -105,12 +105,30 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     }
 
     override fun findActiveUserByToken(token: String): AuthenticatedPrincipal? =
-        dsl.select(ID, EMAIL)
+        dsl.select(ID, EMAIL, ROLE)
             .from(USERS)
             .where(AUTH_TOKEN.eq(token))
             .and(AUTH_TOKEN_EXPIRES_AT.gt(OffsetDateTime.now()))
             .and(DELETED_AT.isNull)
-            .fetchOne { AuthenticatedPrincipal(id = it[ID]!!, email = it[EMAIL]!!) }
+            .fetchOne { AuthenticatedPrincipal(id = it[ID]!!, email = it[EMAIL]!!, role = UserRole.valueOf(it[ROLE]!!)) }
+
+    override fun findAll(): List<User> =
+        dsl.select(ID, NICKNAME, EMAIL, DATE_OF_BIRTH, AVATAR_URL, BIO, CITY, COUNTRY_CODE, ROLE, STATUS,
+            RULES_ACCEPTED_AT, EMAIL_VERIFIED_AT, LAST_SEEN_AT, CREATED_AT, UPDATED_AT)
+            .from(USERS)
+            .where(DELETED_AT.isNull)
+            .orderBy(CREATED_AT.desc())
+            .fetch { toUser(it) }
+
+    override fun setStatus(userId: UUID, status: UserStatus): User {
+        dsl.update(USERS).set(STATUS, status.name).set(UPDATED_AT, OffsetDateTime.now()).where(ID.eq(userId)).execute()
+        return findById(userId) ?: error("User $userId not found")
+    }
+
+    override fun setRole(userId: UUID, role: UserRole): User {
+        dsl.update(USERS).set(ROLE, role.name).set(UPDATED_AT, OffsetDateTime.now()).where(ID.eq(userId)).execute()
+        return findById(userId) ?: error("User $userId not found")
+    }
 
     private fun toUser(record: Record): User = User(
         id = record[ID]!!,

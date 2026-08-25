@@ -9,6 +9,7 @@ export type {
   ForumReply,
   CreateForumPostInput,
   CreateForumReplyInput,
+  CreateForumTopicInput,
 } from './types.ts'
 
 export const forumService = new GraphqlForumService(graphqlClient)

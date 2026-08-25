@@ -1,12 +1,14 @@
 extend type Query {
     activeQuestionnaire(kind: QuestionnaireKind!): QuestionnaireVersion
     questionnaireVersion(id: ID!): QuestionnaireVersion
+    questionnaireVersions(kind: QuestionnaireKind!): [QuestionnaireVersion!]!
     myQuestionnaireResponse(questionnaireVersionId: ID!): UserQuestionnaireResponse
 }
 
 extend type Mutation {
     saveQuestionnaireResponse(input: SaveQuestionnaireResponseInput!): UserQuestionnaireResponse!
     submitQuestionnaireResponse(id: ID!): UserQuestionnaireResponse!
+    saveQuestionnaireTemplate(input: SaveQuestionnaireTemplateInput!): QuestionnaireVersion!
 }
 
 """Definition is the JSON document described in questionnaire_versions.definition: {version, sections, questions}."""
@@ -38,4 +40,9 @@ type UserQuestionnaireResponse {
 input SaveQuestionnaireResponseInput {
     questionnaireVersionId: ID!
     answers: String!
+}
+
+input SaveQuestionnaireTemplateInput {
+    kind: QuestionnaireKind!
+    definition: String!
 }

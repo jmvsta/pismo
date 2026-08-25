@@ -39,3 +39,41 @@
   padding: 32px 0;
   max-width: 480px;
 }
+
+.admin-questionnaire-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.admin-editor-row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+.admin-editor-row .input {
+  flex: 1;
+}
+
+.admin-new-topic-form {
+  margin-top: var(--space-4);
+}
+
+.admin-question-block {
+  border: 1px solid var(--color-divider);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.admin-options-list {
+  margin: var(--space-2) 0 0 var(--space-4);
+}
+
+.admin-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}

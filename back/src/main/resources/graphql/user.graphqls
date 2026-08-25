@@ -1,6 +1,7 @@
 type Query {
     me: User
     user(id: ID!): User
+    users: [User!]!
 }
 
 type Mutation {
@@ -8,6 +9,8 @@ type Mutation {
     register(input: RegisterInput!): User!
     login(input: LoginInput!): User!
     logout: Boolean!
+    setUserStatus(userId: ID!, status: UserStatus!): User!
+    setUserRole(userId: ID!, role: UserRole!): User!
 }
 
 type User {

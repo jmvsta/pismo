@@ -8,6 +8,7 @@ export type {
   QuestionnaireVersionSummary,
   UserQuestionnaireResponse,
   SaveQuestionnaireResponseInput,
+  SaveQuestionnaireTemplateInput,
 } from './types.ts'
 
 export const questionnaireService = new GraphqlQuestionnaireService(graphqlClient)

@@ -28,3 +28,8 @@ data class SaveQuestionnaireResponseInput(
     val questionnaireVersionId: Int,
     val answers: String,
 )
+
+data class SaveQuestionnaireTemplateInput(
+    val kind: QuestionnaireKind,
+    val definition: String,
+)

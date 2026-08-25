@@ -4,6 +4,7 @@ import type {
   QuestionnaireKind,
   QuestionnaireVersion,
   SaveQuestionnaireResponseInput,
+  SaveQuestionnaireTemplateInput,
   UserQuestionnaireResponse,
 } from './types.ts'
 import type { QuestionnaireService } from './QuestionnaireService.ts'
@@ -71,6 +72,22 @@ const SUBMIT_QUESTIONNAIRE_RESPONSE_MUTATION = `
   }
 `
 
+const QUESTIONNAIRE_VERSIONS_QUERY = `
+  query QuestionnaireVersions($kind: QuestionnaireKind!) {
+    questionnaireVersions(kind: $kind) {
+      ${QUESTIONNAIRE_VERSION_FIELDS}
+    }
+  }
+`
+
+const SAVE_QUESTIONNAIRE_TEMPLATE_MUTATION = `
+  mutation SaveQuestionnaireTemplate($input: SaveQuestionnaireTemplateInput!) {
+    saveQuestionnaireTemplate(input: $input) {
+      ${QUESTIONNAIRE_VERSION_FIELDS}
+    }
+  }
+`
+
 export class GraphqlQuestionnaireService implements QuestionnaireService {
   private readonly client: GraphqlClient
 
@@ -120,5 +137,21 @@ export class GraphqlQuestionnaireService implements QuestionnaireService {
       { id: string }
     >(SUBMIT_QUESTIONNAIRE_RESPONSE_MUTATION, { id })
     return data.submitQuestionnaireResponse
+  }
+
+  async questionnaireVersions(kind: QuestionnaireKind): Promise<QuestionnaireVersion[]> {
+    const data = await this.client.request<
+      { questionnaireVersions: QuestionnaireVersion[] },
+      { kind: QuestionnaireKind }
+    >(QUESTIONNAIRE_VERSIONS_QUERY, { kind })
+    return data.questionnaireVersions
+  }
+
+  async saveQuestionnaireTemplate(input: SaveQuestionnaireTemplateInput): Promise<QuestionnaireVersion> {
+    const data = await this.client.request<
+      { saveQuestionnaireTemplate: QuestionnaireVersion },
+      { input: SaveQuestionnaireTemplateInput }
+    >(SAVE_QUESTIONNAIRE_TEMPLATE_MUTATION, { input })
+    return data.saveQuestionnaireTemplate
   }
 }

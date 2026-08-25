@@ -1,7 +1,11 @@
+import { forumService } from '../../services/forum/index.ts'
 import type { ForumPost } from '../../services/forum/index.ts'
+import ThanksButton from './ThanksButton.tsx'
 
 interface ForumPostCardProps {
   post: ForumPost
+  onOpen: (post: ForumPost) => void
+  onThanked: (post: ForumPost) => void
 }
 
 function formatRelativeTime(iso: string): string {
@@ -17,11 +21,16 @@ function formatRelativeTime(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-function ForumPostCard({ post }: ForumPostCardProps) {
+function ForumPostCard({ post, onOpen, onThanked }: ForumPostCardProps) {
   const coverPhoto = post.photos[0]
 
+  const handleThank = async () => {
+    const updated = await forumService.thankForumPost(post.id)
+    onThanked(updated)
+  }
+
   return (
-    <article className="forum-post">
+    <article className="forum-post" onClick={() => onOpen(post)}>
       <div className="forum-post-meta">
         <span className="tag tag-accent">{post.topic.title}</span>
         <span className="text-muted">
@@ -39,7 +48,7 @@ function ForumPostCard({ post }: ForumPostCardProps) {
       </div>
       <div className="forum-post-footer text-muted">
         <span>{post.replyCount} replies</span>
-        <span>{post.thanksCount} thanks</span>
+        <ThanksButton count={post.thanksCount} onThank={handleThank} />
       </div>
     </article>
   )

@@ -1,6 +1,7 @@
 import type {
   CreateForumPostInput,
   CreateForumReplyInput,
+  CreateForumTopicInput,
   ForumPost,
   ForumReply,
   ForumTopic,
@@ -14,4 +15,7 @@ export interface ForumService {
   createForumReply(input: CreateForumReplyInput): Promise<ForumReply>
   thankForumPost(postId: string): Promise<ForumPost>
   thankForumReply(replyId: string): Promise<ForumReply>
+  createForumTopic(input: CreateForumTopicInput): Promise<ForumTopic>
+  setForumTopicActive(topicId: string, active: boolean): Promise<ForumTopic>
+  deleteForumTopic(topicId: string): Promise<void>
 }

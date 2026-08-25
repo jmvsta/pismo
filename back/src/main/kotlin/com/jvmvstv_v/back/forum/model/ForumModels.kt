@@ -57,3 +57,14 @@ data class CreateForumReplyInput(
     val parentReplyId: UUID?,
     val body: String,
 )
+
+data class CreateForumTopicInput(
+    val code: String,
+    val title: String,
+    val description: String?,
+)
+
+data class UpdateForumPostInput(
+    val title: String?,
+    val body: String?,
+)

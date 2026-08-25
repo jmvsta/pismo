@@ -30,3 +30,8 @@ export interface SaveQuestionnaireResponseInput {
   questionnaireVersionId: string
   answers: string
 }
+
+export interface SaveQuestionnaireTemplateInput {
+  kind: QuestionnaireKind
+  definition: string
+}

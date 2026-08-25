@@ -4,6 +4,7 @@ import type { UserSummary } from '../user/types.ts'
 import type {
   CreateForumPostInput,
   CreateForumReplyInput,
+  CreateForumTopicInput,
   ForumPost,
   ForumReply,
   ForumTopic,
@@ -154,6 +155,28 @@ const THANK_FORUM_REPLY_MUTATION = `
   }
 `
 
+const CREATE_FORUM_TOPIC_MUTATION = `
+  mutation CreateForumTopic($input: CreateForumTopicInput!) {
+    createForumTopic(input: $input) {
+      ${TOPIC_FIELDS}
+    }
+  }
+`
+
+const SET_FORUM_TOPIC_ACTIVE_MUTATION = `
+  mutation SetForumTopicActive($topicId: ID!, $active: Boolean!) {
+    setForumTopicActive(topicId: $topicId, active: $active) {
+      ${TOPIC_FIELDS}
+    }
+  }
+`
+
+const DELETE_FORUM_TOPIC_MUTATION = `
+  mutation DeleteForumTopic($topicId: ID!) {
+    deleteForumTopic(topicId: $topicId)
+  }
+`
+
 export class GraphqlForumService implements ForumService {
   private readonly client: GraphqlClient
 
@@ -212,5 +235,28 @@ export class GraphqlForumService implements ForumService {
       { replyId },
     )
     return toForumReply(data.thankForumReply)
+  }
+
+  async createForumTopic(input: CreateForumTopicInput): Promise<ForumTopic> {
+    const data = await this.client.request<
+      { createForumTopic: ForumTopic },
+      { input: CreateForumTopicInput }
+    >(CREATE_FORUM_TOPIC_MUTATION, { input })
+    return data.createForumTopic
+  }
+
+  async setForumTopicActive(topicId: string, active: boolean): Promise<ForumTopic> {
+    const data = await this.client.request<
+      { setForumTopicActive: ForumTopic },
+      { topicId: string; active: boolean }
+    >(SET_FORUM_TOPIC_ACTIVE_MUTATION, { topicId, active })
+    return data.setForumTopicActive
+  }
+
+  async deleteForumTopic(topicId: string): Promise<void> {
+    await this.client.request<{ deleteForumTopic: boolean }, { topicId: string }>(
+      DELETE_FORUM_TOPIC_MUTATION,
+      { topicId },
+    )
   }
 }

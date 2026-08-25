@@ -1,4 +1,4 @@
-import type { LoginInput, RegisterInput, UpdateProfileInput, User } from './types.ts'
+import type { LoginInput, RegisterInput, UpdateProfileInput, User, UserRole, UserStatus } from './types.ts'
 
 export interface UserService {
   me(): Promise<User | null>
@@ -7,4 +7,7 @@ export interface UserService {
   register(input: RegisterInput): Promise<User>
   login(input: LoginInput): Promise<User>
   logout(): Promise<void>
+  users(): Promise<User[]>
+  setUserStatus(userId: string, status: UserStatus): Promise<User>
+  setUserRole(userId: string, role: UserRole): Promise<User>
 }

@@ -48,6 +48,13 @@ class JooqQuestionnaireRepository(
             .where(V_ID.eq(id))
             .fetchOne { toVersion(it) }
 
+    override fun findAllVersions(kind: QuestionnaireKind): List<QuestionnaireVersion> =
+        dsl.select(V_ID, V_KIND, V_VERSION, V_DEFINITION, V_IS_ACTIVE, V_CREATED_AT)
+            .from(VERSIONS)
+            .where(V_KIND.eq(kind.name.lowercase()))
+            .orderBy(V_VERSION.desc())
+            .fetch { toVersion(it) }
+
     override fun findResponse(userId: UUID, questionnaireVersionId: Int): UserQuestionnaireResponse? =
         dsl.select(RE_ID, RE_USER_ID, RE_VERSION_ID, RE_ANSWERS, RE_SUBMITTED_AT, RE_CREATED_AT, RE_UPDATED_AT)
             .from(RESPONSES)
@@ -66,6 +73,23 @@ class JooqQuestionnaireRepository(
             .execute()
         return findResponse(userId, input.questionnaireVersionId) ?: error("Questionnaire response not found")
     }
+
+    override fun saveTemplate(kind: QuestionnaireKind, definition: String): QuestionnaireVersion =
+        dsl.transactionResult { config ->
+            val tx = config.dsl()
+            val kindValue = kind.name.lowercase()
+            val nextVersion = (tx.select(DSL.max(V_VERSION)).from(VERSIONS).where(V_KIND.eq(kindValue)).fetchOne(0, Int::class.java) ?: 0) + 1
+            tx.update(VERSIONS).set(V_IS_ACTIVE, false).where(V_KIND.eq(kindValue)).and(V_IS_ACTIVE.isTrue).execute()
+            val id = tx.insertInto(VERSIONS)
+                .columns(V_KIND, V_VERSION, V_DEFINITION, V_IS_ACTIVE)
+                .values(kindValue, nextVersion, JSONB.valueOf(definition), true)
+                .returning(V_ID)
+                .fetchOne(V_ID)!!
+            tx.select(V_ID, V_KIND, V_VERSION, V_DEFINITION, V_IS_ACTIVE, V_CREATED_AT)
+                .from(VERSIONS)
+                .where(V_ID.eq(id))
+                .fetchOne { toVersion(it) }!!
+        }
 
     override fun submitResponse(id: UUID): UserQuestionnaireResponse {
         dsl.update(RESPONSES)

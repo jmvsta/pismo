@@ -1,22 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { forumService } from '../../services/forum/index.ts'
-import type { ForumPost, ForumTopic } from '../../services/forum/index.ts'
+import type { ForumPost, ForumReply, ForumTopic } from '../../services/forum/index.ts'
 import { useWalletStore } from '../../store/walletStore.ts'
+import { useUserStore } from '../../store/userStore.ts'
+import { matchingService } from '../../services/matching/index.ts'
+import type { UserMatch } from '../../services/matching/index.ts'
 import { formatMinorAmount } from '../../lib/money.ts'
 import ForumPostCard from './ForumPostCard.tsx'
 import ForumNewPostDialog from './ForumNewPostDialog.tsx'
+import ForumNewTopicDialog from './ForumNewTopicDialog.tsx'
+import ForumPostDetail from './ForumPostDetail.tsx'
 import './Forum.css'
 
 type SortMode = 'latest' | 'top' | 'unanswered'
 
 const PAGE_SIZE = 10
-
-const SUGGESTED = [
-  { name: 'Kenji · Osaka', pct: 91 },
-  { name: 'Ana · Porto', pct: 87 },
-  { name: 'Louise · Lyon', pct: 74 },
-]
 
 function Forum() {
   const [topics, setTopics] = useState<ForumTopic[]>([])
@@ -28,11 +27,23 @@ function Forum() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [feedError, setFeedError] = useState<string | null>(null)
   const [isNewPostOpen, setIsNewPostOpen] = useState(false)
+  const [isNewTopicOpen, setIsNewTopicOpen] = useState(false)
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
   const { wallet, loadWallet } = useWalletStore()
+  const currentUser = useUserStore((state) => state.currentUser)
+  const [matches, setMatches] = useState<UserMatch[]>([])
+  const selectedPost = posts.find((post) => post.id === selectedPostId) ?? null
 
   useEffect(() => {
     loadWallet()
   }, [loadWallet])
+
+  useEffect(() => {
+    matchingService
+      .myMatches(3)
+      .then(setMatches)
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     forumService
@@ -76,6 +87,30 @@ function Forum() {
     } finally {
       setLoadingMore(false)
     }
+  }
+
+  const handlePostThanked = (updated: ForumPost) => {
+    setPosts((prev) => prev.map((post) => (post.id === updated.id ? updated : post)))
+  }
+
+  const handleReplyAdded = (postId: string, reply: ForumReply) => {
+    setPosts((prev) =>
+      prev.map((post) =>
+        post.id === postId
+          ? { ...post, replies: [...post.replies, reply], replyCount: post.replyCount + 1 }
+          : post,
+      ),
+    )
+  }
+
+  const handleReplyThanked = (postId: string, updated: ForumReply) => {
+    setPosts((prev) =>
+      prev.map((post) =>
+        post.id === postId
+          ? { ...post, replies: post.replies.map((reply) => (reply.id === updated.id ? updated : reply)) }
+          : post,
+      ),
+    )
   }
 
   const visiblePosts = useMemo(() => {
@@ -131,6 +166,13 @@ function Forum() {
                 {topic.title}
               </span>
             ))}
+            <button
+              type="button"
+              className="btn btn-ghost forum-new-topic-btn"
+              onClick={() => setIsNewTopicOpen(true)}
+            >
+              + New topic
+            </button>
           </div>
         </aside>
 
@@ -157,7 +199,12 @@ function Forum() {
           )}
 
           {visiblePosts.map((post) => (
-            <ForumPostCard key={post.id} post={post} />
+            <ForumPostCard
+              key={post.id}
+              post={post}
+              onOpen={(opened) => setSelectedPostId(opened.id)}
+              onThanked={handlePostThanked}
+            />
           ))}
 
           {hasMore && sortMode !== 'unanswered' && (
@@ -173,12 +220,16 @@ function Forum() {
           <div>
             <h6>Suggested pen pals</h6>
             <div className="forum-suggested">
-              {SUGGESTED.map((person) => (
-                <Link to="/profile" key={person.name} className="forum-suggested-row">
-                  <span>{person.name}</span>
-                  <span className="forum-suggested-pct">{person.pct}%</span>
-                </Link>
-              ))}
+              {matches.length === 0 && <p className="text-muted forum-suggested-empty">No matches yet.</p>}
+              {matches.map((match) => {
+                const other = currentUser && match.userA.id === currentUser.id ? match.userB : match.userA
+                return (
+                  <Link to={`/profile/${other.id}`} key={other.id} className="forum-suggested-row">
+                    <span>{other.nickname}</span>
+                    <span className="forum-suggested-pct">{Math.round(match.score)}%</span>
+                  </Link>
+                )
+              })}
             </div>
             <button type="button" className="btn btn-ghost forum-see-all">
               See all matches →
@@ -213,6 +264,26 @@ function Forum() {
           topics={topics}
           onClose={() => setIsNewPostOpen(false)}
           onCreated={(post) => setPosts((prev) => [post, ...prev])}
+        />
+      )}
+
+      {isNewTopicOpen && (
+        <ForumNewTopicDialog
+          onClose={() => setIsNewTopicOpen(false)}
+          onCreated={(topic) => {
+            setTopics((prev) => [...prev, topic])
+            setActiveTopic(topic.id)
+          }}
+        />
+      )}
+
+      {selectedPost && (
+        <ForumPostDetail
+          post={selectedPost}
+          onClose={() => setSelectedPostId(null)}
+          onPostThanked={handlePostThanked}
+          onReplyAdded={handleReplyAdded}
+          onReplyThanked={handleReplyThanked}
         />
       )}
     </div>

@@ -55,3 +55,9 @@ export interface CreateForumReplyInput {
   parentReplyId?: string
   body: string
 }
+
+export interface CreateForumTopicInput {
+  code: string
+  title: string
+  description?: string
+}
