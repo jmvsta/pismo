@@ -9,6 +9,7 @@ type PanelStatus = 'idle' | 'loading' | 'ready' | 'error'
 
 function AdminUsersPanel() {
   const currentUser = useUserStore((state) => state.currentUser)
+  const isAdmin = currentUser?.role === 'ADMIN'
   const [users, setUsers] = useState<User[]>([])
   const [status, setStatus] = useState<PanelStatus>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -88,18 +89,23 @@ function AdminUsersPanel() {
                 <td>{user.nickname}</td>
                 <td className="text-muted">{user.email}</td>
                 <td>
-                  <select
-                    className="input"
-                    value={user.role}
-                    disabled={isSelf}
-                    onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
-                  >
-                    {ROLES.map((role) => (
-                      <option key={role} value={role}>
-                        {role}
-                      </option>
-                    ))}
-                  </select>
+                  {isAdmin ? (
+                    <select
+                      className="input"
+                      value={user.role}
+                      disabled={isSelf}
+                      onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
+                    >
+                      {ROLES.map((role) => (
+                        <option key={role} value={role}>
+                          {role}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    // Moderators can't change roles -- read-only.
+                    <span>{user.role}</span>
+                  )}
                 </td>
                 <td>
                   <span className={user.status === 'SUSPENDED' ? 'tag tag-neutral' : 'tag tag-accent'}>

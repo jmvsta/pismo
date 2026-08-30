@@ -1,10 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { forumService } from '../../services/forum/index.ts'
 import type { ForumTopic } from '../../services/forum/index.ts'
+import { useUserStore } from '../../store/userStore.ts'
 
 type PanelStatus = 'idle' | 'loading' | 'ready' | 'error'
 
 function AdminTopicsPanel() {
+  const currentUser = useUserStore((state) => state.currentUser)
+  const isAdmin = currentUser?.role === 'ADMIN'
   const [topics, setTopics] = useState<ForumTopic[]>([])
   const [status, setStatus] = useState<PanelStatus>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -101,32 +104,38 @@ function AdminTopicsPanel() {
                 <button type="button" className="btn btn-secondary" onClick={() => handleToggleActive(topic)}>
                   {topic.active ? 'Freeze' : 'Unfreeze'}
                 </button>
-                <button type="button" className="btn btn-ghost" onClick={() => handleDelete(topic)}>
-                  Remove
-                </button>
+                {/* Moderators can freeze/unfreeze but not delete topics. */}
+                {isAdmin && (
+                  <button type="button" className="btn btn-ghost" onClick={() => handleDelete(topic)}>
+                    Remove
+                  </button>
+                )}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      <form className="admin-editor-row admin-new-topic-form" onSubmit={handleCreate}>
-        <input
-          className="input"
-          placeholder="code"
-          value={newCode}
-          onChange={(e) => setNewCode(e.target.value)}
-        />
-        <input
-          className="input"
-          placeholder="title"
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-        />
-        <button type="submit" className="btn btn-secondary">
-          + Topic
-        </button>
-      </form>
+      {/* Creating new topics is admin-only -- not one of the actions moderators were granted. */}
+      {isAdmin && (
+        <form className="admin-editor-row admin-new-topic-form" onSubmit={handleCreate}>
+          <input
+            className="input"
+            placeholder="code"
+            value={newCode}
+            onChange={(e) => setNewCode(e.target.value)}
+          />
+          <input
+            className="input"
+            placeholder="title"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+          />
+          <button type="submit" className="btn btn-secondary">
+            + Topic
+          </button>
+        </form>
+      )}
     </div>
   )
 }
