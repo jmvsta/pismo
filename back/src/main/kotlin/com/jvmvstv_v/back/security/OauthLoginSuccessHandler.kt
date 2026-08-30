@@ -23,9 +23,10 @@ class OauthLoginSuccessHandler(
     ) {
         val oidcUser = authentication.principal as OidcUser
         val email = oidcUser.email ?: error("Google account has no email")
+        val subject = oidcUser.subject ?: error("Google account has no subject")
         val user = userService.loginWithOauth(
             provider = OauthProvider.GOOGLE,
-            providerUserId = oidcUser.subject,
+            providerUserId = subject,
             email = email,
             suggestedNickname = oidcUser.givenName ?: oidcUser.fullName,
         )
