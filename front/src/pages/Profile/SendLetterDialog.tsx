@@ -1,74 +1,130 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { lettersService } from '../../services/letters/index.ts'
 import type { Letter } from '../../services/letters/index.ts'
+import type { UserAddress } from '../../services/address/index.ts'
 
 interface SendLetterDialogProps {
   connectionId: string
   recipientId: string
   recipientNickname: string
+  recipientAddress: UserAddress | null
+  existingLetter: Letter | null
   onClose: () => void
   onSent: (letter: Letter) => void
 }
 
-function SendLetterDialog({ connectionId, recipientId, recipientNickname, onClose, onSent }: SendLetterDialogProps) {
-  const [note, setNote] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+function formatAddress(address: UserAddress): string {
+  return [address.recipientName, address.streetLine1, address.streetLine2, address.city, address.region, address.postalCode, address.countryCode]
+    .filter(Boolean)
+    .join(', ')
+}
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    if (submitting) return
-    setSubmitting(true)
+function SendLetterDialog({
+  connectionId,
+  recipientId,
+  recipientNickname,
+  recipientAddress,
+  existingLetter,
+  onClose,
+  onSent,
+}: SendLetterDialogProps) {
+  const [letter, setLetter] = useState<Letter | null>(existingLetter)
+  const [loading, setLoading] = useState(existingLetter === null)
+  const [confirming, setConfirming] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (existingLetter) return
+    let cancelled = false
+    lettersService
+      .createLetter({ connectionId, recipientId })
+      .then((created) => {
+        if (!cancelled) setLetter(created)
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Could not start this letter.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [connectionId, recipientId, existingLetter])
+
+  const handleCopyCode = () => {
+    if (!letter?.trackingCode) return
+    navigator.clipboard?.writeText(letter.trackingCode).then(() => setCopied(true))
+  }
+
+  const handleConfirmSent = async () => {
+    if (!letter) return
+    setConfirming(true)
     setError(null)
     try {
-      const letter = await lettersService.createLetter({ connectionId, recipientId, note: note || undefined })
       const sent = await lettersService.updateLetterStatus(letter.id, 'SENT')
       onSent(sent)
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not record this letter.')
-      setSubmitting(false)
+      setError(err instanceof Error ? err.message : 'Could not mark this letter as sent.')
+      setConfirming(false)
     }
   }
 
   return (
     <div className="forum-modal-backdrop" onClick={onClose}>
-      <form className="forum-modal" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
+      <div className="forum-modal" onClick={(e) => e.stopPropagation()}>
         <div className="forum-modal-header">
-          <h5>Send the first letter to {recipientNickname}</h5>
+          <h5>Send a letter to {recipientNickname}</h5>
           <button type="button" className="btn btn-icon" onClick={onClose} aria-label="Close">
             ×
           </button>
         </div>
 
-        <p className="text-muted text-sm">
-          The letter itself travels by post — this just records that you've written and sent it, and reveals your
-          pen pal's address to you once they've shared it.
-        </p>
+        {loading && <p className="text-muted">Preparing your letter…</p>}
 
-        <div className="field">
-          <label htmlFor="send-letter-note">Note to yourself (optional)</label>
-          <textarea
-            id="send-letter-note"
-            className="input"
-            rows={3}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="e.g. tracking code, what you wrote about…"
-          />
-        </div>
+        {!loading && letter && (
+          <div className="flex flex-col gap-3">
+            <p className="text-muted text-sm">
+              Write this code inside the letter — {recipientNickname} will enter it once it arrives to confirm
+              delivery.
+            </p>
 
-        {error && <p className="text-muted">{error}</p>}
+            <div className="flex items-center gap-3 border border-[var(--color-divider)] p-3">
+              <span className="text-2xl font-bold tracking-widest">{letter.trackingCode}</span>
+              <button type="button" className="btn btn-ghost" onClick={handleCopyCode}>
+                {copied ? 'Copied' : 'Copy code'}
+              </button>
+            </div>
 
-        <div className="forum-modal-actions">
-          <button type="button" className="btn btn-secondary" onClick={onClose}>
-            Cancel
-          </button>
-          <button type="submit" className="btn btn-primary" disabled={submitting}>
-            {submitting ? 'Sending…' : "I've sent it →"}
-          </button>
-        </div>
-      </form>
+            <div className="text-sm">
+              <span className="font-semibold">Send to: </span>
+              {recipientAddress ? (
+                formatAddress(recipientAddress)
+              ) : (
+                <span className="text-muted">
+                  {recipientNickname} hasn't shared their address for this connection yet — ask them to enable
+                  address sharing first.
+                </span>
+              )}
+            </div>
+
+            {error && <p className="text-muted">{error}</p>}
+
+            <div className="forum-modal-actions">
+              <button type="button" className="btn btn-secondary" onClick={onClose}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-primary" onClick={handleConfirmSent} disabled={confirming}>
+                {confirming ? 'Saving…' : "I've written and sent it →"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!loading && !letter && error && <p className="text-muted">{error}</p>}
+      </div>
     </div>
   )
 }

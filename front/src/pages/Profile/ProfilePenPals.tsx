@@ -4,17 +4,24 @@ import { useUserStore } from '../../store/userStore.ts'
 import { matchingService } from '../../services/matching/index.ts'
 import type { PenPalConnection } from '../../services/matching/index.ts'
 import { lettersService } from '../../services/letters/index.ts'
+import type { Letter } from '../../services/letters/index.ts'
 import { addressService } from '../../services/address/index.ts'
 import type { ConnectionAddressConsent, UserAddress } from '../../services/address/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
 import SendLetterDialog from './SendLetterDialog.tsx'
+import ConfirmDeliveryDialog from './ConfirmDeliveryDialog.tsx'
+
+const OPEN_STATUSES = new Set(['DRAFT', 'SENT', 'IN_TRANSIT'])
 
 interface ConnectionRow {
   connection: PenPalConnection
-  isRequester: boolean
-  firstLetterSent: boolean
+  letters: Letter[]
   myConsent: ConnectionAddressConsent | null
   otherConsent: ConnectionAddressConsent | null
+}
+
+function otherUserId(connection: PenPalConnection, userId: string): string {
+  return connection.userA.id === userId ? connection.userB.id : connection.userA.id
 }
 
 function formatEstablished(iso: string): string {
@@ -28,16 +35,13 @@ function formatAddress(address: UserAddress): string {
 }
 
 async function loadRow(connection: PenPalConnection, currentUserId: string): Promise<ConnectionRow> {
-  const requesterId = connection.request?.requester.id
-  const isRequester = requesterId === currentUserId
   const [letters, consents] = await Promise.all([
     lettersService.lettersForConnection(connection.id),
     addressService.addressConsentsForConnection(connection.id),
   ])
-  const firstLetterSent = letters.some((letter) => letter.sender.id === requesterId && letter.status !== 'DRAFT')
   const myConsent = consents.find((consent) => consent.grantor.id === currentUserId) ?? null
   const otherConsent = consents.find((consent) => consent.grantor.id !== currentUserId) ?? null
-  return { connection, isRequester, firstLetterSent, myConsent, otherConsent }
+  return { connection, letters, myConsent, otherConsent }
 }
 
 interface ProfilePenPalsProps {
@@ -50,7 +54,8 @@ function ProfilePenPals({ onGoToAddressTab }: ProfilePenPalsProps) {
   const [myAddress, setMyAddress] = useState<UserAddress | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [letterDialogFor, setLetterDialogFor] = useState<PenPalConnection | null>(null)
+  const [letterDialogFor, setLetterDialogFor] = useState<{ connection: PenPalConnection; existing: Letter | null } | null>(null)
+  const [confirmDialogFor, setConfirmDialogFor] = useState<{ connectionId: string; letter: Letter } | null>(null)
 
   useEffect(() => {
     if (!currentUserId) return
@@ -84,6 +89,16 @@ function ProfilePenPals({ onGoToAddressTab }: ProfilePenPalsProps) {
     setRows((prev) => prev.map((row) => (row.connection.id === connectionId ? { ...row, ...patch } : row)))
   }
 
+  const replaceLetter = (connectionId: string, letter: Letter) => {
+    setRows((prev) =>
+      prev.map((row) =>
+        row.connection.id === connectionId
+          ? { ...row, letters: [letter, ...row.letters.filter((existing) => existing.id !== letter.id)] }
+          : row,
+      ),
+    )
+  }
+
   const handleToggleShare = async (row: ConnectionRow) => {
     if (!myAddress) return
     try {
@@ -114,7 +129,20 @@ function ProfilePenPals({ onGoToAddressTab }: ProfilePenPalsProps) {
       {rows.map((row) => {
         const other = row.connection.userA.id === currentUserId ? row.connection.userB : row.connection.userA
         const avatarUrl = imageUrl(other.avatarImageId)
-        const otherAddressVisible = row.firstLetterSent && row.otherConsent?.status === 'GRANTED' && row.otherConsent.address
+        const requesterId = row.connection.request?.requester.id
+        const hasEverSentFirstLetter = row.letters.some(
+          (letter) => letter.sender.id === requesterId && letter.status !== 'DRAFT',
+        )
+        const otherAddressVisible =
+          hasEverSentFirstLetter && row.otherConsent?.status === 'GRANTED' && Boolean(row.otherConsent.address)
+
+        const openLetter = row.letters.find((letter) => OPEN_STATUSES.has(letter.status)) ?? null
+        const deliveredLetters = row.letters.filter((letter) => letter.status === 'DELIVERED')
+        const lastDelivered = deliveredLetters[0] ?? null
+        const eligibleSenderId = lastDelivered
+          ? otherUserId(row.connection, lastDelivered.sender.id)
+          : (requesterId ?? currentUserId)
+        const isMyTurnToSend = !openLetter && eligibleSenderId === currentUserId
 
         return (
           <div key={row.connection.id} className="border border-[var(--color-divider)] p-3">
@@ -149,22 +177,58 @@ function ProfilePenPals({ onGoToAddressTab }: ProfilePenPalsProps) {
                 </span>
               )}
 
-              {!row.firstLetterSent && row.isRequester && (
-                <button type="button" className="btn btn-primary self-start" onClick={() => setLetterDialogFor(row.connection)}>
-                  Send first letter
-                </button>
-              )}
-              {!row.firstLetterSent && !row.isRequester && (
-                <span className="text-muted text-sm">Waiting for {other.nickname} to write first.</span>
+              {openLetter && openLetter.sender.id === currentUserId && (
+                <span className="text-muted text-sm">
+                  {openLetter.status === 'DRAFT' ? (
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      onClick={() => setLetterDialogFor({ connection: row.connection, existing: openLetter })}
+                    >
+                      Resume sending your letter
+                    </button>
+                  ) : (
+                    <>
+                      Sent — waiting for {other.nickname} to confirm delivery. Your code:{' '}
+                      <strong>{openLetter.trackingCode}</strong>
+                    </>
+                  )}
+                </span>
               )}
 
-              {row.firstLetterSent && otherAddressVisible && row.otherConsent?.address && (
+              {openLetter && openLetter.recipient.id === currentUserId && openLetter.status === 'DRAFT' && (
+                <span className="text-muted text-sm">Waiting for {other.nickname} to finish and send their letter.</span>
+              )}
+              {openLetter && openLetter.recipient.id === currentUserId && openLetter.status !== 'DRAFT' && (
+                <button
+                  type="button"
+                  className="btn btn-primary self-start"
+                  onClick={() => setConfirmDialogFor({ connectionId: row.connection.id, letter: openLetter })}
+                >
+                  Confirm delivery
+                </button>
+              )}
+
+              {!openLetter && isMyTurnToSend && (
+                <button
+                  type="button"
+                  className="btn btn-primary self-start"
+                  onClick={() => setLetterDialogFor({ connection: row.connection, existing: null })}
+                >
+                  {deliveredLetters.length === 0 ? 'Send first letter' : 'Reply'}
+                </button>
+              )}
+              {!openLetter && !isMyTurnToSend && (
+                <span className="text-muted text-sm">Waiting for {other.nickname} to write.</span>
+              )}
+
+              {otherAddressVisible && row.otherConsent?.address && (
                 <div className="text-sm">
                   <span className="font-semibold">{other.nickname}'s address: </span>
                   {formatAddress(row.otherConsent.address)}
                 </div>
               )}
-              {row.firstLetterSent && !otherAddressVisible && (
+              {hasEverSentFirstLetter && !otherAddressVisible && (
                 <span className="text-muted text-sm">Waiting for {other.nickname} to share their address.</span>
               )}
             </div>
@@ -172,17 +236,35 @@ function ProfilePenPals({ onGoToAddressTab }: ProfilePenPalsProps) {
         )
       })}
 
-      {letterDialogFor && (
-        <SendLetterDialog
-          connectionId={letterDialogFor.id}
-          recipientId={
-            letterDialogFor.userA.id === currentUserId ? letterDialogFor.userB.id : letterDialogFor.userA.id
-          }
-          recipientNickname={
-            letterDialogFor.userA.id === currentUserId ? letterDialogFor.userB.nickname : letterDialogFor.userA.nickname
-          }
-          onClose={() => setLetterDialogFor(null)}
-          onSent={() => updateRow(letterDialogFor.id, { firstLetterSent: true })}
+      {letterDialogFor &&
+        (() => {
+          const row = rows.find((r) => r.connection.id === letterDialogFor.connection.id)
+          const recipientId = otherUserId(letterDialogFor.connection, currentUserId!)
+          const recipientNickname =
+            letterDialogFor.connection.userA.id === currentUserId
+              ? letterDialogFor.connection.userB.nickname
+              : letterDialogFor.connection.userA.nickname
+          const recipientAddress =
+            row?.otherConsent?.status === 'GRANTED' ? row.otherConsent.address : null
+          return (
+            <SendLetterDialog
+              connectionId={letterDialogFor.connection.id}
+              recipientId={recipientId}
+              recipientNickname={recipientNickname}
+              recipientAddress={recipientAddress}
+              existingLetter={letterDialogFor.existing}
+              onClose={() => setLetterDialogFor(null)}
+              onSent={(letter) => replaceLetter(letterDialogFor.connection.id, letter)}
+            />
+          )
+        })()}
+
+      {confirmDialogFor && (
+        <ConfirmDeliveryDialog
+          letterId={confirmDialogFor.letter.id}
+          senderNickname={confirmDialogFor.letter.sender.nickname}
+          onClose={() => setConfirmDialogFor(null)}
+          onConfirmed={(letter) => replaceLetter(confirmDialogFor.connectionId, letter)}
         />
       )}
     </div>
