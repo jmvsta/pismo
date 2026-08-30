@@ -25,7 +25,7 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     private val NICKNAME = DSL.field("nickname", SQLDataType.VARCHAR)
     private val EMAIL = DSL.field("email", SQLDataType.VARCHAR)
     private val DATE_OF_BIRTH = DSL.field("date_of_birth", SQLDataType.LOCALDATE)
-    private val AVATAR_URL = DSL.field("avatar_url", SQLDataType.VARCHAR)
+    private val AVATAR_IMAGE_ID = DSL.field("avatar_image_id", SQLDataType.UUID)
     private val BIO = DSL.field("bio", SQLDataType.VARCHAR)
     private val CITY = DSL.field("city", SQLDataType.VARCHAR)
     private val COUNTRY_CODE = DSL.field("country_code", SQLDataType.VARCHAR)
@@ -50,7 +50,7 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     private val OAUTH_LINKED_AT = DSL.field("linked_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
 
     override fun findById(id: UUID): User? =
-        dsl.select(ID, NICKNAME, EMAIL, DATE_OF_BIRTH, AVATAR_URL, BIO, CITY, COUNTRY_CODE, ROLE, STATUS,
+        dsl.select(ID, NICKNAME, EMAIL, DATE_OF_BIRTH, AVATAR_IMAGE_ID, BIO, CITY, COUNTRY_CODE, ROLE, STATUS,
             RULES_ACCEPTED_AT, EMAIL_VERIFIED_AT, LAST_SEEN_AT, CREATED_AT, UPDATED_AT)
             .from(USERS)
             .where(ID.eq(id)).and(DELETED_AT.isNull)
@@ -59,12 +59,20 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     override fun update(id: UUID, input: UpdateProfileInput): User {
         val step = dsl.update(USERS).set(UPDATED_AT, OffsetDateTime.now())
         input.nickname?.let { step.set(NICKNAME, it) }
-        input.avatarUrl?.let { step.set(AVATAR_URL, it) }
         input.bio?.let { step.set(BIO, it) }
         input.city?.let { step.set(CITY, it) }
         input.countryCode?.let { step.set(COUNTRY_CODE, it) }
         step.where(ID.eq(id)).execute()
         return findById(id) ?: error("User $id not found")
+    }
+
+    override fun setAvatarImage(userId: UUID, imageId: UUID): User {
+        dsl.update(USERS)
+            .set(AVATAR_IMAGE_ID, imageId)
+            .set(UPDATED_AT, OffsetDateTime.now())
+            .where(ID.eq(userId))
+            .execute()
+        return findById(userId) ?: error("User $userId not found")
     }
 
     override fun create(input: RegisterInput, passwordHash: String): User {
@@ -113,7 +121,7 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
             .fetchOne { AuthenticatedPrincipal(id = it[ID]!!, email = it[EMAIL]!!, role = UserRole.valueOf(it[ROLE]!!)) }
 
     override fun findAll(): List<User> =
-        dsl.select(ID, NICKNAME, EMAIL, DATE_OF_BIRTH, AVATAR_URL, BIO, CITY, COUNTRY_CODE, ROLE, STATUS,
+        dsl.select(ID, NICKNAME, EMAIL, DATE_OF_BIRTH, AVATAR_IMAGE_ID, BIO, CITY, COUNTRY_CODE, ROLE, STATUS,
             RULES_ACCEPTED_AT, EMAIL_VERIFIED_AT, LAST_SEEN_AT, CREATED_AT, UPDATED_AT)
             .from(USERS)
             .where(DELETED_AT.isNull)
@@ -164,7 +172,7 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
         nickname = record[NICKNAME]!!,
         email = record[EMAIL]!!,
         dateOfBirth = record[DATE_OF_BIRTH]?.toString(),
-        avatarUrl = record[AVATAR_URL],
+        avatarImageId = record[AVATAR_IMAGE_ID],
         bio = record[BIO],
         city = record[CITY],
         countryCode = record[COUNTRY_CODE],

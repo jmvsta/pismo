@@ -29,10 +29,22 @@ data class ForumPost(
 
 data class ForumPostPhoto(
     val id: UUID,
-    val url: String,
+    val imageId: UUID,
     val caption: String?,
     val position: Int,
     val createdAt: String,
+)
+
+data class NewForumPostPhotoInput(
+    val mimeType: String,
+    val imageBase64: String,
+    val caption: String?,
+)
+
+data class NewForumPostPhoto(
+    val id: UUID,
+    val imageId: UUID,
+    val caption: String?,
 )
 
 data class ForumReply(
@@ -49,7 +61,7 @@ data class CreateForumPostInput(
     val topicId: Int,
     val title: String,
     val body: String,
-    val photoUrls: List<String>?,
+    val photos: List<NewForumPostPhotoInput>?,
 )
 
 data class CreateForumReplyInput(

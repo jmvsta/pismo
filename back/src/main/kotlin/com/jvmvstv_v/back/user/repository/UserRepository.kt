@@ -15,6 +15,7 @@ interface UserRepository {
     fun findById(id: UUID): User?
     fun findAll(): List<User>
     fun update(id: UUID, input: UpdateProfileInput): User
+    fun setAvatarImage(userId: UUID, imageId: UUID): User
     fun create(input: RegisterInput, passwordHash: String): User
     fun existsByEmailOrNickname(email: String, nickname: String): Boolean
     fun findCredentialsByEmail(email: String): UserCredentials?

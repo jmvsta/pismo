@@ -42,7 +42,7 @@ type ForumPost {
 
 type ForumPostPhoto {
     id: ID!
-    url: String!
+    imageId: ID!
     caption: String
     position: Int!
     createdAt: String!
@@ -63,7 +63,13 @@ input CreateForumPostInput {
     topicId: ID!
     title: String!
     body: String!
-    photoUrls: [String!]
+    photos: [NewForumPostPhotoInput!]
+}
+
+input NewForumPostPhotoInput {
+    mimeType: String!
+    imageBase64: String!
+    caption: String
 }
 
 input CreateForumReplyInput {

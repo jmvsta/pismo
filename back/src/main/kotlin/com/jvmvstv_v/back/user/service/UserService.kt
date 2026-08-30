@@ -13,6 +13,7 @@ interface UserService {
     fun currentUser(): User?
     fun findById(id: UUID): User?
     fun updateProfile(input: UpdateProfileInput): User
+    fun replaceAvatar(mimeType: String, imageBase64: String): User
     fun register(input: RegisterInput): User
     fun login(input: LoginInput): User
     fun loginWithOauth(provider: OauthProvider, providerUserId: String, email: String, suggestedNickname: String?): User

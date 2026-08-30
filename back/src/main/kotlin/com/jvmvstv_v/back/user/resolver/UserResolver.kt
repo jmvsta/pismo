@@ -25,6 +25,10 @@ class UserResolver(private val userService: UserService) {
     fun updateProfile(@Argument input: UpdateProfileInput): User = userService.updateProfile(input)
 
     @MutationMapping
+    fun updateAvatar(@Argument mimeType: String, @Argument imageBase64: String): User =
+        userService.replaceAvatar(mimeType, imageBase64)
+
+    @MutationMapping
     fun register(@Argument input: RegisterInput): User = userService.register(input)
 
     @MutationMapping

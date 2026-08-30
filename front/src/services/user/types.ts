@@ -5,7 +5,7 @@ export type OauthProvider = 'GOOGLE'
 export interface UserSummary {
   id: string
   nickname: string
-  avatarUrl: string | null
+  avatarImageId: string | null
 }
 
 export interface UserOauthAccount {
@@ -34,7 +34,6 @@ export interface User extends UserSummary {
 
 export interface UpdateProfileInput {
   nickname?: string
-  avatarUrl?: string
   bio?: string
   city?: string
   countryCode?: string

@@ -7,6 +7,7 @@ import com.jvmvstv_v.back.forum.model.ForumPost
 import com.jvmvstv_v.back.forum.model.ForumPostPhoto
 import com.jvmvstv_v.back.forum.model.ForumReply
 import com.jvmvstv_v.back.forum.model.ForumTopic
+import com.jvmvstv_v.back.forum.model.NewForumPostPhoto
 import com.jvmvstv_v.back.forum.model.UpdateForumPostInput
 import com.jvmvstv_v.back.user.repository.UserRepository
 import org.jooq.DSLContext
@@ -46,7 +47,7 @@ class JooqForumRepository(
     private val PHOTOS = DSL.table("forum_post_photos")
     private val PH_ID = DSL.field("id", SQLDataType.UUID)
     private val PH_POST_ID = DSL.field("post_id", SQLDataType.UUID)
-    private val PH_URL = DSL.field("url", SQLDataType.VARCHAR)
+    private val PH_IMAGE_ID = DSL.field("image_id", SQLDataType.UUID)
     private val PH_CAPTION = DSL.field("caption", SQLDataType.VARCHAR)
     private val PH_POSITION = DSL.field("position", SQLDataType.INTEGER)
     private val PH_CREATED_AT = DSL.field("created_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
@@ -97,17 +98,17 @@ class JooqForumRepository(
             .where(P_ID.eq(id)).and(P_DELETED_AT.isNull)
             .fetchOne { toPost(it) }
 
-    override fun createPost(authorId: UUID, input: CreateForumPostInput): ForumPost {
+    override fun createPost(authorId: UUID, input: CreateForumPostInput, photos: List<NewForumPostPhoto>): ForumPost {
         val id = UUID.randomUUID()
         val now = OffsetDateTime.now()
         dsl.insertInto(POSTS)
             .columns(P_ID, P_TOPIC_ID, P_AUTHOR_ID, P_TITLE, P_BODY, P_CREATED_AT, P_UPDATED_AT)
             .values(id, input.topicId, authorId, input.title, input.body, now, now)
             .execute()
-        input.photoUrls?.forEachIndexed { index, url ->
+        photos.forEachIndexed { index, photo ->
             dsl.insertInto(PHOTOS)
-                .columns(PH_ID, PH_POST_ID, PH_URL, PH_POSITION, PH_CREATED_AT)
-                .values(UUID.randomUUID(), id, url, index, now)
+                .columns(PH_ID, PH_POST_ID, PH_IMAGE_ID, PH_CAPTION, PH_POSITION, PH_CREATED_AT)
+                .values(photo.id, id, photo.imageId, photo.caption, index, now)
                 .execute()
         }
         return findPostById(id) ?: error("Forum post $id not found")
@@ -197,14 +198,14 @@ class JooqForumRepository(
     }
 
     private fun findPhotosForPost(postId: UUID): List<ForumPostPhoto> =
-        dsl.select(PH_ID, PH_URL, PH_CAPTION, PH_POSITION, PH_CREATED_AT)
+        dsl.select(PH_ID, PH_IMAGE_ID, PH_CAPTION, PH_POSITION, PH_CREATED_AT)
             .from(PHOTOS)
             .where(PH_POST_ID.eq(postId))
             .orderBy(PH_POSITION)
             .fetch {
                 ForumPostPhoto(
                     id = it[PH_ID]!!,
-                    url = it[PH_URL]!!,
+                    imageId = it[PH_IMAGE_ID]!!,
                     caption = it[PH_CAPTION],
                     position = it[PH_POSITION]!!,
                     createdAt = it[PH_CREATED_AT]!!.toString(),

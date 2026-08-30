@@ -13,7 +13,7 @@ data class User(
     val nickname: String,
     val email: String,
     val dateOfBirth: String?,
-    val avatarUrl: String?,
+    val avatarImageId: UUID?,
     val bio: String?,
     val city: String?,
     val countryCode: String?,
@@ -38,7 +38,6 @@ data class UserOauthAccount(
 
 data class UpdateProfileInput(
     val nickname: String?,
-    val avatarUrl: String?,
     val bio: String?,
     val city: String?,
     val countryCode: String?,

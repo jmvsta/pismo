@@ -8,13 +8,19 @@ import com.jvmvstv_v.back.forum.model.CreateForumTopicInput
 import com.jvmvstv_v.back.forum.model.ForumPost
 import com.jvmvstv_v.back.forum.model.ForumReply
 import com.jvmvstv_v.back.forum.model.ForumTopic
+import com.jvmvstv_v.back.forum.model.NewForumPostPhoto
 import com.jvmvstv_v.back.forum.model.UpdateForumPostInput
 import com.jvmvstv_v.back.forum.repository.ForumRepository
+import com.jvmvstv_v.back.image.model.ImageOwnerType
+import com.jvmvstv_v.back.image.service.ImageService
 import org.springframework.stereotype.Service
 import java.util.UUID
 
 @Service
-class ForumServiceImpl(private val forumRepository: ForumRepository) : ForumService {
+class ForumServiceImpl(
+    private val forumRepository: ForumRepository,
+    private val imageService: ImageService,
+) : ForumService {
     override fun topics(): List<ForumTopic> = forumRepository.findTopics()
 
     override fun posts(topicId: Int?, limit: Int?, offset: Int?): List<ForumPost> =
@@ -25,7 +31,12 @@ class ForumServiceImpl(private val forumRepository: ForumRepository) : ForumServ
     override fun createPost(input: CreateForumPostInput): ForumPost {
         val topic = forumRepository.findTopicById(input.topicId) ?: throw AuthException("Topic not found")
         if (!topic.active) throw AuthException("This topic is frozen and isn't accepting new posts")
-        return forumRepository.createPost(CurrentUser.id, input)
+        val photos = input.photos.orEmpty().map { photo ->
+            val photoId = UUID.randomUUID()
+            val image = imageService.store(ImageOwnerType.FORUM_POST_PHOTO, photoId, photo.mimeType, photo.imageBase64)
+            NewForumPostPhoto(id = photoId, imageId = image.id, caption = photo.caption)
+        }
+        return forumRepository.createPost(CurrentUser.id, input, photos)
     }
 
     override fun createReply(input: CreateForumReplyInput): ForumReply {

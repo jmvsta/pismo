@@ -5,7 +5,7 @@ import type { UserService } from './UserService.ts'
 export const USER_SUMMARY_FIELDS = `
   id
   nickname
-  avatarUrl
+  avatarImageId
 `
 
 export const USER_FIELDS = `
@@ -50,6 +50,14 @@ const USER_QUERY = `
 const UPDATE_PROFILE_MUTATION = `
   mutation UpdateProfile($input: UpdateProfileInput!) {
     updateProfile(input: $input) {
+      ${USER_FIELDS}
+    }
+  }
+`
+
+const UPDATE_AVATAR_MUTATION = `
+  mutation UpdateAvatar($mimeType: String!, $imageBase64: String!) {
+    updateAvatar(mimeType: $mimeType, imageBase64: $imageBase64) {
       ${USER_FIELDS}
     }
   }
@@ -126,6 +134,14 @@ export class GraphqlUserService implements UserService {
       { input: UpdateProfileInput }
     >(UPDATE_PROFILE_MUTATION, { input })
     return data.updateProfile
+  }
+
+  async updateAvatar(mimeType: string, imageBase64: string): Promise<User> {
+    const data = await this.client.request<
+      { updateAvatar: User },
+      { mimeType: string; imageBase64: string }
+    >(UPDATE_AVATAR_MUTATION, { mimeType, imageBase64 })
+    return data.updateAvatar
   }
 
   async register(input: RegisterInput): Promise<User> {

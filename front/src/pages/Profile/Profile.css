@@ -29,6 +29,35 @@
   width: 120px;
   height: 120px;
   flex: 0 0 auto;
+  position: relative;
+}
+.profile-avatar-editable {
+  cursor: pointer;
+}
+.profile-avatar-edit {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-3);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-bg);
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.profile-avatar-editable:hover .profile-avatar-edit {
+  opacity: 1;
+}
+.profile-avatar-edit input {
+  display: none;
+}
+.profile-avatar-error {
+  margin: 0 0 10px;
 }
 
 .profile-identity {

@@ -27,7 +27,7 @@ const TABS: { id: TabId; label: string }[] = [
 ]
 
 function MyProfile() {
-  const { currentUser, status: userStatus, error: userError, loadCurrentUser } = useUserStore()
+  const { currentUser, status: userStatus, error: userError, loadCurrentUser, updateAvatar } = useUserStore()
   const [searchParams] = useSearchParams()
   const requestedTab = searchParams.get('tab')
   const initialTab = TABS.some((tab) => tab.id === requestedTab) ? (requestedTab as TabId) : 'letters'
@@ -113,7 +113,7 @@ function MyProfile() {
           ← Back to feed
         </Link>
 
-        <ProfileHeader user={currentUser} badges={badges} />
+        <ProfileHeader user={currentUser} badges={badges} onAvatarChange={updateAvatar} />
 
         <div className="profile-stats">
           <div className="profile-stat">

@@ -4,6 +4,7 @@ export interface UserService {
   me(): Promise<User | null>
   getUser(id: string): Promise<User | null>
   updateProfile(input: UpdateProfileInput): Promise<User>
+  updateAvatar(mimeType: string, imageBase64: string): Promise<User>
   register(input: RegisterInput): Promise<User>
   login(input: LoginInput): Promise<User>
   logout(): Promise<void>
