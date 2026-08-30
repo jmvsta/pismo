@@ -43,7 +43,7 @@ function ForumPostCard({ post, onOpen, onThanked }: ForumPostCardProps) {
       <div className="forum-post-content">
         <p className="text-muted forum-post-excerpt">{post.body}</p>
         {coverPhoto && (
-          <div className="photo-placeholder forum-post-photo">
+          <div className={`forum-post-photo${coverPhotoUrl ? '' : ' photo-placeholder'}`}>
             {coverPhotoUrl ? <img src={coverPhotoUrl} alt={coverPhoto.caption ?? ''} /> : <span>letter photo</span>}
           </div>
         )}

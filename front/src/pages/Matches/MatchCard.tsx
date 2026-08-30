@@ -23,7 +23,7 @@ function MatchCard({ profile, sharedInterests, score, requestState, onReachOut, 
 
   return (
     <div className="card match-card">
-      <div className="match-card-photo photo-placeholder">
+      <div className={`match-card-photo${avatarUrl ? '' : ' photo-placeholder'}`}>
         {avatarUrl ? <img src={avatarUrl} alt={profile.nickname} /> : <span>avatar</span>}
       </div>
 

@@ -51,7 +51,9 @@ function ProfileHeader({ user, badges, onAvatarChange }: ProfileHeaderProps) {
 
   return (
     <div className="profile-header">
-      <div className={`photo-placeholder profile-avatar${onAvatarChange ? ' profile-avatar-editable' : ''}`}>
+      <div
+        className={`profile-avatar${avatarUrl ? '' : ' photo-placeholder'}${onAvatarChange ? ' profile-avatar-editable' : ''}`}
+      >
         {avatarUrl ? <img src={avatarUrl} alt={user.nickname} /> : <span>avatar</span>}
         {onAvatarChange && (
           <label className="profile-avatar-edit">
