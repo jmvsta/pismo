@@ -22,7 +22,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 class SecurityConfig(
     @Value("\${app.cors.allowed-origins}") private val allowedOrigins: List<String>,
     private val userRepository: UserRepository,
-    private val oauthLoginSuccessHandler: OauthLoginSuccessHandler,
 ) {
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
@@ -47,10 +46,17 @@ class SecurityConfig(
     // so it doesn't affect the stateless chain below. Only registered where a google client
     // registration actually exists (application-prod.yaml); local dev keeps using
     // password register/login.
+    //
+    // oauthLoginSuccessHandler is a @Bean *method* parameter, not a constructor dependency of
+    // this class -- it transitively needs UserServiceImpl -> PasswordEncoder, and PasswordEncoder
+    // is a @Bean defined right here in SecurityConfig. Injecting it via the constructor would
+    // make SecurityConfig depend on a bean that can't be created until SecurityConfig already
+    // exists. Spring resolves @Bean method parameters lazily when the method runs, which breaks
+    // that cycle without changing anything else.
     @Bean
     @Order(1)
     @Profile("!local")
-    fun oauth2LoginFilterChain(http: HttpSecurity): SecurityFilterChain {
+    fun oauth2LoginFilterChain(http: HttpSecurity, oauthLoginSuccessHandler: OauthLoginSuccessHandler): SecurityFilterChain {
         http {
             securityMatcher("/oauth2/**", "/login/oauth2/**")
             csrf { disable() }
