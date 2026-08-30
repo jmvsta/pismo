@@ -1,12 +1,18 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useUserStore } from '../../store/userStore.ts'
 import { badgesService } from '../../services/badges/index.ts'
 import type { UserBadge } from '../../services/badges/index.ts'
 import { lettersService } from '../../services/letters/index.ts'
 import { matchingService } from '../../services/matching/index.ts'
+import { forumService } from '../../services/forum/index.ts'
+import type { ForumPost } from '../../services/forum/index.ts'
+import { questionnaireService } from '../../services/questionnaire/index.ts'
+import type { QuestionnaireAnswers, QuestionnaireDefinition } from '../../store/questionnaireDefinition.ts'
 import ProfileHeader from './ProfileHeader.tsx'
 import ProfileLettersTable from './ProfileLettersTable.tsx'
+import ProfileForumActivity from './ProfileForumActivity.tsx'
+import ProfileQuestionnaireAnswers from './ProfileQuestionnaireAnswers.tsx'
 import { toLetterRows, type LetterRow } from './letterRows.ts'
 import BadgeChips from './BadgeChips.tsx'
 import './Profile.css'
@@ -22,11 +28,18 @@ const TABS: { id: TabId; label: string }[] = [
 
 function MyProfile() {
   const { currentUser, status: userStatus, error: userError, loadCurrentUser } = useUserStore()
-  const [activeTab, setActiveTab] = useState<TabId>('letters')
+  const [searchParams] = useSearchParams()
+  const requestedTab = searchParams.get('tab')
+  const initialTab = TABS.some((tab) => tab.id === requestedTab) ? (requestedTab as TabId) : 'letters'
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab)
   const [badges, setBadges] = useState<UserBadge[]>([])
   const [letterRows, setLetterRows] = useState<LetterRow[]>([])
   const [activePenPalCount, setActivePenPalCount] = useState(0)
   const [activityError, setActivityError] = useState<string | null>(null)
+  const [allForumPosts, setAllForumPosts] = useState<ForumPost[]>([])
+  const [questionnaireDefinition, setQuestionnaireDefinition] = useState<QuestionnaireDefinition | null>(null)
+  const [questionnaireAnswers, setQuestionnaireAnswers] = useState<QuestionnaireAnswers>({})
+  const [hasSubmittedQuestionnaire, setHasSubmittedQuestionnaire] = useState(false)
 
   useEffect(() => {
     loadCurrentUser()
@@ -37,16 +50,29 @@ function MyProfile() {
 
     async function loadActivity() {
       try {
-        const [sent, received, connections, myBadges] = await Promise.all([
+        const [sent, received, connections, myBadges, posts, activeVersion] = await Promise.all([
           lettersService.sentLetters(),
           lettersService.receivedLetters(),
           matchingService.myConnections(),
           badgesService.myBadges(),
+          forumService.forumPosts(),
+          questionnaireService.activeQuestionnaire('REGISTRATION'),
         ])
         if (cancelled) return
         setLetterRows(toLetterRows(sent, received))
         setActivePenPalCount(connections.filter((connection) => !connection.endedAt).length)
         setBadges(myBadges)
+        setAllForumPosts(posts)
+
+        if (activeVersion) {
+          setQuestionnaireDefinition(JSON.parse(activeVersion.definition) as QuestionnaireDefinition)
+          const response = await questionnaireService.myQuestionnaireResponse(activeVersion.id)
+          if (cancelled) return
+          if (response?.submittedAt) {
+            setQuestionnaireAnswers(JSON.parse(response.answers) as QuestionnaireAnswers)
+            setHasSubmittedQuestionnaire(true)
+          }
+        }
       } catch (err) {
         if (!cancelled) {
           setActivityError(err instanceof Error ? err.message : 'Could not load your activity.')
@@ -78,6 +104,7 @@ function MyProfile() {
 
   const lettersSentCount = letterRows.filter((row) => row.direction === 'outgoing').length
   const lettersReceivedCount = letterRows.filter((row) => row.direction === 'incoming').length
+  const myForumPosts = allForumPosts.filter((post) => post.author.id === currentUser.id)
 
   return (
     <div className="profile-page">
@@ -119,11 +146,13 @@ function MyProfile() {
           {activityError && <p className="text-muted profile-empty">{activityError}</p>}
 
           {activeTab === 'letters' && <ProfileLettersTable rows={letterRows} />}
-          {activeTab === 'forum' && (
-            <p className="text-muted profile-empty">Forum activity isn't available here yet.</p>
-          )}
+          {activeTab === 'forum' && <ProfileForumActivity posts={myForumPosts} />}
           {activeTab === 'questionnaire' && (
-            <p className="text-muted profile-empty">Questionnaire answers are private.</p>
+            <ProfileQuestionnaireAnswers
+              definition={questionnaireDefinition}
+              answers={questionnaireAnswers}
+              hasSubmitted={hasSubmittedQuestionnaire}
+            />
           )}
           {activeTab === 'badges' &&
             (badges.length === 0 ? (

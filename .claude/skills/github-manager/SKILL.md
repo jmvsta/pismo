@@ -1,6 +1,6 @@
 ---
 name: github-manager
-description: Uses the GitHub MCP server (mcp__plugin_github_github__*) to operate directly on the jmvsta/pismo GitHub repo from Claude Code — creating/updating issues and sub-issues, opening/reviewing/merging pull requests, requesting Copilot reviews, resolving review threads, checking CI/check-run status, creating branches, and committing or pushing files (including .github/workflows/*.yml, CODEOWNERS, issue/PR templates, dependabot config) straight to GitHub. Also covers read-only lookups: releases, tags, commits, teams, collaborators, code/issue/PR search. Use this whenever the user wants to open a PR, file or triage an issue, review or merge a PR, push a branch/commit straight to GitHub, edit a workflow or repo config file via the API, check whether CI passed on a PR, or otherwise "do something on GitHub" for this repo — even if they just say "open a PR for this" or "make an issue for that bug" without naming GitHub explicitly. Does NOT cover GitHub Projects (boards), branch protection/rulesets, repository settings (visibility, default branch, merge options), Actions workflow runs/secrets/dispatch, creating releases/tags, managing collaborators, or creating new labels — the MCP server has no tools for those; this skill says so plainly instead of improvising a workaround.
+description: Uses the GitHub MCP server (mcp__plugin_github_github__*) to operate directly on the jmvsta/pismo GitHub repo from Claude Code — creating/updating issues and sub-issues, opening/reviewing/merging pull requests, requesting Copilot reviews, resolving review threads, checking CI/check-run status, creating branches, and committing or pushing files (including .github/workflows/*.yml, CODEOWNERS, issue/PR templates, dependabot config) straight to GitHub. Also covers read-only lookups: releases, tags, commits, teams, collaborators, code/issue/PR search. Use this whenever the user wants to open a PR, file or triage an issue, review or merge a PR, push a branch/commit straight to GitHub, edit a workflow or repo config file via the API, check whether CI passed on a PR, or otherwise "do something on GitHub" for this repo — even if they just say "open a PR for this" or "make an issue for that bug" without naming GitHub explicitly. Also use this whenever the user names a GitHub-flavored task by its code/title instead of describing it inline (e.g. "implement P-D-0", "do the next devops task", "pick up the CI task from the todo list") — the task's real description lives in the "Todo List" Notion database and needs to be pulled before any GitHub changes get made. Does NOT cover GitHub Projects (boards), branch protection/rulesets, repository settings (visibility, default branch, merge options), Actions workflow runs/secrets/dispatch, creating releases/tags, managing collaborators, or creating new labels — the MCP server has no tools for those; this skill says so plainly instead of improvising a workaround.
 ---
 
 # GitHub Manager (jmvsta/pismo)
@@ -11,6 +11,34 @@ step and no dry run: a write call here (a comment, an issue, a merge, a
 pushed file) lands on the live repo the moment you make it. Treat these
 differently from local `git`/`gh` commands run through Bash, which at least
 stay local until pushed.
+
+## Getting the task's real content
+
+If you were given a task **name/code** rather than a description (e.g.
+"implement P-D-0", "do the next devops task", "pick up the CI task"), the
+actual scope lives in the **Todo List** database in Notion — the same
+database the backend/frontend-task-implementor skills pull from. A code
+alone isn't enough to know what to actually do on GitHub, so fetch the real
+content before touching anything. Skip this section entirely if you were
+already given a full description inline.
+
+Notion is reached through an MCP connector, so its tools won't be in your
+toolset by default — use ToolSearch (query: `notion`) to find and load them.
+Typical shapes to expect: a search or query-database call to find the page
+in the Todo List database whose title/code matches, and a get-page call to
+read its full body once found.
+
+- Match on the code/title. If nothing matches exactly, look for close
+  matches and confirm with the user which one they meant rather than
+  guessing — implementing the wrong GitHub change (a workflow file, a PR, an
+  issue) is live the moment it's made, so a wrong guess isn't cheap to undo.
+- Read the full page content, not just the title — the actual scope
+  (which files, which repo behavior, acceptance criteria) usually lives in
+  the body.
+- This lookup is read-only. Don't change the task's status, add comments, or
+  edit the Notion page while fetching it — only after the GitHub-side work
+  below is actually done and verified, the same way backend/frontend-task-
+  implementor close out their tasks.
 
 ## Load the tools you need
 

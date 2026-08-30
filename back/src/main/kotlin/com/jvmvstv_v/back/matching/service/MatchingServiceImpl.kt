@@ -4,10 +4,13 @@ import com.jvmvstv_v.back.common.CurrentUser
 import com.jvmvstv_v.back.matching.model.PenPalConnection
 import com.jvmvstv_v.back.matching.model.PenPalRequest
 import com.jvmvstv_v.back.matching.model.PenPalRequestStatus
+import com.jvmvstv_v.back.matching.model.SuggestedProfile
 import com.jvmvstv_v.back.matching.model.UserMatch
 import com.jvmvstv_v.back.matching.repository.MatchingRepository
 import org.springframework.stereotype.Service
 import java.util.UUID
+
+private const val DEFAULT_SUGGESTED_PROFILES_LIMIT = 20
 
 @Service
 class MatchingServiceImpl(private val matchingRepository: MatchingRepository) : MatchingService {
@@ -29,4 +32,14 @@ class MatchingServiceImpl(private val matchingRepository: MatchingRepository) : 
     override fun cancelPenPalRequest(id: UUID): PenPalRequest = matchingRepository.cancelRequest(id)
 
     override fun endConnection(id: UUID): PenPalConnection = matchingRepository.endConnection(id)
+
+    override fun suggestedProfiles(search: String?, limit: Int?, offset: Int?): List<SuggestedProfile> =
+        matchingRepository.findSuggestedProfiles(
+            CurrentUser.id,
+            search,
+            limit ?: DEFAULT_SUGGESTED_PROFILES_LIMIT,
+            offset ?: 0,
+        )
+
+    override fun hideProfile(userId: UUID) = matchingRepository.hideProfile(CurrentUser.id, userId)
 }

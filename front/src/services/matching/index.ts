@@ -4,6 +4,8 @@ import { GraphqlMatchingService } from './GraphqlMatchingService.ts'
 export type { MatchingService } from './MatchingService.ts'
 export type {
   UserMatch,
+  MatchProfile,
+  SuggestedProfile,
   PenPalRequest,
   PenPalRequestStatus,
   PenPalConnection,

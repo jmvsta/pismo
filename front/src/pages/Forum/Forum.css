@@ -60,6 +60,17 @@
   color: var(--color-accent);
   background: var(--color-accent-100);
 }
+.forum-topics-frozen-label {
+  margin: 10px 0 4px;
+  color: var(--color-neutral-500);
+}
+.forum-topics span.is-frozen {
+  color: var(--color-neutral-500);
+}
+.forum-topics span.is-frozen.is-active {
+  color: var(--color-neutral-700);
+  background: var(--color-neutral-200);
+}
 
 .forum-feed {
   flex: 1;

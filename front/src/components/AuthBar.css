@@ -9,4 +9,9 @@
 .auth-bar-nickname {
   color: var(--color-text);
   font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.auth-bar-nickname:hover {
+  color: var(--color-accent);
 }
