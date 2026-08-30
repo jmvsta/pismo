@@ -3,6 +3,8 @@ package com.jvmvstv_v.back.user.service
 import com.jvmvstv_v.back.common.AuthException
 import com.jvmvstv_v.back.common.CurrentUser
 import com.jvmvstv_v.back.common.SecureTokenGenerator
+import com.jvmvstv_v.back.image.model.ImageOwnerType
+import com.jvmvstv_v.back.image.service.ImageService
 import com.jvmvstv_v.back.user.model.LoginInput
 import com.jvmvstv_v.back.user.model.OauthProvider
 import com.jvmvstv_v.back.user.model.RegisterInput
@@ -24,6 +26,7 @@ private val TOKEN_LIFETIME: Duration = Duration.ofHours(1)
 class UserServiceImpl(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
+    private val imageService: ImageService,
 ) : UserService {
     override fun currentUser(): User? = CurrentUser.idOrNull?.let { userRepository.findById(it) }
 
@@ -31,6 +34,15 @@ class UserServiceImpl(
 
     override fun updateProfile(input: UpdateProfileInput): User =
         userRepository.update(CurrentUser.id, input)
+
+    override fun replaceAvatar(mimeType: String, imageBase64: String): User {
+        val userId = CurrentUser.id
+        val previousAvatarImageId = userRepository.findById(userId)?.avatarImageId
+        val image = imageService.store(ImageOwnerType.USER_AVATAR, userId, mimeType, imageBase64)
+        val updated = userRepository.setAvatarImage(userId, image.id)
+        previousAvatarImageId?.let { imageService.delete(it) }
+        return updated
+    }
 
     override fun register(input: RegisterInput): User {
         validateRegistration(input)

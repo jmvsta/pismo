@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom'
 import { forumService } from '../../services/forum/index.ts'
 import type { ForumPost, ForumReply, ForumTopic } from '../../services/forum/index.ts'
 import { useWalletStore } from '../../store/walletStore.ts'
+import { useUserStore } from '../../store/userStore.ts'
 import { matchingService } from '../../services/matching/index.ts'
 import type { SuggestedProfile } from '../../services/matching/index.ts'
 import { formatMinorAmount } from '../../lib/money.ts'
+import { imageUrl } from '../../services/imageUrl.ts'
 import ForumPostCard from './ForumPostCard.tsx'
 import ForumNewPostDialog from './ForumNewPostDialog.tsx'
 import ForumNewTopicDialog from './ForumNewTopicDialog.tsx'
@@ -29,6 +31,8 @@ function Forum() {
   const [isNewTopicOpen, setIsNewTopicOpen] = useState(false)
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
   const { wallet, loadWallet } = useWalletStore()
+  const currentUser = useUserStore((state) => state.currentUser)
+  const avatarUrl = imageUrl(currentUser?.avatarImageId)
   const [suggestedProfiles, setSuggestedProfiles] = useState<SuggestedProfile[]>([])
   const selectedPost = posts.find((post) => post.id === selectedPostId) ?? null
 
@@ -142,7 +146,13 @@ function Forum() {
         <span className="forum-wallet-pill">
           Wallet · {wallet ? formatMinorAmount(wallet.balanceMinor, wallet.currency) : '—'}
         </span>
-        <Link to="/profile" className="photo-placeholder forum-nav-avatar" aria-label="My profile" />
+        <Link
+          to="/profile"
+          className={`forum-nav-avatar${avatarUrl ? '' : ' photo-placeholder'}`}
+          aria-label="My profile"
+        >
+          {avatarUrl && <img src={avatarUrl} alt="" />}
+        </Link>
       </div>
 
       <div className="forum-body">

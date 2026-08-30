@@ -11,10 +11,16 @@ export interface ForumTopic {
 
 export interface ForumPostPhoto {
   id: string
-  url: string
+  imageId: string
   caption: string | null
   position: number
   createdAt: string
+}
+
+export interface NewForumPostPhotoInput {
+  mimeType: string
+  imageBase64: string
+  caption?: string
 }
 
 /** parentReplyId is set for a threaded reply-to-a-reply; null for a top-level reply to the post. */
@@ -47,7 +53,7 @@ export interface CreateForumPostInput {
   topicId: string
   title: string
   body: string
-  photoUrls?: string[]
+  photos?: NewForumPostPhotoInput[]
 }
 
 export interface CreateForumReplyInput {

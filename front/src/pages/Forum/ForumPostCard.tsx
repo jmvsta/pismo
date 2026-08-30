@@ -1,5 +1,6 @@
 import { forumService } from '../../services/forum/index.ts'
 import type { ForumPost } from '../../services/forum/index.ts'
+import { imageUrl } from '../../services/imageUrl.ts'
 import ThanksButton from './ThanksButton.tsx'
 
 interface ForumPostCardProps {
@@ -23,6 +24,7 @@ function formatRelativeTime(iso: string): string {
 
 function ForumPostCard({ post, onOpen, onThanked }: ForumPostCardProps) {
   const coverPhoto = post.photos[0]
+  const coverPhotoUrl = coverPhoto ? imageUrl(coverPhoto.imageId) : null
 
   const handleThank = async () => {
     const updated = await forumService.thankForumPost(post.id)
@@ -41,8 +43,8 @@ function ForumPostCard({ post, onOpen, onThanked }: ForumPostCardProps) {
       <div className="forum-post-content">
         <p className="text-muted forum-post-excerpt">{post.body}</p>
         {coverPhoto && (
-          <div className="photo-placeholder forum-post-photo">
-            {coverPhoto.url ? <img src={coverPhoto.url} alt={coverPhoto.caption ?? ''} /> : <span>letter photo</span>}
+          <div className={`forum-post-photo${coverPhotoUrl ? '' : ' photo-placeholder'}`}>
+            {coverPhotoUrl ? <img src={coverPhotoUrl} alt={coverPhoto.caption ?? ''} /> : <span>letter photo</span>}
           </div>
         )}
       </div>

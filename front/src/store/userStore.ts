@@ -13,6 +13,7 @@ interface UserState {
   login: (input: LoginInput) => Promise<void>
   logout: () => Promise<void>
   updateProfile: (input: UpdateProfileInput) => Promise<void>
+  updateAvatar: (mimeType: string, imageBase64: string) => Promise<void>
 }
 
 function toErrorMessage(error: unknown): string {
@@ -63,6 +64,11 @@ export const useUserStore = create<UserState>((set) => ({
 
   updateProfile: async (input) => {
     const currentUser = await userService.updateProfile(input)
+    set({ currentUser })
+  },
+
+  updateAvatar: async (mimeType, imageBase64) => {
+    const currentUser = await userService.updateAvatar(mimeType, imageBase64)
     set({ currentUser })
   },
 }))

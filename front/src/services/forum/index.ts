@@ -6,6 +6,7 @@ export type {
   ForumTopic,
   ForumPost,
   ForumPostPhoto,
+  NewForumPostPhotoInput,
   ForumReply,
   CreateForumPostInput,
   CreateForumReplyInput,

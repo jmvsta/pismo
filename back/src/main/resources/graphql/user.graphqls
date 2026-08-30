@@ -6,6 +6,7 @@ type Query {
 
 type Mutation {
     updateProfile(input: UpdateProfileInput!): User!
+    updateAvatar(mimeType: String!, imageBase64: String!): User!
     register(input: RegisterInput!): User!
     login(input: LoginInput!): User!
     logout: Boolean!
@@ -18,7 +19,7 @@ type User {
     nickname: String!
     email: String!
     dateOfBirth: String
-    avatarUrl: String
+    avatarImageId: ID
     bio: String
     city: String
     countryCode: String
@@ -59,7 +60,6 @@ enum OauthProvider {
 
 input UpdateProfileInput {
     nickname: String
-    avatarUrl: String
     bio: String
     city: String
     countryCode: String

@@ -22,7 +22,7 @@ const TOPIC_FIELDS = `
 
 const PHOTO_FIELDS = `
   id
-  url
+  imageId
   caption
   position
   createdAt

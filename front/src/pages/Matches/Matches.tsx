@@ -47,7 +47,7 @@ function Matches() {
   }, [currentUser])
 
   const handleLoadMore = useCallback(async () => {
-    if (!currentUser || loadingMore || !hasMore) return
+    if (!currentUser || loading || loadingMore || !hasMore) return
     setLoadingMore(true)
     try {
       const result = await matchingService.suggestedProfiles(undefined, PAGE_SIZE, offset)
@@ -60,7 +60,7 @@ function Matches() {
     } finally {
       setLoadingMore(false)
     }
-  }, [currentUser, loadingMore, hasMore, offset])
+  }, [currentUser, loading, loadingMore, hasMore, offset])
 
   useEffect(() => {
     const sentinel = sentinelRef.current

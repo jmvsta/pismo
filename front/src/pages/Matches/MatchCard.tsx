@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { MatchProfile } from '../../services/matching/index.ts'
+import { imageUrl } from '../../services/imageUrl.ts'
 
 interface MatchCardProps {
   profile: MatchProfile
@@ -18,11 +19,12 @@ function countryFlag(countryCode: string | null): string | null {
 
 function MatchCard({ profile, sharedInterests, score, requestState, onReachOut, onHide }: MatchCardProps) {
   const flag = countryFlag(profile.countryCode)
+  const avatarUrl = imageUrl(profile.avatarImageId)
 
   return (
     <div className="card match-card">
-      <div className="match-card-photo photo-placeholder">
-        {profile.avatarUrl ? <img src={profile.avatarUrl} alt={profile.nickname} /> : <span>avatar</span>}
+      <div className={`match-card-photo${avatarUrl ? '' : ' photo-placeholder'}`}>
+        {avatarUrl ? <img src={avatarUrl} alt={profile.nickname} /> : <span>avatar</span>}
       </div>
 
       <div className="match-card-body">
