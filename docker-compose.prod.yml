@@ -1,0 +1,24 @@
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: ${DB_NAME:-pismo}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    restart: unless-stopped
+
+  app:
+    image: ghcr.io/jmvsta/pismo/back:latest
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-pismo}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      STRIPE_API_KEY: ${STRIPE_API_KEY}
+    restart: unless-stopped
+
+  front:
+    image: ghcr.io/jmvsta/pismo/front:latest
+    restart: unless-stopped
