@@ -2,6 +2,7 @@ extend type Query {
     myMatches(limit: Int): [UserMatch!]!
     penPalRequests(status: PenPalRequestStatus): [PenPalRequest!]!
     myConnections: [PenPalConnection!]!
+    suggestedProfiles(search: String, limit: Int, offset: Int): [SuggestedProfile!]!
 }
 
 extend type Mutation {
@@ -9,6 +10,7 @@ extend type Mutation {
     respondToPenPalRequest(id: ID!, accept: Boolean!): PenPalRequest!
     cancelPenPalRequest(id: ID!): PenPalRequest!
     endConnection(id: ID!): PenPalConnection!
+    hideProfile(userId: ID!): Boolean!
 }
 
 """One row per unordered pair of users; no synthetic id, the pair itself is the key."""
@@ -18,6 +20,13 @@ type UserMatch {
     score: Float!
     sharedInterests: [String!]!
     computedAt: String!
+}
+
+"""A suggested profile card for the matches feed; score/sharedInterests are null/empty until a match has been computed for this pair."""
+type SuggestedProfile {
+    user: User!
+    score: Float
+    sharedInterests: [String!]!
 }
 
 type PenPalRequest {

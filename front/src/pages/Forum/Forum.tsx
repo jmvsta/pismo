@@ -3,9 +3,8 @@ import { Link } from 'react-router-dom'
 import { forumService } from '../../services/forum/index.ts'
 import type { ForumPost, ForumReply, ForumTopic } from '../../services/forum/index.ts'
 import { useWalletStore } from '../../store/walletStore.ts'
-import { useUserStore } from '../../store/userStore.ts'
 import { matchingService } from '../../services/matching/index.ts'
-import type { UserMatch } from '../../services/matching/index.ts'
+import type { SuggestedProfile } from '../../services/matching/index.ts'
 import { formatMinorAmount } from '../../lib/money.ts'
 import ForumPostCard from './ForumPostCard.tsx'
 import ForumNewPostDialog from './ForumNewPostDialog.tsx'
@@ -30,8 +29,7 @@ function Forum() {
   const [isNewTopicOpen, setIsNewTopicOpen] = useState(false)
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
   const { wallet, loadWallet } = useWalletStore()
-  const currentUser = useUserStore((state) => state.currentUser)
-  const [matches, setMatches] = useState<UserMatch[]>([])
+  const [suggestedProfiles, setSuggestedProfiles] = useState<SuggestedProfile[]>([])
   const selectedPost = posts.find((post) => post.id === selectedPostId) ?? null
 
   useEffect(() => {
@@ -40,8 +38,8 @@ function Forum() {
 
   useEffect(() => {
     matchingService
-      .myMatches(3)
-      .then(setMatches)
+      .suggestedProfiles(undefined, 3)
+      .then(setSuggestedProfiles)
       .catch(() => {})
   }, [])
 
@@ -113,6 +111,9 @@ function Forum() {
     )
   }
 
+  const activeTopics = useMemo(() => topics.filter((topic) => topic.active), [topics])
+  const frozenTopics = useMemo(() => topics.filter((topic) => !topic.active), [topics])
+
   const visiblePosts = useMemo(() => {
     if (sortMode === 'top') {
       return [...posts].sort((a, b) => b.replyCount - a.replyCount)
@@ -132,8 +133,12 @@ function Forum() {
         <Link to="/" className="nav-link" aria-current="page">
           Feed
         </Link>
-        <span className="nav-link nav-link-static">Find a pen pal</span>
-        <span className="nav-link nav-link-static">My letters</span>
+        <Link to="/matches" className="nav-link">
+          Find a pen pal
+        </Link>
+        <Link to="/profile?tab=letters" className="nav-link">
+          My letters
+        </Link>
         <span className="forum-wallet-pill">
           Wallet · {wallet ? formatMinorAmount(wallet.balanceMinor, wallet.currency) : '—'}
         </span>
@@ -157,10 +162,20 @@ function Forum() {
             >
               All posts
             </span>
-            {topics.map((topic) => (
+            {activeTopics.map((topic) => (
               <span
                 key={topic.id}
                 className={activeTopic === topic.id ? 'is-active' : undefined}
+                onClick={() => setActiveTopic(topic.id)}
+              >
+                {topic.title}
+              </span>
+            ))}
+            {frozenTopics.length > 0 && <h6 className="forum-topics-frozen-label">Frozen</h6>}
+            {frozenTopics.map((topic) => (
+              <span
+                key={topic.id}
+                className={activeTopic === topic.id ? 'is-active is-frozen' : 'is-frozen'}
                 onClick={() => setActiveTopic(topic.id)}
               >
                 {topic.title}
@@ -220,20 +235,21 @@ function Forum() {
           <div>
             <h6>Suggested pen pals</h6>
             <div className="forum-suggested">
-              {matches.length === 0 && <p className="text-muted forum-suggested-empty">No matches yet.</p>}
-              {matches.map((match) => {
-                const other = currentUser && match.userA.id === currentUser.id ? match.userB : match.userA
-                return (
-                  <Link to={`/profile/${other.id}`} key={other.id} className="forum-suggested-row">
-                    <span>{other.nickname}</span>
-                    <span className="forum-suggested-pct">{Math.round(match.score)}%</span>
-                  </Link>
-                )
-              })}
+              {suggestedProfiles.length === 0 && (
+                <p className="text-muted forum-suggested-empty">No matches yet.</p>
+              )}
+              {suggestedProfiles.map((suggestion) => (
+                <Link to={`/profile/${suggestion.user.id}`} key={suggestion.user.id} className="forum-suggested-row">
+                  <span>{suggestion.user.nickname}</span>
+                  {suggestion.score !== null && (
+                    <span className="forum-suggested-pct">{Math.round(suggestion.score)}%</span>
+                  )}
+                </Link>
+              ))}
             </div>
-            <button type="button" className="btn btn-ghost forum-see-all">
+            <Link to="/matches" className="btn btn-ghost forum-see-all">
               See all matches →
-            </button>
+            </Link>
           </div>
 
           <div className="forum-plus-box">

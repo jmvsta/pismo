@@ -6,12 +6,19 @@ function AuthBar() {
   const currentUser = useUserStore((state) => state.currentUser)
   const logout = useUserStore((state) => state.logout)
 
+  const handleLogout = async () => {
+    await logout()
+    window.location.href = '/'
+  }
+
   return (
     <div className="auth-bar">
       {currentUser ? (
         <>
-          <span className="auth-bar-nickname">{currentUser.nickname}</span>
-          <button type="button" className="btn btn-ghost" onClick={() => logout()}>
+          <Link to="/profile" className="auth-bar-nickname">
+            {currentUser.nickname}
+          </Link>
+          <button type="button" className="btn btn-ghost" onClick={handleLogout}>
             Log out
           </button>
         </>

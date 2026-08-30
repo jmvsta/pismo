@@ -9,6 +9,7 @@ import Questionnaire from './pages/Questionnaire/Questionnaire.tsx'
 import Profile from './pages/Profile/Profile.tsx'
 import Admin from './pages/Admin/Admin.tsx'
 import Wallet from './pages/Wallet/Wallet.tsx'
+import Matches from './pages/Matches/Matches.tsx'
 
 const AUTH_PAGES = ['/login', '/register']
 
@@ -31,6 +32,7 @@ function App() {
         <Route path="/profile/:userId?" element={<Profile />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/wallet" element={<Wallet />} />
+        <Route path="/matches" element={<Matches />} />
       </Routes>
     </>
   )

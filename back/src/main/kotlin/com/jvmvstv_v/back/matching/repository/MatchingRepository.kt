@@ -3,6 +3,7 @@ package com.jvmvstv_v.back.matching.repository
 import com.jvmvstv_v.back.matching.model.PenPalConnection
 import com.jvmvstv_v.back.matching.model.PenPalRequest
 import com.jvmvstv_v.back.matching.model.PenPalRequestStatus
+import com.jvmvstv_v.back.matching.model.SuggestedProfile
 import com.jvmvstv_v.back.matching.model.UserMatch
 import java.util.UUID
 
@@ -15,4 +16,6 @@ interface MatchingRepository {
     fun respondToRequest(id: UUID, accept: Boolean): PenPalRequest
     fun cancelRequest(id: UUID): PenPalRequest
     fun endConnection(id: UUID): PenPalConnection
+    fun findSuggestedProfiles(userId: UUID, search: String?, limit: Int, offset: Int): List<SuggestedProfile>
+    fun hideProfile(userId: UUID, hiddenUserId: UUID)
 }

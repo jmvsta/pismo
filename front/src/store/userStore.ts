@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { userService } from '../services/user/index.ts'
-import type { LoginInput, RegisterInput, User } from '../services/user/index.ts'
+import type { LoginInput, RegisterInput, UpdateProfileInput, User } from '../services/user/index.ts'
 
 type UserStatus = 'idle' | 'loading' | 'ready' | 'error'
 
@@ -12,6 +12,7 @@ interface UserState {
   register: (input: RegisterInput) => Promise<void>
   login: (input: LoginInput) => Promise<void>
   logout: () => Promise<void>
+  updateProfile: (input: UpdateProfileInput) => Promise<void>
 }
 
 function toErrorMessage(error: unknown): string {
@@ -58,5 +59,10 @@ export const useUserStore = create<UserState>((set) => ({
   logout: async () => {
     await userService.logout()
     set({ currentUser: null, status: 'idle', error: null })
+  },
+
+  updateProfile: async (input) => {
+    const currentUser = await userService.updateProfile(input)
+    set({ currentUser })
   },
 }))

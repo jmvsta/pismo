@@ -4,6 +4,7 @@ import com.jvmvstv_v.back.common.CurrentUser
 import com.jvmvstv_v.back.matching.model.PenPalConnection
 import com.jvmvstv_v.back.matching.model.PenPalRequest
 import com.jvmvstv_v.back.matching.model.PenPalRequestStatus
+import com.jvmvstv_v.back.matching.model.SuggestedProfile
 import com.jvmvstv_v.back.matching.model.UserMatch
 import com.jvmvstv_v.back.user.repository.UserRepository
 import org.jooq.DSLContext
@@ -43,6 +44,17 @@ class JooqMatchingRepository(
     private val C_ESTABLISHED_AT = DSL.field("established_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
     private val C_ENDED_AT = DSL.field("ended_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
     private val C_ENDED_BY_ID = DSL.field("ended_by_id", SQLDataType.UUID)
+
+    private val USERS = DSL.table("users")
+    private val U_ID = DSL.field(DSL.name("users", "id"), SQLDataType.UUID)
+    private val U_NICKNAME = DSL.field(DSL.name("users", "nickname"), SQLDataType.VARCHAR)
+    private val U_DELETED_AT = DSL.field(DSL.name("users", "deleted_at"), SQLDataType.TIMESTAMPWITHTIMEZONE)
+    private val U_CREATED_AT = DSL.field(DSL.name("users", "created_at"), SQLDataType.TIMESTAMPWITHTIMEZONE)
+
+    private val HIDES = DSL.table("user_profile_hides")
+    private val H_USER_ID = DSL.field("user_id", SQLDataType.UUID)
+    private val H_HIDDEN_USER_ID = DSL.field("hidden_user_id", SQLDataType.UUID)
+    private val H_HIDDEN_AT = DSL.field("hidden_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
 
     override fun findMatchesForUser(userId: UUID, limit: Int?): List<UserMatch> {
         val step = dsl.select(M_USER_A, M_USER_B, M_SCORE, M_SHARED_INTERESTS, M_COMPUTED_AT)
@@ -118,6 +130,49 @@ class JooqMatchingRepository(
             .where(C_ID.eq(id))
             .execute()
         return findConnectionById(id) ?: error("Pen pal connection $id not found")
+    }
+
+    override fun findSuggestedProfiles(userId: UUID, search: String?, limit: Int, offset: Int): List<SuggestedProfile> {
+        val step = dsl.select(U_ID, M_SCORE, M_SHARED_INTERESTS)
+            .from(USERS)
+            .leftJoin(MATCHES)
+            .on(
+                M_USER_A.eq(userId).and(M_USER_B.eq(U_ID))
+                    .or(M_USER_B.eq(userId).and(M_USER_A.eq(U_ID)))
+            )
+            .where(U_ID.ne(userId))
+            .and(U_DELETED_AT.isNull)
+            .and(U_ID.notIn(dsl.select(H_HIDDEN_USER_ID).from(HIDES).where(H_USER_ID.eq(userId))))
+            .and(
+                DSL.notExists(
+                    dsl.selectOne().from(CONNECTIONS)
+                        .where(C_ENDED_AT.isNull)
+                        .and(
+                            C_USER_A.eq(userId).and(C_USER_B.eq(U_ID))
+                                .or(C_USER_B.eq(userId).and(C_USER_A.eq(U_ID)))
+                        )
+                )
+            )
+        val filtered = if (search != null) step.and(U_NICKNAME.containsIgnoreCase(search)) else step
+        return filtered
+            .orderBy(M_SCORE.desc().nullsLast(), U_CREATED_AT.desc())
+            .limit(limit)
+            .offset(offset)
+            .fetch {
+                SuggestedProfile(
+                    user = userRepository.findById(it[U_ID]!!) ?: error("User not found"),
+                    score = it[M_SCORE]?.toDouble(),
+                    sharedInterests = it[M_SHARED_INTERESTS]?.toList() ?: emptyList(),
+                )
+            }
+    }
+
+    override fun hideProfile(userId: UUID, hiddenUserId: UUID) {
+        dsl.insertInto(HIDES)
+            .columns(H_USER_ID, H_HIDDEN_USER_ID, H_HIDDEN_AT)
+            .values(userId, hiddenUserId, OffsetDateTime.now())
+            .onConflictDoNothing()
+            .execute()
     }
 
     private fun findRequestById(id: UUID): PenPalRequest? =

@@ -13,6 +13,12 @@ data class UserMatch(
     val computedAt: String,
 )
 
+data class SuggestedProfile(
+    val user: User,
+    val score: Double?,
+    val sharedInterests: List<String>,
+)
+
 data class PenPalRequest(
     val id: UUID,
     val requester: User,

@@ -131,3 +131,21 @@
   margin: 0;
   padding: var(--space-4) 0;
 }
+
+.profile-forum-activity {
+  display: flex;
+  flex-direction: column;
+}
+.profile-forum-activity .forum-post:first-child {
+  padding-top: 0;
+}
+
+.profile-questionnaire-answers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.profile-questionnaire-question {
+  font-weight: 600;
+  margin-bottom: 4px;
+}

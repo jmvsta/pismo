@@ -2,12 +2,22 @@ import type { UserSummary } from '../user/types.ts'
 
 export type PenPalRequestStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED'
 
+export interface MatchProfile extends UserSummary {
+  countryCode: string | null
+}
+
 export interface UserMatch {
-  userA: UserSummary
-  userB: UserSummary
+  userA: MatchProfile
+  userB: MatchProfile
   score: number
   sharedInterests: string[]
   computedAt: string
+}
+
+export interface SuggestedProfile {
+  user: MatchProfile
+  score: number | null
+  sharedInterests: string[]
 }
 
 export interface PenPalRequest {

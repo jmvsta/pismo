@@ -3,6 +3,7 @@ package com.jvmvstv_v.back.matching.resolver
 import com.jvmvstv_v.back.matching.model.PenPalConnection
 import com.jvmvstv_v.back.matching.model.PenPalRequest
 import com.jvmvstv_v.back.matching.model.PenPalRequestStatus
+import com.jvmvstv_v.back.matching.model.SuggestedProfile
 import com.jvmvstv_v.back.matching.model.UserMatch
 import com.jvmvstv_v.back.matching.service.MatchingService
 import org.springframework.graphql.data.method.annotation.Argument
@@ -23,6 +24,13 @@ class MatchingResolver(private val matchingService: MatchingService) {
     @QueryMapping
     fun myConnections(): List<PenPalConnection> = matchingService.myConnections()
 
+    @QueryMapping
+    fun suggestedProfiles(
+        @Argument search: String?,
+        @Argument limit: Int?,
+        @Argument offset: Int?,
+    ): List<SuggestedProfile> = matchingService.suggestedProfiles(search, limit, offset)
+
     @MutationMapping
     fun sendPenPalRequest(@Argument addresseeId: UUID, @Argument message: String?): PenPalRequest =
         matchingService.sendPenPalRequest(addresseeId, message)
@@ -36,4 +44,10 @@ class MatchingResolver(private val matchingService: MatchingService) {
 
     @MutationMapping
     fun endConnection(@Argument id: UUID): PenPalConnection = matchingService.endConnection(id)
+
+    @MutationMapping
+    fun hideProfile(@Argument userId: UUID): Boolean {
+        matchingService.hideProfile(userId)
+        return true
+    }
 }

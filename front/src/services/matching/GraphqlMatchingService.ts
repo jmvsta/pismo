@@ -1,7 +1,12 @@
 import type { GraphqlClient } from '../graphqlClient.ts'
 import { USER_SUMMARY_FIELDS } from '../user/GraphqlUserService.ts'
-import type { PenPalConnection, PenPalRequest, PenPalRequestStatus, UserMatch } from './types.ts'
+import type { PenPalConnection, PenPalRequest, PenPalRequestStatus, SuggestedProfile, UserMatch } from './types.ts'
 import type { MatchingService } from './MatchingService.ts'
+
+const MATCH_PROFILE_FIELDS = `
+  ${USER_SUMMARY_FIELDS}
+  countryCode
+`
 
 export const PEN_PAL_REQUEST_FIELDS = `
   id
@@ -32,12 +37,28 @@ const PEN_PAL_CONNECTION_FIELDS = `
 const MY_MATCHES_QUERY = `
   query MyMatches($limit: Int) {
     myMatches(limit: $limit) {
-      userA { ${USER_SUMMARY_FIELDS} }
-      userB { ${USER_SUMMARY_FIELDS} }
+      userA { ${MATCH_PROFILE_FIELDS} }
+      userB { ${MATCH_PROFILE_FIELDS} }
       score
       sharedInterests
       computedAt
     }
+  }
+`
+
+const SUGGESTED_PROFILES_QUERY = `
+  query SuggestedProfiles($search: String, $limit: Int, $offset: Int) {
+    suggestedProfiles(search: $search, limit: $limit, offset: $offset) {
+      user { ${MATCH_PROFILE_FIELDS} }
+      score
+      sharedInterests
+    }
+  }
+`
+
+const HIDE_PROFILE_MUTATION = `
+  mutation HideProfile($userId: ID!) {
+    hideProfile(userId: $userId)
   }
 `
 
@@ -102,6 +123,18 @@ export class GraphqlMatchingService implements MatchingService {
       { limit },
     )
     return data.myMatches
+  }
+
+  async suggestedProfiles(search?: string, limit?: number, offset?: number): Promise<SuggestedProfile[]> {
+    const data = await this.client.request<
+      { suggestedProfiles: SuggestedProfile[] },
+      { search?: string; limit?: number; offset?: number }
+    >(SUGGESTED_PROFILES_QUERY, { search, limit, offset })
+    return data.suggestedProfiles
+  }
+
+  async hideProfile(userId: string): Promise<void> {
+    await this.client.request<{ hideProfile: boolean }, { userId: string }>(HIDE_PROFILE_MUTATION, { userId })
   }
 
   async penPalRequests(status?: PenPalRequestStatus): Promise<PenPalRequest[]> {
