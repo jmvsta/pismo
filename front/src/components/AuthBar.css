@@ -1,9 +1,40 @@
+/* A thin sliver pinned to the very top of the viewport -- this is the hover target that
+   reveals the bar. It has to be a separate fixed element from .auth-bar itself because
+   .auth-bar starts translated off-screen (display: none would kill hover entirely, and
+   visibility: hidden still needs *something* present at the top edge to hover over). */
+.auth-bar-zone {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 14px;
+  z-index: 60;
+}
+
+/* position: fixed takes this out of normal flow entirely, so it never occupies layout
+   space -- unlike the old always-visible version, page content no longer gets pushed down
+   by its height. Hidden by sliding up out of view; hovering the thin zone above (or the
+   bar itself, once revealed -- :hover bubbles from a fixed-position descendant to its
+   DOM ancestor regardless of visual overflow) slides it back down. */
 .auth-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 0.75rem 1.5rem;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-divider);
+  transform: translateY(-100%);
+  transition: transform 0.25s ease;
+  z-index: 60;
+}
+
+.auth-bar-zone:hover .auth-bar {
+  transform: translateY(0);
 }
 
 .auth-bar-nickname {

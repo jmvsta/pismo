@@ -11,27 +11,36 @@ function AuthBar() {
     window.location.href = '/'
   }
 
+  const canModerate = currentUser?.role === 'ADMIN' || currentUser?.role === 'MODERATOR'
+
   return (
-    <div className="auth-bar">
-      {currentUser ? (
-        <>
-          <Link to="/profile" className="auth-bar-nickname">
-            {currentUser.nickname}
-          </Link>
-          <button type="button" className="btn btn-ghost" onClick={handleLogout}>
-            Log out
-          </button>
-        </>
-      ) : (
-        <>
-          <Link to="/login" className="btn btn-ghost">
-            Log in
-          </Link>
-          <Link to="/register" className="btn btn-secondary">
-            Register
-          </Link>
-        </>
-      )}
+    <div className="auth-bar-zone">
+      <div className="auth-bar">
+        {currentUser ? (
+          <>
+            {canModerate && (
+              <Link to="/admin" className="btn btn-ghost">
+                Moderate
+              </Link>
+            )}
+            <Link to="/profile" className="auth-bar-nickname">
+              {currentUser.nickname}
+            </Link>
+            <button type="button" className="btn btn-ghost" onClick={handleLogout}>
+              Log out
+            </button>
+          </>
+        ) : (
+          <>
+            <Link to="/login" className="btn btn-ghost">
+              Log in
+            </Link>
+            <Link to="/register" className="btn btn-secondary">
+              Register
+            </Link>
+          </>
+        )}
+      </div>
     </div>
   )
 }
