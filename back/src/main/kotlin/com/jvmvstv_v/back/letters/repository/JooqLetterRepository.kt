@@ -83,16 +83,32 @@ class JooqLetterRepository(
             .orderBy(L_CREATED_AT.desc())
             .fetch { toLetter(it, includeFeedback = true) }
 
+    override fun countPendingIncoming(recipientId: UUID): Int =
+        dsl.selectCount().from(LETTERS)
+            .where(L_RECIPIENT_ID.eq(recipientId))
+            .and(L_STATUS.`in`(LetterStatus.SENT.name, LetterStatus.IN_TRANSIT.name))
+            .fetchOne(0, Int::class.java) ?: 0
+
     override fun create(senderId: UUID, input: CreateLetterInput): Letter {
         val id = UUID.randomUUID()
         val now = OffsetDateTime.now()
+        val trackingCode = generateUniqueTrackingCode()
         dsl.insertInto(LETTERS)
-            .columns(L_ID, L_CONNECTION_ID, L_SENDER_ID, L_RECIPIENT_ID, L_STATUS, L_LANGUAGE_CODE, L_NOTE,
-                L_CREATED_AT, L_UPDATED_AT)
-            .values(id, input.connectionId, senderId, input.recipientId, LetterStatus.DRAFT.name,
+            .columns(L_ID, L_CONNECTION_ID, L_SENDER_ID, L_RECIPIENT_ID, L_STATUS, L_TRACKING_CODE, L_LANGUAGE_CODE,
+                L_NOTE, L_CREATED_AT, L_UPDATED_AT)
+            .values(id, input.connectionId, senderId, input.recipientId, LetterStatus.DRAFT.name, trackingCode,
                 input.languageCode, input.note, now, now)
             .execute()
         return findById(id) ?: error("Letter $id not found")
+    }
+
+    private fun generateUniqueTrackingCode(): String {
+        repeat(10) {
+            val code = (0..999999).random().toString().padStart(6, '0')
+            val exists = dsl.fetchExists(dsl.selectOne().from(LETTERS).where(L_TRACKING_CODE.eq(code)))
+            if (!exists) return code
+        }
+        error("Could not generate a unique tracking code")
     }
 
     override fun updateStatus(id: UUID, status: LetterStatus, location: String?, note: String?): Letter {
