@@ -95,6 +95,17 @@ jobs:
     runs-on: ubuntu-latest
     environment: PROD
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy compose files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: docker-compose.yml,docker-compose.prod.yml
+          target: /home/${{ secrets.SSH_USER }}/pismo
+
       - name: SSH and redeploy
         uses: appleboy/ssh-action@v1
         with:
@@ -102,6 +113,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
             cd ~/pismo
             docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
