@@ -1,5 +1,6 @@
 package com.jvmvstv_v.back.letters.service
 
+import com.jvmvstv_v.back.common.AuthException
 import com.jvmvstv_v.back.common.CurrentUser
 import com.jvmvstv_v.back.letters.model.CreateLetterInput
 import com.jvmvstv_v.back.letters.model.Letter
@@ -33,9 +34,9 @@ class LetterServiceImpl(
         val senderId = CurrentUser.id
         val connection = matchingRepository.findConnectionById(input.connectionId)
             ?: error("Connection ${input.connectionId} not found")
-        if (connection.endedAt != null) error("This connection has ended")
+        if (connection.endedAt != null) throw AuthException("This connection has ended")
         val otherId = if (connection.userA.id == senderId) connection.userB.id else connection.userA.id
-        if (input.recipientId != otherId) error("Recipient must be the other person in this connection")
+        if (input.recipientId != otherId) throw AuthException("Recipient must be the other person in this connection")
         requireSendersTurn(connection, senderId)
         return letterRepository.create(senderId, input)
     }
@@ -43,16 +44,16 @@ class LetterServiceImpl(
     private fun requireSendersTurn(connection: PenPalConnection, senderId: UUID) {
         val letters = letterRepository.findForConnection(connection.id)
         if (letters.any { it.status in OPEN_STATUSES }) {
-            error("This connection already has a letter in progress")
+            throw AuthException("This connection already has a letter in progress")
         }
         val lastDelivered = letters.firstOrNull { it.status == LetterStatus.DELIVERED }
         if (lastDelivered == null) {
             val requesterId = connection.request?.requester?.id
             if (requesterId != null && senderId != requesterId) {
-                error("Only the person who reached out can send the first letter")
+                throw AuthException("Only the person who reached out can send the first letter")
             }
         } else if (lastDelivered.sender.id == senderId) {
-            error("Wait for your pen pal to reply first")
+            throw AuthException("Wait for your pen pal to reply first")
         }
     }
 
@@ -61,11 +62,11 @@ class LetterServiceImpl(
 
     override fun confirmDelivery(id: UUID, code: String): Letter {
         val letter = letterRepository.findById(id) ?: error("Letter $id not found")
-        if (letter.recipient.id != CurrentUser.id) error("Only the recipient can confirm delivery")
+        if (letter.recipient.id != CurrentUser.id) throw AuthException("Only the recipient can confirm delivery")
         if (letter.status != LetterStatus.SENT && letter.status != LetterStatus.IN_TRANSIT) {
-            error("This letter isn't awaiting delivery confirmation")
+            throw AuthException("This letter isn't awaiting delivery confirmation")
         }
-        if (letter.trackingCode != code) error("Incorrect code")
+        if (letter.trackingCode != code) throw AuthException("Incorrect code")
         return letterRepository.updateStatus(id, LetterStatus.DELIVERED, null, null)
     }
 
