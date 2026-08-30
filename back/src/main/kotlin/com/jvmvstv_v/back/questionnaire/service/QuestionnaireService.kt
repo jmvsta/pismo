@@ -12,6 +12,7 @@ interface QuestionnaireService {
     fun questionnaireVersion(id: Int): QuestionnaireVersion?
     fun allVersions(kind: QuestionnaireKind): List<QuestionnaireVersion>
     fun myResponse(questionnaireVersionId: Int): UserQuestionnaireResponse?
+    fun response(userId: UUID, questionnaireVersionId: Int): UserQuestionnaireResponse?
     fun saveResponse(input: SaveQuestionnaireResponseInput): UserQuestionnaireResponse
     fun submitResponse(id: UUID): UserQuestionnaireResponse
     fun saveTemplate(input: SaveQuestionnaireTemplateInput): QuestionnaireVersion

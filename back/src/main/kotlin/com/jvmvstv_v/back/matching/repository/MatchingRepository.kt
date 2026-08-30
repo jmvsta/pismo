@@ -17,5 +17,8 @@ interface MatchingRepository {
     fun cancelRequest(id: UUID): PenPalRequest
     fun endConnection(id: UUID): PenPalConnection
     fun findSuggestedProfiles(userId: UUID, search: String?, limit: Int, offset: Int): List<SuggestedProfile>
+    fun findHiddenProfiles(userId: UUID, limit: Int, offset: Int): List<SuggestedProfile>
     fun hideProfile(userId: UUID, hiddenUserId: UUID)
+    fun isConnected(userAId: UUID, userBId: UUID): Boolean
+    fun countPendingIncomingRequests(userId: UUID): Int
 }

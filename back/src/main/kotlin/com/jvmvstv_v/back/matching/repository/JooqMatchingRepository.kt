@@ -8,6 +8,7 @@ import com.jvmvstv_v.back.matching.model.SuggestedProfile
 import com.jvmvstv_v.back.matching.model.UserMatch
 import com.jvmvstv_v.back.user.repository.UserRepository
 import org.jooq.DSLContext
+import org.jooq.Field
 import org.jooq.Record
 import org.jooq.impl.DSL
 import org.jooq.impl.SQLDataType
@@ -104,8 +105,7 @@ class JooqMatchingRepository(
             .where(R_ID.eq(id))
             .execute()
         if (accept) {
-            val userA = minOf(request.requester.id, request.addressee.id)
-            val userB = maxOf(request.requester.id, request.addressee.id)
+            val (userA, userB) = orderedPair(request.requester.id, request.addressee.id)
             dsl.insertInto(CONNECTIONS)
                 .columns(C_ID, C_USER_A, C_USER_B, C_REQUEST_ID, C_ESTABLISHED_AT)
                 .values(UUID.randomUUID(), userA, userB, id, OffsetDateTime.now())
@@ -133,7 +133,8 @@ class JooqMatchingRepository(
     }
 
     override fun findSuggestedProfiles(userId: UUID, search: String?, limit: Int, offset: Int): List<SuggestedProfile> {
-        val step = dsl.select(U_ID, M_SCORE, M_SHARED_INTERESTS)
+        val hasIncomingRequest = incomingRequestField(userId)
+        val step = dsl.select(U_ID, M_SCORE, M_SHARED_INTERESTS, hasIncomingRequest)
             .from(USERS)
             .leftJoin(MATCHES)
             .on(
@@ -153,18 +154,40 @@ class JooqMatchingRepository(
                         )
                 )
             )
+            .and(
+                // Once you've reached out, the card disappears from the suggestions feed --
+                // they surface again for you only via Pending (if they reciprocate) or Matched.
+                DSL.notExists(
+                    dsl.selectOne().from(REQUESTS)
+                        .where(R_REQUESTER_ID.eq(userId))
+                        .and(R_ADDRESSEE_ID.eq(U_ID))
+                        .and(R_STATUS.eq(PenPalRequestStatus.PENDING.name))
+                )
+            )
         val filtered = if (search != null) step.and(U_NICKNAME.containsIgnoreCase(search)) else step
         return filtered
-            .orderBy(M_SCORE.desc().nullsLast(), U_CREATED_AT.desc())
+            .orderBy(hasIncomingRequest.desc(), M_SCORE.desc().nullsLast(), U_CREATED_AT.desc())
             .limit(limit)
             .offset(offset)
-            .fetch {
-                SuggestedProfile(
-                    user = userRepository.findById(it[U_ID]!!) ?: error("User not found"),
-                    score = it[M_SCORE]?.toDouble(),
-                    sharedInterests = it[M_SHARED_INTERESTS]?.toList() ?: emptyList(),
-                )
-            }
+            .fetch { toSuggestedProfile(it, hasIncomingRequest) }
+    }
+
+    override fun findHiddenProfiles(userId: UUID, limit: Int, offset: Int): List<SuggestedProfile> {
+        val hasIncomingRequest = incomingRequestField(userId)
+        return dsl.select(U_ID, M_SCORE, M_SHARED_INTERESTS, hasIncomingRequest)
+            .from(HIDES)
+            .join(USERS).on(U_ID.eq(H_HIDDEN_USER_ID))
+            .leftJoin(MATCHES)
+            .on(
+                M_USER_A.eq(userId).and(M_USER_B.eq(U_ID))
+                    .or(M_USER_B.eq(userId).and(M_USER_A.eq(U_ID)))
+            )
+            .where(H_USER_ID.eq(userId))
+            .and(U_DELETED_AT.isNull)
+            .orderBy(H_HIDDEN_AT.desc())
+            .limit(limit)
+            .offset(offset)
+            .fetch { toSuggestedProfile(it, hasIncomingRequest) }
     }
 
     override fun hideProfile(userId: UUID, hiddenUserId: UUID) {
@@ -174,6 +197,45 @@ class JooqMatchingRepository(
             .onConflictDoNothing()
             .execute()
     }
+
+    override fun isConnected(userAId: UUID, userBId: UUID): Boolean {
+        val (orderedA, orderedB) = orderedPair(userAId, userBId)
+        return dsl.fetchExists(
+            dsl.selectOne().from(CONNECTIONS)
+                .where(C_USER_A.eq(orderedA)).and(C_USER_B.eq(orderedB)).and(C_ENDED_AT.isNull)
+        )
+    }
+
+    // pen_pal_connections' user_a_id < user_b_id check constraint is enforced by Postgres'
+    // unsigned byte-wise uuid comparison -- java.util.UUID#compareTo is a SIGNED comparison of
+    // the high/low 64 bits instead, which disagrees with Postgres for any pair straddling the
+    // 0x8 boundary in the first hex digit. Comparing the canonical string form sidesteps that:
+    // hex-digit ASCII ordering matches byte value ordering, so it always matches Postgres.
+    private fun orderedPair(a: UUID, b: UUID): Pair<UUID, UUID> =
+        if (a.toString() < b.toString()) a to b else b to a
+
+    override fun countPendingIncomingRequests(userId: UUID): Int =
+        dsl.selectCount().from(REQUESTS)
+            .where(R_ADDRESSEE_ID.eq(userId))
+            .and(R_STATUS.eq(PenPalRequestStatus.PENDING.name))
+            .fetchOne(0, Int::class.java) ?: 0
+
+    private fun incomingRequestField(userId: UUID) = DSL.field(
+        DSL.exists(
+            dsl.selectOne().from(REQUESTS)
+                .where(R_REQUESTER_ID.eq(U_ID))
+                .and(R_ADDRESSEE_ID.eq(userId))
+                .and(R_STATUS.eq(PenPalRequestStatus.PENDING.name))
+        )
+    )
+
+    private fun toSuggestedProfile(record: Record, hasIncomingRequest: Field<Boolean>): SuggestedProfile =
+        SuggestedProfile(
+            user = userRepository.findById(record[U_ID]!!) ?: error("User not found"),
+            score = record[M_SCORE]?.toDouble(),
+            sharedInterests = record[M_SHARED_INTERESTS]?.toList() ?: emptyList(),
+            hasIncomingRequest = record[hasIncomingRequest] ?: false,
+        )
 
     private fun findRequestById(id: UUID): PenPalRequest? =
         dsl.select(R_ID, R_REQUESTER_ID, R_ADDRESSEE_ID, R_STATUS, R_MESSAGE, R_CREATED_AT, R_RESPONDED_AT)

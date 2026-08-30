@@ -17,6 +17,7 @@ data class SuggestedProfile(
     val user: User,
     val score: Double?,
     val sharedInterests: List<String>,
+    val hasIncomingRequest: Boolean,
 )
 
 data class PenPalRequest(

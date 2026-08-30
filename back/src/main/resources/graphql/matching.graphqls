@@ -3,6 +3,8 @@ extend type Query {
     penPalRequests(status: PenPalRequestStatus): [PenPalRequest!]!
     myConnections: [PenPalConnection!]!
     suggestedProfiles(search: String, limit: Int, offset: Int): [SuggestedProfile!]!
+    hiddenProfiles(limit: Int, offset: Int): [SuggestedProfile!]!
+    pendingIncomingRequestCount: Int!
 }
 
 extend type Mutation {
@@ -27,6 +29,7 @@ type SuggestedProfile {
     user: User!
     score: Float
     sharedInterests: [String!]!
+    hasIncomingRequest: Boolean!
 }
 
 type PenPalRequest {

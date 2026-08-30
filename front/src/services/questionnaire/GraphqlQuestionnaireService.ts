@@ -56,6 +56,14 @@ const MY_QUESTIONNAIRE_RESPONSE_QUERY = `
   }
 `
 
+const USER_QUESTIONNAIRE_RESPONSE_QUERY = `
+  query UserQuestionnaireResponse($userId: ID!, $questionnaireVersionId: ID!) {
+    userQuestionnaireResponse(userId: $userId, questionnaireVersionId: $questionnaireVersionId) {
+      ${RESPONSE_FIELDS}
+    }
+  }
+`
+
 const SAVE_QUESTIONNAIRE_RESPONSE_MUTATION = `
   mutation SaveQuestionnaireResponse($input: SaveQuestionnaireResponseInput!) {
     saveQuestionnaireResponse(input: $input) {
@@ -119,6 +127,17 @@ export class GraphqlQuestionnaireService implements QuestionnaireService {
       { questionnaireVersionId: string }
     >(MY_QUESTIONNAIRE_RESPONSE_QUERY, { questionnaireVersionId })
     return data.myQuestionnaireResponse
+  }
+
+  async userQuestionnaireResponse(
+    userId: string,
+    questionnaireVersionId: string,
+  ): Promise<UserQuestionnaireResponse | null> {
+    const data = await this.client.request<
+      { userQuestionnaireResponse: UserQuestionnaireResponse | null },
+      { userId: string; questionnaireVersionId: string }
+    >(USER_QUESTIONNAIRE_RESPONSE_QUERY, { userId, questionnaireVersionId })
+    return data.userQuestionnaireResponse
   }
 
   async saveQuestionnaireResponse(

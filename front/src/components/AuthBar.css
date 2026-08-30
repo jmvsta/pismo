@@ -37,6 +37,41 @@
   transform: translateY(0);
 }
 
+.auth-bar-envelope {
+  font-size: 18px;
+  line-height: 1;
+  text-decoration: none;
+  display: inline-block;
+  transform-origin: 50% 0%;
+  animation: auth-bar-ring 4s ease-in-out infinite;
+}
+
+/* Ringing lives in a short burst near the start of each cycle, then rests -- a gentle
+   reminder rather than a constant wiggle. */
+@keyframes auth-bar-ring {
+  0%, 8%, 100% {
+    transform: rotate(0deg);
+  }
+  1% {
+    transform: rotate(-12deg);
+  }
+  2% {
+    transform: rotate(10deg);
+  }
+  3% {
+    transform: rotate(-8deg);
+  }
+  4% {
+    transform: rotate(6deg);
+  }
+  5% {
+    transform: rotate(-4deg);
+  }
+  6% {
+    transform: rotate(2deg);
+  }
+}
+
 .auth-bar-nickname {
   color: var(--color-text);
   font-weight: 600;

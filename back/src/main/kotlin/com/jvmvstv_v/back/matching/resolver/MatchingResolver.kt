@@ -31,6 +31,13 @@ class MatchingResolver(private val matchingService: MatchingService) {
         @Argument offset: Int?,
     ): List<SuggestedProfile> = matchingService.suggestedProfiles(search, limit, offset)
 
+    @QueryMapping
+    fun hiddenProfiles(@Argument limit: Int?, @Argument offset: Int?): List<SuggestedProfile> =
+        matchingService.hiddenProfiles(limit, offset)
+
+    @QueryMapping
+    fun pendingIncomingRequestCount(): Int = matchingService.pendingIncomingRequestCount()
+
     @MutationMapping
     fun sendPenPalRequest(@Argument addresseeId: UUID, @Argument message: String?): PenPalRequest =
         matchingService.sendPenPalRequest(addresseeId, message)

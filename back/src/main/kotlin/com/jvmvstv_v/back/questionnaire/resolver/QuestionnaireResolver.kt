@@ -27,6 +27,10 @@ class QuestionnaireResolver(private val questionnaireService: QuestionnaireServi
         questionnaireService.myResponse(questionnaireVersionId)
 
     @QueryMapping
+    fun userQuestionnaireResponse(@Argument userId: UUID, @Argument questionnaireVersionId: Int): UserQuestionnaireResponse? =
+        questionnaireService.response(userId, questionnaireVersionId)
+
+    @QueryMapping
     fun questionnaireVersions(@Argument kind: QuestionnaireKind): List<QuestionnaireVersion> =
         questionnaireService.allVersions(kind)
 
