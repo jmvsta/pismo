@@ -25,20 +25,18 @@ services:
     volumes:
       - certbot-www:/var/www/certbot:ro
 
-  # Renews automatically every 12h (a no-op until a cert actually exists). The FIRST
-  # certificate has to be requested manually once -- see the PR description -- because
-  # nginx needs the ACME-challenge location live before Let's Encrypt can validate the domain.
+  # No entrypoint/command override here on purpose -- this service exists only to be
+  # invoked via `docker compose run --rm certbot <args>`, which keeps the image's own
+  # ENTRYPOINT (the certbot binary) and just replaces the arguments. Overriding entrypoint
+  # to a persistent renew-loop broke that: `run --rm certbot certonly ...` would keep this
+  # service's entrypoint and silently discard "certonly ..." as unused arguments to the
+  # loop script instead of ever running it. Renewal is a cron job on the host instead --
+  # see the PR description for the crontab line.
   certbot:
     image: certbot/certbot:latest
-    restart: unless-stopped
     volumes:
       - certbot-www:/var/www/certbot
       - certbot-conf:/etc/letsencrypt
-    entrypoint: >
-      sh -c "trap exit TERM; while :; do
-        certbot renew --webroot -w /var/www/certbot --quiet;
-        sleep 12h;
-      done"
 
 volumes:
   certbot-www:
