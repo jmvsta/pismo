@@ -104,7 +104,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: docker-compose.yml,docker-compose.prod.yml
-          target: ~/pismo
+          target: /home/${{ secrets.SSH_USER }}/pismo
 
       - name: SSH and redeploy
         uses: appleboy/ssh-action@v1
@@ -113,6 +113,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
             cd ~/pismo
             docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
