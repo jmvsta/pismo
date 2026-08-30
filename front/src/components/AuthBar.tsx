@@ -1,10 +1,29 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useUserStore } from '../store/userStore.ts'
+import { matchingService } from '../services/matching/index.ts'
 import './AuthBar.css'
 
 function AuthBar() {
   const currentUser = useUserStore((state) => state.currentUser)
   const logout = useUserStore((state) => state.logout)
+  const [pendingCount, setPendingCount] = useState(0)
+
+  useEffect(() => {
+    if (!currentUser) return
+    let cancelled = false
+    matchingService
+      .pendingIncomingRequestCount()
+      .then((count) => {
+        if (!cancelled) setPendingCount(count)
+      })
+      .catch(() => {
+        // Best-effort notification -- a failed count shouldn't block the rest of the bar.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [currentUser])
 
   const handleLogout = async () => {
     await logout()
@@ -18,6 +37,16 @@ function AuthBar() {
       <div className="auth-bar">
         {currentUser ? (
           <>
+            {pendingCount > 0 && (
+              <Link
+                to="/matches?tab=pending"
+                className="auth-bar-envelope"
+                title={`${pendingCount} pen pal request${pendingCount === 1 ? '' : 's'} waiting`}
+                aria-label="Pending pen pal requests"
+              >
+                ✉️
+              </Link>
+            )}
             {canModerate && (
               <Link to="/admin" className="btn btn-ghost">
                 Moderate

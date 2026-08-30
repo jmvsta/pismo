@@ -20,6 +20,24 @@
   color: var(--color-accent);
 }
 
+.matches-tabs {
+  display: flex;
+  gap: 24px;
+  border-bottom: 2px solid var(--color-divider);
+  margin-bottom: var(--space-4);
+  font-size: 14px;
+}
+.matches-tabs span {
+  padding-bottom: 10px;
+  cursor: pointer;
+  margin-bottom: -2px;
+}
+.matches-tabs span.is-active {
+  font-weight: 800;
+  color: var(--color-accent);
+  border-bottom: 2px solid var(--color-accent);
+}
+
 .matches-empty {
   padding: var(--space-6) 0;
   text-align: center;
@@ -42,11 +60,21 @@
 .match-card-photo {
   width: 100%;
   aspect-ratio: 1 / 1;
+  position: relative;
 }
 .match-card-photo img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.match-card-envelope {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 18px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
 }
 
 .match-card-body {
@@ -80,6 +108,18 @@
 
 .match-card-country {
   font-size: 13px;
+}
+
+.match-card-bio {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.match-card-questionnaire-link {
+  align-self: flex-start;
+  padding: 0;
+  font-size: 12px;
+  text-decoration: underline;
 }
 
 .match-card-interests {

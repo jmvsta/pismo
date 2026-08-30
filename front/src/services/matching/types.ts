@@ -4,6 +4,7 @@ export type PenPalRequestStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELL
 
 export interface MatchProfile extends UserSummary {
   countryCode: string | null
+  bio: string | null
 }
 
 export interface UserMatch {
@@ -18,12 +19,13 @@ export interface SuggestedProfile {
   user: MatchProfile
   score: number | null
   sharedInterests: string[]
+  hasIncomingRequest: boolean
 }
 
 export interface PenPalRequest {
   id: string
-  requester: UserSummary
-  addressee: UserSummary
+  requester: MatchProfile
+  addressee: MatchProfile
   status: PenPalRequestStatus
   message: string | null
   createdAt: string
@@ -32,8 +34,8 @@ export interface PenPalRequest {
 
 export interface PenPalConnectionSummary {
   id: string
-  userA: UserSummary
-  userB: UserSummary
+  userA: MatchProfile
+  userB: MatchProfile
   establishedAt: string
   endedAt: string | null
 }

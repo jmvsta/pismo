@@ -3,6 +3,8 @@ import type { PenPalConnection, PenPalRequest, PenPalRequestStatus, SuggestedPro
 export interface MatchingService {
   myMatches(limit?: number): Promise<UserMatch[]>
   suggestedProfiles(search?: string, limit?: number, offset?: number): Promise<SuggestedProfile[]>
+  hiddenProfiles(limit?: number, offset?: number): Promise<SuggestedProfile[]>
+  pendingIncomingRequestCount(): Promise<number>
   penPalRequests(status?: PenPalRequestStatus): Promise<PenPalRequest[]>
   myConnections(): Promise<PenPalConnection[]>
   sendPenPalRequest(addresseeId: string, message?: string): Promise<PenPalRequest>

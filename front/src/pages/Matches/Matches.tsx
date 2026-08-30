@@ -1,100 +1,31 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useUserStore } from '../../store/userStore.ts'
-import { matchingService } from '../../services/matching/index.ts'
-import type { SuggestedProfile } from '../../services/matching/index.ts'
-import MatchCard from './MatchCard.tsx'
+import NewMatchesTab from './NewMatchesTab.tsx'
+import PendingMatchesTab from './PendingMatchesTab.tsx'
+import HiddenMatchesTab from './HiddenMatchesTab.tsx'
+import MatchedTab from './MatchedTab.tsx'
+import MatchQuestionnaireDialog from './MatchQuestionnaireDialog.tsx'
 import './Matches.css'
 
-const PAGE_SIZE = 12
+type TabId = 'new' | 'pending' | 'hidden' | 'matched'
 
-type RequestState = 'idle' | 'sending' | 'sent' | 'error'
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'new', label: 'New' },
+  { id: 'pending', label: 'Pending' },
+  { id: 'hidden', label: 'Hidden' },
+  { id: 'matched', label: 'Matched' },
+]
 
 function Matches() {
   const currentUser = useUserStore((state) => state.currentUser)
-  const [profiles, setProfiles] = useState<SuggestedProfile[]>([])
-  const [offset, setOffset] = useState(0)
-  const [hasMore, setHasMore] = useState(true)
-  const [loading, setLoading] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [requestStates, setRequestStates] = useState<Record<string, RequestState>>({})
-  const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const [searchParams] = useSearchParams()
+  const requestedTab = searchParams.get('tab')
+  const initialTab = TABS.some((tab) => tab.id === requestedTab) ? (requestedTab as TabId) : 'new'
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab)
+  const [questionnaireTarget, setQuestionnaireTarget] = useState<{ userId: string; nickname: string } | null>(null)
 
-  useEffect(() => {
-    if (!currentUser) return
-    let cancelled = false
-
-    matchingService
-      .suggestedProfiles(undefined, PAGE_SIZE, 0)
-      .then((result) => {
-        if (cancelled) return
-        setProfiles(result)
-        setOffset(result.length)
-        setHasMore(result.length === PAGE_SIZE)
-        setError(null)
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load matches.')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [currentUser])
-
-  const handleLoadMore = useCallback(async () => {
-    if (!currentUser || loading || loadingMore || !hasMore) return
-    setLoadingMore(true)
-    try {
-      const result = await matchingService.suggestedProfiles(undefined, PAGE_SIZE, offset)
-      setProfiles((prev) => [...prev, ...result])
-      setOffset((prev) => prev + result.length)
-      setHasMore(result.length === PAGE_SIZE)
-      setError(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load more matches.')
-    } finally {
-      setLoadingMore(false)
-    }
-  }, [currentUser, loading, loadingMore, hasMore, offset])
-
-  useEffect(() => {
-    const sentinel = sentinelRef.current
-    if (!sentinel) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) handleLoadMore()
-      },
-      { rootMargin: '200px' },
-    )
-
-    observer.observe(sentinel)
-    return () => observer.disconnect()
-  }, [handleLoadMore])
-
-  const handleHide = async (profileId: string) => {
-    try {
-      await matchingService.hideProfile(profileId)
-      setProfiles((prev) => prev.filter((suggestion) => suggestion.user.id !== profileId))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not hide this profile.')
-    }
-  }
-
-  const handleReachOut = async (profileId: string) => {
-    setRequestStates((prev) => ({ ...prev, [profileId]: 'sending' }))
-    try {
-      await matchingService.sendPenPalRequest(profileId)
-      setRequestStates((prev) => ({ ...prev, [profileId]: 'sent' }))
-    } catch {
-      setRequestStates((prev) => ({ ...prev, [profileId]: 'error' }))
-    }
-  }
+  const handleViewQuestionnaire = (userId: string, nickname: string) => setQuestionnaireTarget({ userId, nickname })
 
   if (!currentUser) {
     return (
@@ -117,34 +48,30 @@ function Matches() {
         </p>
       </div>
 
-      {error && <p className="text-muted matches-empty">{error}</p>}
-
-      {!error && loading && <p className="text-muted matches-empty">Loading matches…</p>}
-
-      {!error && !loading && profiles.length === 0 && (
-        <p className="text-muted matches-empty">No matches yet — check back after filling out your profile.</p>
-      )}
-
-      <div className="matches-grid">
-        {profiles.map((suggestion) => (
-          <MatchCard
-            key={suggestion.user.id}
-            profile={suggestion.user}
-            sharedInterests={suggestion.sharedInterests}
-            score={suggestion.score}
-            requestState={requestStates[suggestion.user.id] ?? 'idle'}
-            onReachOut={() => handleReachOut(suggestion.user.id)}
-            onHide={() => handleHide(suggestion.user.id)}
-          />
+      <div className="matches-tabs">
+        {TABS.map((tab) => (
+          <span
+            key={tab.id}
+            className={activeTab === tab.id ? 'is-active' : undefined}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </span>
         ))}
       </div>
 
-      <div ref={sentinelRef} className="matches-sentinel">
-        {loadingMore && <span className="text-muted">Loading more…</span>}
-        {!hasMore && !loading && profiles.length > 0 && (
-          <span className="text-muted">You've reached the end of your matches.</span>
-        )}
-      </div>
+      {activeTab === 'new' && <NewMatchesTab onViewQuestionnaire={handleViewQuestionnaire} />}
+      {activeTab === 'pending' && <PendingMatchesTab onViewQuestionnaire={handleViewQuestionnaire} />}
+      {activeTab === 'hidden' && <HiddenMatchesTab onViewQuestionnaire={handleViewQuestionnaire} />}
+      {activeTab === 'matched' && <MatchedTab />}
+
+      {questionnaireTarget && (
+        <MatchQuestionnaireDialog
+          userId={questionnaireTarget.userId}
+          nickname={questionnaireTarget.nickname}
+          onClose={() => setQuestionnaireTarget(null)}
+        />
+      )}
     </div>
   )
 }

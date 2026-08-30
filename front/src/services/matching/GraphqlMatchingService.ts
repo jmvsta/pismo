@@ -6,12 +6,13 @@ import type { MatchingService } from './MatchingService.ts'
 const MATCH_PROFILE_FIELDS = `
   ${USER_SUMMARY_FIELDS}
   countryCode
+  bio
 `
 
 export const PEN_PAL_REQUEST_FIELDS = `
   id
-  requester { ${USER_SUMMARY_FIELDS} }
-  addressee { ${USER_SUMMARY_FIELDS} }
+  requester { ${MATCH_PROFILE_FIELDS} }
+  addressee { ${MATCH_PROFILE_FIELDS} }
   status
   message
   createdAt
@@ -20,8 +21,8 @@ export const PEN_PAL_REQUEST_FIELDS = `
 
 export const PEN_PAL_CONNECTION_SUMMARY_FIELDS = `
   id
-  userA { ${USER_SUMMARY_FIELDS} }
-  userB { ${USER_SUMMARY_FIELDS} }
+  userA { ${MATCH_PROFILE_FIELDS} }
+  userB { ${MATCH_PROFILE_FIELDS} }
   establishedAt
   endedAt
 `
@@ -46,13 +47,32 @@ const MY_MATCHES_QUERY = `
   }
 `
 
+const SUGGESTED_PROFILE_FIELDS = `
+  user { ${MATCH_PROFILE_FIELDS} }
+  score
+  sharedInterests
+  hasIncomingRequest
+`
+
 const SUGGESTED_PROFILES_QUERY = `
   query SuggestedProfiles($search: String, $limit: Int, $offset: Int) {
     suggestedProfiles(search: $search, limit: $limit, offset: $offset) {
-      user { ${MATCH_PROFILE_FIELDS} }
-      score
-      sharedInterests
+      ${SUGGESTED_PROFILE_FIELDS}
     }
+  }
+`
+
+const HIDDEN_PROFILES_QUERY = `
+  query HiddenProfiles($limit: Int, $offset: Int) {
+    hiddenProfiles(limit: $limit, offset: $offset) {
+      ${SUGGESTED_PROFILE_FIELDS}
+    }
+  }
+`
+
+const PENDING_INCOMING_REQUEST_COUNT_QUERY = `
+  query PendingIncomingRequestCount {
+    pendingIncomingRequestCount
   }
 `
 
@@ -135,6 +155,21 @@ export class GraphqlMatchingService implements MatchingService {
 
   async hideProfile(userId: string): Promise<void> {
     await this.client.request<{ hideProfile: boolean }, { userId: string }>(HIDE_PROFILE_MUTATION, { userId })
+  }
+
+  async hiddenProfiles(limit?: number, offset?: number): Promise<SuggestedProfile[]> {
+    const data = await this.client.request<
+      { hiddenProfiles: SuggestedProfile[] },
+      { limit?: number; offset?: number }
+    >(HIDDEN_PROFILES_QUERY, { limit, offset })
+    return data.hiddenProfiles
+  }
+
+  async pendingIncomingRequestCount(): Promise<number> {
+    const data = await this.client.request<{ pendingIncomingRequestCount: number }>(
+      PENDING_INCOMING_REQUEST_COUNT_QUERY,
+    )
+    return data.pendingIncomingRequestCount
   }
 
   async penPalRequests(status?: PenPalRequestStatus): Promise<PenPalRequest[]> {

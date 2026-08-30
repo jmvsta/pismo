@@ -3,6 +3,7 @@ extend type Query {
     questionnaireVersion(id: ID!): QuestionnaireVersion
     questionnaireVersions(kind: QuestionnaireKind!): [QuestionnaireVersion!]!
     myQuestionnaireResponse(questionnaireVersionId: ID!): UserQuestionnaireResponse
+    userQuestionnaireResponse(userId: ID!, questionnaireVersionId: ID!): UserQuestionnaireResponse
 }
 
 extend type Mutation {
