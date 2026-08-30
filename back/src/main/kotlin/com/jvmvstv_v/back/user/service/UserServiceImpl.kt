@@ -4,6 +4,7 @@ import com.jvmvstv_v.back.common.AuthException
 import com.jvmvstv_v.back.common.CurrentUser
 import com.jvmvstv_v.back.common.SecureTokenGenerator
 import com.jvmvstv_v.back.user.model.LoginInput
+import com.jvmvstv_v.back.user.model.OauthProvider
 import com.jvmvstv_v.back.user.model.RegisterInput
 import com.jvmvstv_v.back.user.model.UpdateProfileInput
 import com.jvmvstv_v.back.user.model.User
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.OffsetDateTime
 import java.util.UUID
+import kotlin.random.Random
 
 private val TOKEN_LIFETIME: Duration = Duration.ofHours(1)
 
@@ -48,6 +50,40 @@ class UserServiceImpl(
         return user.copy(authToken = issueToken(user.id))
     }
 
+    // Three cases: this Google account has signed in before (linked already), this email
+    // already has a password account (link Google to it), or neither (create a fresh user).
+    // Either way the caller gets back the same shape register()/login() return -- a bearer
+    // token, not a Google token. Rules acceptance is implicit here: there's no separate
+    // "accept the rules" step in the OAuth flow the way there is on the register form.
+    override fun loginWithOauth(
+        provider: OauthProvider,
+        providerUserId: String,
+        email: String,
+        suggestedNickname: String?,
+    ): User {
+        val linkedUserId = userRepository.findUserIdByOauthAccount(provider, providerUserId)
+        val userId = when {
+            linkedUserId != null -> linkedUserId
+            else -> {
+                val existingId = userRepository.findCredentialsByEmail(email)?.id
+                if (existingId != null) {
+                    userRepository.linkOauthAccount(existingId, provider, providerUserId, email)
+                    existingId
+                } else {
+                    val created = userRepository.createOauthUser(
+                        nickname = uniqueNickname(email, suggestedNickname),
+                        email = email,
+                        provider = provider,
+                        providerUserId = providerUserId,
+                    )
+                    return created.copy(authToken = issueToken(created.id))
+                }
+            }
+        }
+        val user = userRepository.findById(userId) ?: error("User $userId not found")
+        return user.copy(authToken = issueToken(user.id))
+    }
+
     override fun logout() = userRepository.clearAuthToken(CurrentUser.id)
 
     override fun listUsers(): List<User> {
@@ -69,6 +105,22 @@ class UserServiceImpl(
         val token = SecureTokenGenerator.generate()
         userRepository.setAuthToken(userId, token, OffsetDateTime.now().plus(TOKEN_LIFETIME))
         return token
+    }
+
+    private fun uniqueNickname(email: String, suggested: String?): String {
+        val base = (suggested?.takeIf { it.isNotBlank() } ?: email.substringBefore('@'))
+            .lowercase()
+            .replace(Regex("[^a-z0-9._-]"), "")
+            .let { if (it.length < 3) it.padEnd(3, '0') else it }
+            .take(40)
+        var candidate = base
+        var attempt = 0
+        while (userRepository.existsByEmailOrNickname(email, candidate)) {
+            attempt++
+            if (attempt > 10) error("Could not generate a unique nickname for $email")
+            candidate = "$base${Random.nextInt(1000, 9999)}".take(50)
+        }
+        return candidate
     }
 
     private fun validateRegistration(input: RegisterInput) {

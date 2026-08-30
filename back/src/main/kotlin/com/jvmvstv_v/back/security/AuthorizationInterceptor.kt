@@ -6,7 +6,6 @@ import graphql.GraphqlErrorBuilder
 import graphql.language.Field
 import graphql.language.OperationDefinition
 import graphql.parser.Parser
-import org.springframework.context.annotation.Profile
 import org.springframework.graphql.execution.ErrorType
 import org.springframework.graphql.server.WebGraphQlInterceptor
 import org.springframework.graphql.server.WebGraphQlRequest
@@ -18,7 +17,6 @@ import reactor.core.publisher.Mono
 private val PUBLIC_FIELDS = setOf("login", "register", "__schema", "__type", "__typename")
 
 @Component
-@Profile("local")
 class AuthorizationInterceptor : WebGraphQlInterceptor {
     override fun intercept(request: WebGraphQlRequest, chain: WebGraphQlInterceptor.Chain): Mono<WebGraphQlResponse> {
         val fields = topLevelFields(request.document)

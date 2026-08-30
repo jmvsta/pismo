@@ -1,6 +1,7 @@
 package com.jvmvstv_v.back.user.service
 
 import com.jvmvstv_v.back.user.model.LoginInput
+import com.jvmvstv_v.back.user.model.OauthProvider
 import com.jvmvstv_v.back.user.model.RegisterInput
 import com.jvmvstv_v.back.user.model.UpdateProfileInput
 import com.jvmvstv_v.back.user.model.User
@@ -14,6 +15,7 @@ interface UserService {
     fun updateProfile(input: UpdateProfileInput): User
     fun register(input: RegisterInput): User
     fun login(input: LoginInput): User
+    fun loginWithOauth(provider: OauthProvider, providerUserId: String, email: String, suggestedNickname: String?): User
     fun logout()
     fun listUsers(): List<User>
     fun setUserStatus(userId: UUID, status: UserStatus): User

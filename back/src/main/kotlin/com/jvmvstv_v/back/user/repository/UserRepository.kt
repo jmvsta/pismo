@@ -1,6 +1,7 @@
 package com.jvmvstv_v.back.user.repository
 
 import com.jvmvstv_v.back.common.AuthenticatedPrincipal
+import com.jvmvstv_v.back.user.model.OauthProvider
 import com.jvmvstv_v.back.user.model.RegisterInput
 import com.jvmvstv_v.back.user.model.UpdateProfileInput
 import com.jvmvstv_v.back.user.model.User
@@ -22,4 +23,7 @@ interface UserRepository {
     fun findActiveUserByToken(token: String): AuthenticatedPrincipal?
     fun setStatus(userId: UUID, status: UserStatus): User
     fun setRole(userId: UUID, role: UserRole): User
+    fun findUserIdByOauthAccount(provider: OauthProvider, providerUserId: String): UUID?
+    fun linkOauthAccount(userId: UUID, provider: OauthProvider, providerUserId: String, email: String?)
+    fun createOauthUser(nickname: String, email: String, provider: OauthProvider, providerUserId: String): User
 }
