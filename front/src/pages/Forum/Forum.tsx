@@ -140,8 +140,8 @@ function Forum() {
         <Link to="/matches" className="nav-link">
           Find a pen pal
         </Link>
-        <Link to="/profile?tab=letters" className="nav-link">
-          My letters
+        <Link to="/profile?tab=penpals" className="nav-link">
+          My pen pals
         </Link>
         <span className="forum-wallet-pill">
           Wallet · {wallet ? formatMinorAmount(wallet.balanceMinor, wallet.currency) : '—'}

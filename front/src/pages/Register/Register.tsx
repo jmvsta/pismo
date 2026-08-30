@@ -39,7 +39,7 @@ function Register() {
         dateOfBirth: dob || undefined,
         acceptedRules,
       })
-      navigate('/questionnaire')
+      navigate('/register/bio')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed.')
     } finally {
@@ -66,8 +66,10 @@ function Register() {
           </p>
           <ol className="register-steps">
             <li className="is-current">01 — Register</li>
-            <li>02 — Fill the questionnaire</li>
-            <li>03 — Get matched. Write.</li>
+            <li>02 — Bio</li>
+            <li>03 — Address</li>
+            <li>04 — Fill the questionnaire</li>
+            <li>05 — Get matched. Write.</li>
           </ol>
         </aside>
 

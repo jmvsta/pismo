@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { MatchProfile } from '../../services/matching/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
+import EnvelopeIcon from '../../components/icons/EnvelopeIcon.tsx'
 
 export type MatchCardVariant = 'new' | 'pending' | 'hidden' | 'matched'
 
@@ -48,7 +49,7 @@ function MatchCard({
         {avatarUrl ? <img src={avatarUrl} alt={profile.nickname} /> : <span>avatar</span>}
         {hasIncomingRequest && (
           <span className="match-card-envelope" title="Already reached out to you" aria-hidden="true">
-            ✉️
+            <EnvelopeIcon />
           </span>
         )}
       </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useUserStore } from '../store/userStore.ts'
 import { matchingService } from '../services/matching/index.ts'
+import EnvelopeIcon from './icons/EnvelopeIcon.tsx'
 import './AuthBar.css'
 
 function AuthBar() {
@@ -44,7 +45,7 @@ function AuthBar() {
                 title={`${pendingCount} pen pal request${pendingCount === 1 ? '' : 's'} waiting`}
                 aria-label="Pending pen pal requests"
               >
-                ✉️
+                <EnvelopeIcon />
               </Link>
             )}
             {canModerate && (

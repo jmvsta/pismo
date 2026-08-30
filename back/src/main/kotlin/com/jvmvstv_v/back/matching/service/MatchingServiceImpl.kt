@@ -74,6 +74,6 @@ class MatchingServiceImpl(private val matchingRepository: MatchingRepository) : 
         if (viewerId != null && (user.id == viewerId || matchingRepository.isConnected(viewerId, user.id))) {
             user
         } else {
-            user.copy(avatarImageId = null, bio = null)
+            user.copy(avatarImageId = null)
         }
 }
