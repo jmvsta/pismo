@@ -135,3 +135,23 @@ Plain `get_*`/`list_*`/`search_*` reads don't need confirmation. This is the
 same "hard to reverse or visible to others" judgment call as anywhere else —
 it just applies more often here because every write is already live on the
 real repo, not a local draft.
+
+## One correction, one new PR — never push to a branch after its PR merged
+
+The user here tends to merge draft PRs almost immediately, often within
+minutes, sometimes before a review round is even finished. That's their
+call to make, but it means a branch's PR can merge while you're still mid-
+fix — and `push_files`/`create_or_update_file` don't know or care that the
+PR closed; they'll happily keep committing to that now-orphaned branch.
+Those commits are invisible until *another* PR gets opened from the same
+branch and merged, which has repeatedly cost a full round-trip of "why
+didn't my fix apply" debugging in this repo already — don't repeat it.
+
+So: before pushing a follow-up commit to any branch, check whether it still
+has an open PR (`list_pull_requests` with `state: "open"`, or `pull_request_read`
+on the specific number). If there isn't one, open a fresh branch off the
+current default branch and a fresh PR for the correction — even if the fix
+is one line, even if it's for the exact same task/bug as the branch that
+just merged. Don't reuse or reopen a merged branch's PR to carry more
+commits. This costs an extra branch/PR per correction; that's cheaper than
+a fix silently never reaching `master`.
