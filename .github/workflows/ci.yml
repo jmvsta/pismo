@@ -85,6 +85,8 @@ jobs:
           context: front
           file: front/Dockerfile
           push: true
+          build-args: |
+            VITE_API_URL=/api
           tags: |
             ghcr.io/${{ github.repository }}/front:latest
             ghcr.io/${{ github.repository }}/front:${{ github.sha }}
