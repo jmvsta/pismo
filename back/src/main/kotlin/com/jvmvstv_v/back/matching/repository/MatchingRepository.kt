@@ -12,6 +12,7 @@ interface MatchingRepository {
     fun findRequestsForUser(userId: UUID, status: PenPalRequestStatus?): List<PenPalRequest>
     fun findConnectionsForUser(userId: UUID): List<PenPalConnection>
     fun findConnectionById(id: UUID): PenPalConnection?
+    fun findRequestById(id: UUID): PenPalRequest?
     fun createRequest(requesterId: UUID, addresseeId: UUID, message: String?): PenPalRequest
     fun respondToRequest(id: UUID, accept: Boolean): PenPalRequest
     fun cancelRequest(id: UUID): PenPalRequest

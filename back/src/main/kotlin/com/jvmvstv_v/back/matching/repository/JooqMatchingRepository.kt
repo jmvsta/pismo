@@ -237,7 +237,7 @@ class JooqMatchingRepository(
             hasIncomingRequest = record[hasIncomingRequest] ?: false,
         )
 
-    private fun findRequestById(id: UUID): PenPalRequest? =
+    override fun findRequestById(id: UUID): PenPalRequest? =
         dsl.select(R_ID, R_REQUESTER_ID, R_ADDRESSEE_ID, R_STATUS, R_MESSAGE, R_CREATED_AT, R_RESPONDED_AT)
             .from(REQUESTS)
             .where(R_ID.eq(id))
