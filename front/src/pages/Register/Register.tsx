@@ -1,22 +1,11 @@
 import { useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { API_BASE_URL } from '../../config/env.ts'
 import { useUserStore } from '../../store/userStore.ts'
 import './Register.css'
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(file)
-  })
-}
 
 function Register() {
   const navigate = useNavigate()
   const register = useUserStore((state) => state.register)
-  const updateProfile = useUserStore((state) => state.updateProfile)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [nickname, setNickname] = useState('')
@@ -24,7 +13,6 @@ function Register() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [acceptedRules, setAcceptedRules] = useState(false)
-  const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -35,7 +23,6 @@ function Register() {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    setAvatarFile(file)
     setAvatarPreview(URL.createObjectURL(file))
   }
 
@@ -52,10 +39,6 @@ function Register() {
         dateOfBirth: dob || undefined,
         acceptedRules,
       })
-      if (avatarFile) {
-        const avatarUrl = await readFileAsDataUrl(avatarFile)
-        await updateProfile({ avatarUrl })
-      }
       navigate('/questionnaire')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed.')
@@ -65,7 +48,7 @@ function Register() {
   }
 
   const handleGoogleOAuth = () => {
-    window.location.href = `${API_BASE_URL}/oauth2/authorization/google`
+    window.location.href = '/oauth2/authorization/google'
   }
 
   return (

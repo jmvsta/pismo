@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { API_BASE_URL } from '../../config/env.ts'
 import { useUserStore } from '../../store/userStore.ts'
 import '../Register/Register.css'
 
@@ -31,7 +30,7 @@ function Login() {
   }
 
   const handleGoogleOAuth = () => {
-    window.location.href = `${API_BASE_URL}/oauth2/authorization/google`
+    window.location.href = '/oauth2/authorization/google'
   }
 
   return (
