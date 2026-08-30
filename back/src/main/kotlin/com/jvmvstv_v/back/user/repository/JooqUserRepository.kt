@@ -130,6 +130,35 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
         return findById(userId) ?: error("User $userId not found")
     }
 
+    override fun findUserIdByOauthAccount(provider: OauthProvider, providerUserId: String): UUID? =
+        dsl.select(OAUTH_USER_ID)
+            .from(OAUTH_ACCOUNTS)
+            .where(OAUTH_PROVIDER.eq(provider.name)).and(OAUTH_PROVIDER_USER_ID.eq(providerUserId))
+            .fetchOne { it[OAUTH_USER_ID] }
+
+    override fun linkOauthAccount(userId: UUID, provider: OauthProvider, providerUserId: String, email: String?) {
+        dsl.insertInto(OAUTH_ACCOUNTS)
+            .columns(OAUTH_ID, OAUTH_USER_ID, OAUTH_PROVIDER, OAUTH_PROVIDER_USER_ID, OAUTH_EMAIL, OAUTH_LINKED_AT)
+            .values(UUID.randomUUID(), userId, provider.name, providerUserId, email, OffsetDateTime.now())
+            .execute()
+    }
+
+    override fun createOauthUser(nickname: String, email: String, provider: OauthProvider, providerUserId: String): User {
+        val id = UUID.randomUUID()
+        dsl.transaction { config ->
+            val tx = config.dsl()
+            tx.insertInto(USERS)
+                .columns(ID, NICKNAME, EMAIL, RULES_ACCEPTED_AT)
+                .values(id, nickname, email, OffsetDateTime.now())
+                .execute()
+            tx.insertInto(OAUTH_ACCOUNTS)
+                .columns(OAUTH_ID, OAUTH_USER_ID, OAUTH_PROVIDER, OAUTH_PROVIDER_USER_ID, OAUTH_EMAIL, OAUTH_LINKED_AT)
+                .values(UUID.randomUUID(), id, provider.name, providerUserId, email, OffsetDateTime.now())
+                .execute()
+        }
+        return findById(id) ?: error("User $id not found after oauth registration")
+    }
+
     private fun toUser(record: Record): User = User(
         id = record[ID]!!,
         nickname = record[NICKNAME]!!,
