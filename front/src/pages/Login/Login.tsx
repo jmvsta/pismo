@@ -93,9 +93,6 @@ function Login() {
               <button type="button" className="btn btn-secondary" onClick={handleGoogleOAuth}>
                 Continue with Google
               </button>
-              <button type="button" className="btn btn-secondary">
-                Continue with Apple
-              </button>
             </div>
 
             <div className="register-signin">

@@ -1,6 +1,6 @@
 export type UserRole = 'USER' | 'MODERATOR' | 'ADMIN'
 export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'DELETED'
-export type OauthProvider = 'GOOGLE' | 'APPLE'
+export type OauthProvider = 'GOOGLE'
 
 export interface UserSummary {
   id: string

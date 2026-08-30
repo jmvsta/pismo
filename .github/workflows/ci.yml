@@ -13,6 +13,7 @@ jobs:
   build-back:
     name: Build back
     runs-on: ubuntu-latest
+    environment: PROD
     defaults:
       run:
         working-directory: back
@@ -39,6 +40,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: back
+          file: back/Dockerfile
           push: true
           tags: |
             ghcr.io/${{ github.repository }}/back:latest
@@ -47,6 +49,7 @@ jobs:
   build-front:
     name: Build front
     runs-on: ubuntu-latest
+    environment: PROD
     defaults:
       run:
         working-directory: front
@@ -77,6 +80,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: front
+          file: front/Dockerfile
           push: true
           tags: |
             ghcr.io/${{ github.repository }}/front:latest

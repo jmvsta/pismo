@@ -43,7 +43,7 @@ CREATE TABLE user_oauth_accounts (
     provider_user_id VARCHAR(255) NOT NULL,
     email            VARCHAR(320),
     linked_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    CONSTRAINT user_oauth_provider_check CHECK (provider IN ('GOOGLE', 'APPLE')),
+    CONSTRAINT user_oauth_provider_check CHECK (provider IN ('GOOGLE')),
     CONSTRAINT user_oauth_provider_uk UNIQUE (provider, provider_user_id)
 );
 

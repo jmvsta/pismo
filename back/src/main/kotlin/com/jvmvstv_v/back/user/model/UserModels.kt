@@ -6,7 +6,7 @@ enum class UserRole { USER, MODERATOR, ADMIN }
 
 enum class UserStatus { ACTIVE, SUSPENDED, DELETED }
 
-enum class OauthProvider { GOOGLE, APPLE }
+enum class OauthProvider { GOOGLE }
 
 data class User(
     val id: UUID,
