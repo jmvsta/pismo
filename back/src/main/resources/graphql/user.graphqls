@@ -55,7 +55,6 @@ type UserOauthAccount {
 
 enum OauthProvider {
     GOOGLE
-    APPLE
 }
 
 input UpdateProfileInput {
