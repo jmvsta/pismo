@@ -13,6 +13,12 @@
   padding: 28px 40px 36px;
 }
 
+.admin-back {
+  display: inline-block;
+  font-size: 13px;
+  margin-bottom: var(--space-3);
+}
+
 .admin-header h2 {
   margin: 0 0 4px;
 }

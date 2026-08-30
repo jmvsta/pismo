@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import AdminUsersPanel from './AdminUsersPanel.tsx'
 import AdminTopicsPanel from './AdminTopicsPanel.tsx'
 import AdminQuestionnairePanel from './AdminQuestionnairePanel.tsx'
@@ -29,6 +29,10 @@ function Admin() {
   return (
     <div className="admin-page">
       <div className="admin-card">
+        <Link to="/" className="admin-back">
+          ← Back to feed
+        </Link>
+
         <div className="admin-header">
           <h6>Admin</h6>
           <h2>Moderation</h2>
