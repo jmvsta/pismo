@@ -12,8 +12,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository
-import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.CorsConfigurationSource
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource
@@ -56,21 +54,24 @@ class SecurityConfig(
         return http.build()
     }
 
+    // Auth here is a Bearer token over the Authorization header, never an ambient cookie,
+    // so there is no session for CSRF to protect and no login redirect to send anyone to.
+    // GraphQL multiplexes public ops (login/register) and protected ones over one endpoint,
+    // which the HTTP layer can't tell apart -- that's AuthorizationInterceptor's job, at the
+    // GraphQL field level. This chain just has to get every request that far unmolested.
     @Bean
     @Profile("!local")
     fun secureSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
-        val requestHandler = CsrfTokenRequestAttributeHandler()
         http {
             cors { }
-            csrf {
-                csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse()
-                csrfTokenRequestHandler = requestHandler
-            }
+            csrf { disable() }
+            sessionManagement { sessionCreationPolicy = SessionCreationPolicy.STATELESS }
             authorizeHttpRequests {
-                authorize("/actuator/health", permitAll)
-                authorize(anyRequest, authenticated)
+                authorize(anyRequest, permitAll)
             }
-            oauth2Login { }
+            addFilterBefore<UsernamePasswordAuthenticationFilter>(
+                BearerTokenAuthenticationFilter(userRepository),
+            )
             headers {
                 frameOptions { deny = true }
             }
