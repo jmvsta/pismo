@@ -95,6 +95,25 @@ jobs:
     runs-on: ubuntu-latest
     environment: PROD
     steps:
+      - name: Check deploy secrets are populated
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          for name in SSH_HOST SSH_USER SSH_PRIVATE_KEY; do
+            eval "value=\$$name"
+            if [ -z "$value" ]; then
+              echo "$name: EMPTY — not readable as a secret in this environment"
+            else
+              echo "$name: set, ${#value} chars"
+            fi
+          done
+          case "$SSH_PRIVATE_KEY" in
+            "-----BEGIN"*) echo "key: starts with a BEGIN header" ;;
+            *) echo "key: does NOT start with a BEGIN header" ;;
+          esac
+
       - name: SSH and redeploy
         uses: appleboy/ssh-action@v1
         with:
