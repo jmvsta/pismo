@@ -5,12 +5,14 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
+import org.springframework.core.annotation.Order
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.invoke
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.CorsConfigurationSource
@@ -20,6 +22,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 class SecurityConfig(
     @Value("\${app.cors.allowed-origins}") private val allowedOrigins: List<String>,
     private val userRepository: UserRepository,
+    private val oauthLoginSuccessHandler: OauthLoginSuccessHandler,
 ) {
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
@@ -37,7 +40,33 @@ class SecurityConfig(
     @Bean
     fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
 
+    // Google's login is a real browser navigation that round-trips through Google and back
+    // (not fetch/XHR), so it needs the session Spring's OAuth2 client uses to hold the
+    // authorization request/state between those two hops -- unlike everything else in this
+    // app, which is stateless bearer-token auth. Scoped narrowly and given priority (@Order 1)
+    // so it doesn't affect the stateless chain below. Only registered where a google client
+    // registration actually exists (application-prod.yaml); local dev keeps using
+    // password register/login.
     @Bean
+    @Order(1)
+    @Profile("!local")
+    fun oauth2LoginFilterChain(http: HttpSecurity): SecurityFilterChain {
+        http {
+            securityMatcher("/oauth2/**", "/login/oauth2/**")
+            csrf { disable() }
+            authorizeHttpRequests {
+                authorize(anyRequest, permitAll)
+            }
+            oauth2Login {
+                authenticationSuccessHandler = oauthLoginSuccessHandler
+                authenticationFailureHandler = SimpleUrlAuthenticationFailureHandler("/login?error=oauth")
+            }
+        }
+        return http.build()
+    }
+
+    @Bean
+    @Order(2)
     @Profile("local")
     fun localSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http {
@@ -55,11 +84,12 @@ class SecurityConfig(
     }
 
     // Auth here is a Bearer token over the Authorization header, never an ambient cookie,
-    // so there is no session for CSRF to protect and no login redirect to send anyone to.
-    // GraphQL multiplexes public ops (login/register) and protected ones over one endpoint,
-    // which the HTTP layer can't tell apart -- that's AuthorizationInterceptor's job, at the
-    // GraphQL field level. This chain just has to get every request that far unmolested.
+    // so there is no session for CSRF to protect. GraphQL multiplexes public ops
+    // (login/register) and protected ones over one endpoint, which the HTTP layer can't
+    // tell apart -- that's AuthorizationInterceptor's job, at the GraphQL field level.
+    // This chain just has to get every request that far unmolested.
     @Bean
+    @Order(2)
     @Profile("!local")
     fun secureSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http {
