@@ -26,6 +26,9 @@ class LetterResolver(private val letterService: LetterService) {
     @QueryMapping
     fun receivedLetters(): List<Letter> = letterService.receivedLetters()
 
+    @QueryMapping
+    fun pendingIncomingLetterCount(): Int = letterService.pendingIncomingLetterCount()
+
     @MutationMapping
     fun createLetter(@Argument input: CreateLetterInput): Letter = letterService.createLetter(input)
 
@@ -36,6 +39,10 @@ class LetterResolver(private val letterService: LetterService) {
         @Argument location: String?,
         @Argument note: String?,
     ): Letter = letterService.updateStatus(id, status, location, note)
+
+    @MutationMapping
+    fun confirmLetterDelivery(@Argument id: UUID, @Argument code: String): Letter =
+        letterService.confirmDelivery(id, code)
 
     @MutationMapping
     fun submitLetterFeedback(@Argument input: SubmitLetterFeedbackInput): LetterFeedback =

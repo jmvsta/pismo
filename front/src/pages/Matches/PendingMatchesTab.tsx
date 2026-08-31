@@ -13,6 +13,7 @@ function PendingMatchesTab({ onViewQuestionnaire }: PendingMatchesTabProps) {
   const [requests, setRequests] = useState<PenPalRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [respondingIds, setRespondingIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     let cancelled = false
@@ -36,11 +37,18 @@ function PendingMatchesTab({ onViewQuestionnaire }: PendingMatchesTabProps) {
   }, [currentUserId])
 
   const handleRespond = async (requestId: string, accept: boolean) => {
+    if (respondingIds.has(requestId)) return
+    setRespondingIds((prev) => new Set(prev).add(requestId))
     try {
       await matchingService.respondToPenPalRequest(requestId, accept)
       setRequests((prev) => prev.filter((request) => request.id !== requestId))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not respond to this request.')
+      setRespondingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(requestId)
+        return next
+      })
     }
   }
 
@@ -59,6 +67,7 @@ function PendingMatchesTab({ onViewQuestionnaire }: PendingMatchesTabProps) {
           profile={request.requester}
           sharedInterests={[]}
           score={null}
+          pendingActionDisabled={respondingIds.has(request.id)}
           onAccept={() => handleRespond(request.id, true)}
           onDecline={() => handleRespond(request.id, false)}
           onViewQuestionnaire={() => onViewQuestionnaire(request.requester.id, request.requester.nickname)}

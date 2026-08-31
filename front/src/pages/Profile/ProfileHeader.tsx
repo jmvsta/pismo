@@ -3,11 +3,13 @@ import type { User } from '../../services/user/index.ts'
 import type { UserBadge } from '../../services/badges/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
 import BadgeChips from './BadgeChips.tsx'
+import ProfileBioEditor from './ProfileBioEditor.tsx'
 
 interface ProfileHeaderProps {
   user: User
   badges: UserBadge[]
   onAvatarChange?: (mimeType: string, imageBase64: string) => Promise<void>
+  onBioChange?: (bio: string) => Promise<void>
 }
 
 function formatMemberSince(iso: string): string {
@@ -27,7 +29,7 @@ function readAsBase64(file: File): Promise<string> {
   })
 }
 
-function ProfileHeader({ user, badges, onAvatarChange }: ProfileHeaderProps) {
+function ProfileHeader({ user, badges, onAvatarChange, onBioChange }: ProfileHeaderProps) {
   const location = formatLocation(user)
   const avatarUrl = imageUrl(user.avatarImageId)
   const [uploading, setUploading] = useState(false)
@@ -75,7 +77,11 @@ function ProfileHeader({ user, badges, onAvatarChange }: ProfileHeaderProps) {
             member since {formatMemberSince(user.createdAt)}
           </span>
         </div>
-        <p className="profile-bio">{user.bio || 'No bio yet.'}</p>
+        {onBioChange ? (
+          <ProfileBioEditor initialBio={user.bio} onSave={onBioChange} />
+        ) : (
+          <p className="profile-bio">{user.bio || 'No bio yet.'}</p>
+        )}
         {error && <p className="text-muted profile-avatar-error">{error}</p>}
         <BadgeChips badges={badges.slice(0, 3)} />
       </div>

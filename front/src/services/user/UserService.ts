@@ -8,6 +8,8 @@ export interface UserService {
   register(input: RegisterInput): Promise<User>
   login(input: LoginInput): Promise<User>
   logout(): Promise<void>
+  confirmEmail(code: string): Promise<User>
+  resendVerificationCode(): Promise<void>
   users(): Promise<User[]>
   setUserStatus(userId: string, status: UserStatus): Promise<User>
   setUserRole(userId: string, role: UserRole): Promise<User>

@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useUserStore } from '../store/userStore.ts'
 import { matchingService } from '../services/matching/index.ts'
+import { lettersService } from '../services/letters/index.ts'
+import EnvelopeIcon from './icons/EnvelopeIcon.tsx'
 import './AuthBar.css'
 
 function AuthBar() {
   const currentUser = useUserStore((state) => state.currentUser)
   const logout = useUserStore((state) => state.logout)
   const [pendingCount, setPendingCount] = useState(0)
+  const [pendingLetterCount, setPendingLetterCount] = useState(0)
 
   useEffect(() => {
     if (!currentUser) return
@@ -16,6 +19,14 @@ function AuthBar() {
       .pendingIncomingRequestCount()
       .then((count) => {
         if (!cancelled) setPendingCount(count)
+      })
+      .catch(() => {
+        // Best-effort notification -- a failed count shouldn't block the rest of the bar.
+      })
+    lettersService
+      .pendingIncomingLetterCount()
+      .then((count) => {
+        if (!cancelled) setPendingLetterCount(count)
       })
       .catch(() => {
         // Best-effort notification -- a failed count shouldn't block the rest of the bar.
@@ -44,7 +55,17 @@ function AuthBar() {
                 title={`${pendingCount} pen pal request${pendingCount === 1 ? '' : 's'} waiting`}
                 aria-label="Pending pen pal requests"
               >
-                ✉️
+                <EnvelopeIcon />
+              </Link>
+            )}
+            {pendingLetterCount > 0 && (
+              <Link
+                to="/profile?tab=penpals"
+                className="auth-bar-envelope"
+                title={`${pendingLetterCount} letter${pendingLetterCount === 1 ? '' : 's'} on the way`}
+                aria-label="Pending letters"
+              >
+                <EnvelopeIcon />
               </Link>
             )}
             {canModerate && (

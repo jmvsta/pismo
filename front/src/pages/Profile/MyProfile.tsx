@@ -8,38 +8,56 @@ import { matchingService } from '../../services/matching/index.ts'
 import { forumService } from '../../services/forum/index.ts'
 import type { ForumPost } from '../../services/forum/index.ts'
 import { questionnaireService } from '../../services/questionnaire/index.ts'
+import type { QuestionnaireKind } from '../../services/questionnaire/index.ts'
 import type { QuestionnaireAnswers, QuestionnaireDefinition } from '../../store/questionnaireDefinition.ts'
 import ProfileHeader from './ProfileHeader.tsx'
 import ProfileLettersTable from './ProfileLettersTable.tsx'
 import ProfileForumActivity from './ProfileForumActivity.tsx'
 import ProfileQuestionnaireAnswers from './ProfileQuestionnaireAnswers.tsx'
+import ProfileAddressForm from './ProfileAddressForm.tsx'
+import ProfilePenPals from './ProfilePenPals.tsx'
 import { toLetterRows, type LetterRow } from './letterRows.ts'
 import BadgeChips from './BadgeChips.tsx'
 import './Profile.css'
 
-type TabId = 'letters' | 'forum' | 'questionnaire' | 'badges'
+type TabId = 'penpals' | 'letters' | 'forum' | 'questionnaire' | 'address' | 'badges'
 
 const TABS: { id: TabId; label: string }[] = [
+  { id: 'penpals', label: 'Pen pals' },
   { id: 'letters', label: 'Letters' },
   { id: 'forum', label: 'Forum posts' },
   { id: 'questionnaire', label: 'Questionnaire' },
+  { id: 'address', label: 'My address' },
   { id: 'badges', label: 'Badges' },
 ]
 
+const QUESTIONNAIRE_KINDS: { kind: QuestionnaireKind; label: string }[] = [
+  { kind: 'REGISTRATION', label: 'Registration questionnaire' },
+  { kind: 'EXPERIENCE', label: 'Experience questionnaire' },
+]
+
+interface QuestionnaireSlot {
+  kind: QuestionnaireKind
+  label: string
+  versionId: string
+  definition: QuestionnaireDefinition
+  answers: QuestionnaireAnswers
+  hasSubmitted: boolean
+}
+
 function MyProfile() {
-  const { currentUser, status: userStatus, error: userError, loadCurrentUser, updateAvatar } = useUserStore()
+  const { currentUser, status: userStatus, error: userError, loadCurrentUser, updateAvatar, updateProfile } =
+    useUserStore()
   const [searchParams] = useSearchParams()
   const requestedTab = searchParams.get('tab')
-  const initialTab = TABS.some((tab) => tab.id === requestedTab) ? (requestedTab as TabId) : 'letters'
+  const initialTab = TABS.some((tab) => tab.id === requestedTab) ? (requestedTab as TabId) : 'penpals'
   const [activeTab, setActiveTab] = useState<TabId>(initialTab)
   const [badges, setBadges] = useState<UserBadge[]>([])
   const [letterRows, setLetterRows] = useState<LetterRow[]>([])
   const [activePenPalCount, setActivePenPalCount] = useState(0)
   const [activityError, setActivityError] = useState<string | null>(null)
   const [allForumPosts, setAllForumPosts] = useState<ForumPost[]>([])
-  const [questionnaireDefinition, setQuestionnaireDefinition] = useState<QuestionnaireDefinition | null>(null)
-  const [questionnaireAnswers, setQuestionnaireAnswers] = useState<QuestionnaireAnswers>({})
-  const [hasSubmittedQuestionnaire, setHasSubmittedQuestionnaire] = useState(false)
+  const [questionnaireSlots, setQuestionnaireSlots] = useState<QuestionnaireSlot[]>([])
 
   useEffect(() => {
     loadCurrentUser()
@@ -48,31 +66,42 @@ function MyProfile() {
   useEffect(() => {
     let cancelled = false
 
+    async function loadQuestionnaireSlots(): Promise<QuestionnaireSlot[]> {
+      const slots = await Promise.all(
+        QUESTIONNAIRE_KINDS.map(async ({ kind, label }) => {
+          const activeVersion = await questionnaireService.activeQuestionnaire(kind)
+          if (!activeVersion) return null
+          const response = await questionnaireService.myQuestionnaireResponse(activeVersion.id)
+          const slot: QuestionnaireSlot = {
+            kind,
+            label,
+            versionId: activeVersion.id,
+            definition: JSON.parse(activeVersion.definition) as QuestionnaireDefinition,
+            answers: response?.submittedAt ? (JSON.parse(response.answers) as QuestionnaireAnswers) : {},
+            hasSubmitted: Boolean(response?.submittedAt),
+          }
+          return slot
+        }),
+      )
+      return slots.filter((slot): slot is QuestionnaireSlot => slot !== null)
+    }
+
     async function loadActivity() {
       try {
-        const [sent, received, connections, myBadges, posts, activeVersion] = await Promise.all([
+        const [sent, received, connections, myBadges, posts, slots] = await Promise.all([
           lettersService.sentLetters(),
           lettersService.receivedLetters(),
           matchingService.myConnections(),
           badgesService.myBadges(),
           forumService.forumPosts(),
-          questionnaireService.activeQuestionnaire('REGISTRATION'),
+          loadQuestionnaireSlots(),
         ])
         if (cancelled) return
         setLetterRows(toLetterRows(sent, received))
         setActivePenPalCount(connections.filter((connection) => !connection.endedAt).length)
         setBadges(myBadges)
         setAllForumPosts(posts)
-
-        if (activeVersion) {
-          setQuestionnaireDefinition(JSON.parse(activeVersion.definition) as QuestionnaireDefinition)
-          const response = await questionnaireService.myQuestionnaireResponse(activeVersion.id)
-          if (cancelled) return
-          if (response?.submittedAt) {
-            setQuestionnaireAnswers(JSON.parse(response.answers) as QuestionnaireAnswers)
-            setHasSubmittedQuestionnaire(true)
-          }
-        }
+        setQuestionnaireSlots(slots)
       } catch (err) {
         if (!cancelled) {
           setActivityError(err instanceof Error ? err.message : 'Could not load your activity.')
@@ -113,7 +142,12 @@ function MyProfile() {
           ← Back to feed
         </Link>
 
-        <ProfileHeader user={currentUser} badges={badges} onAvatarChange={updateAvatar} />
+        <ProfileHeader
+          user={currentUser}
+          badges={badges}
+          onAvatarChange={updateAvatar}
+          onBioChange={(bio) => updateProfile({ bio })}
+        />
 
         <div className="profile-stats">
           <div className="profile-stat">
@@ -145,15 +179,32 @@ function MyProfile() {
 
           {activityError && <p className="text-muted profile-empty">{activityError}</p>}
 
+          {activeTab === 'penpals' && <ProfilePenPals onGoToAddressTab={() => setActiveTab('address')} />}
           {activeTab === 'letters' && <ProfileLettersTable rows={letterRows} />}
           {activeTab === 'forum' && <ProfileForumActivity posts={myForumPosts} />}
           {activeTab === 'questionnaire' && (
-            <ProfileQuestionnaireAnswers
-              definition={questionnaireDefinition}
-              answers={questionnaireAnswers}
-              hasSubmitted={hasSubmittedQuestionnaire}
-            />
+            <div className="flex flex-col gap-6">
+              {questionnaireSlots.map((slot) => (
+                <ProfileQuestionnaireAnswers
+                  key={slot.kind}
+                  title={slot.label}
+                  definition={slot.definition}
+                  answers={slot.answers}
+                  hasSubmitted={slot.hasSubmitted}
+                  action={
+                    <Link
+                      to={`/questionnaire?kind=${slot.kind}`}
+                      state={{ returnTo: '/profile?tab=questionnaire' }}
+                      className="btn btn-ghost"
+                    >
+                      {slot.hasSubmitted ? 'Edit answers' : 'Fill out'}
+                    </Link>
+                  }
+                />
+              ))}
+            </div>
           )}
+          {activeTab === 'address' && <ProfileAddressForm />}
           {activeTab === 'badges' &&
             (badges.length === 0 ? (
               <p className="text-muted profile-empty">No badges earned yet.</p>

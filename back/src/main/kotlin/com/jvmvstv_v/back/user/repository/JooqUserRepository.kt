@@ -40,6 +40,9 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     private val DELETED_AT = DSL.field("deleted_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
     private val AUTH_TOKEN = DSL.field("auth_token", SQLDataType.VARCHAR)
     private val AUTH_TOKEN_EXPIRES_AT = DSL.field("auth_token_expires_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
+    private val EMAIL_VERIFICATION_CODE = DSL.field("email_verification_code", SQLDataType.VARCHAR)
+    private val EMAIL_VERIFICATION_CODE_EXPIRES_AT =
+        DSL.field("email_verification_code_expires_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
 
     private val OAUTH_ACCOUNTS = DSL.table("user_oauth_accounts")
     private val OAUTH_ID = DSL.field("id", SQLDataType.UUID)
@@ -113,12 +116,46 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     }
 
     override fun findActiveUserByToken(token: String): AuthenticatedPrincipal? =
-        dsl.select(ID, EMAIL, ROLE)
+        dsl.select(ID, EMAIL, ROLE, EMAIL_VERIFIED_AT)
             .from(USERS)
             .where(AUTH_TOKEN.eq(token))
             .and(AUTH_TOKEN_EXPIRES_AT.gt(OffsetDateTime.now()))
             .and(DELETED_AT.isNull)
-            .fetchOne { AuthenticatedPrincipal(id = it[ID]!!, email = it[EMAIL]!!, role = UserRole.valueOf(it[ROLE]!!)) }
+            .fetchOne {
+                AuthenticatedPrincipal(
+                    id = it[ID]!!,
+                    email = it[EMAIL]!!,
+                    role = UserRole.valueOf(it[ROLE]!!),
+                    emailVerifiedAt = it[EMAIL_VERIFIED_AT]?.toString(),
+                )
+            }
+
+    override fun setEmailVerificationCode(userId: UUID, code: String, expiresAt: OffsetDateTime) {
+        dsl.update(USERS)
+            .set(EMAIL_VERIFICATION_CODE, code)
+            .set(EMAIL_VERIFICATION_CODE_EXPIRES_AT, expiresAt)
+            .where(ID.eq(userId))
+            .execute()
+    }
+
+    override fun findEmailVerificationCode(userId: UUID): Pair<String, OffsetDateTime>? {
+        val record = dsl.select(EMAIL_VERIFICATION_CODE, EMAIL_VERIFICATION_CODE_EXPIRES_AT)
+            .from(USERS)
+            .where(ID.eq(userId))
+            .fetchOne() ?: return null
+        val code = record[EMAIL_VERIFICATION_CODE] ?: return null
+        val expiresAt = record[EMAIL_VERIFICATION_CODE_EXPIRES_AT] ?: return null
+        return code to expiresAt
+    }
+
+    override fun markEmailVerified(userId: UUID) {
+        dsl.update(USERS)
+            .set(EMAIL_VERIFIED_AT, OffsetDateTime.now())
+            .set(EMAIL_VERIFICATION_CODE, null as String?)
+            .set(EMAIL_VERIFICATION_CODE_EXPIRES_AT, null as OffsetDateTime?)
+            .where(ID.eq(userId))
+            .execute()
+    }
 
     override fun findAll(): List<User> =
         dsl.select(ID, NICKNAME, EMAIL, DATE_OF_BIRTH, AVATAR_IMAGE_ID, BIO, CITY, COUNTRY_CODE, ROLE, STATUS,
@@ -156,8 +193,8 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
         dsl.transaction { config ->
             val tx = config.dsl()
             tx.insertInto(USERS)
-                .columns(ID, NICKNAME, EMAIL, RULES_ACCEPTED_AT)
-                .values(id, nickname, email, OffsetDateTime.now())
+                .columns(ID, NICKNAME, EMAIL, RULES_ACCEPTED_AT, EMAIL_VERIFIED_AT)
+                .values(id, nickname, email, OffsetDateTime.now(), OffsetDateTime.now())
                 .execute()
             tx.insertInto(OAUTH_ACCOUNTS)
                 .columns(OAUTH_ID, OAUTH_USER_ID, OAUTH_PROVIDER, OAUTH_PROVIDER_USER_ID, OAUTH_EMAIL, OAUTH_LINKED_AT)

@@ -14,6 +14,8 @@ interface UserState {
   logout: () => Promise<void>
   updateProfile: (input: UpdateProfileInput) => Promise<void>
   updateAvatar: (mimeType: string, imageBase64: string) => Promise<void>
+  confirmEmail: (code: string) => Promise<void>
+  resendVerificationCode: () => Promise<void>
 }
 
 function toErrorMessage(error: unknown): string {
@@ -70,5 +72,14 @@ export const useUserStore = create<UserState>((set) => ({
   updateAvatar: async (mimeType, imageBase64) => {
     const currentUser = await userService.updateAvatar(mimeType, imageBase64)
     set({ currentUser })
+  },
+
+  confirmEmail: async (code) => {
+    const currentUser = await userService.confirmEmail(code)
+    set({ currentUser })
+  },
+
+  resendVerificationCode: async () => {
+    await userService.resendVerificationCode()
   },
 }))

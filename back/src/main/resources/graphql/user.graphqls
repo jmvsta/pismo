@@ -10,6 +10,8 @@ type Mutation {
     register(input: RegisterInput!): User!
     login(input: LoginInput!): User!
     logout: Boolean!
+    confirmEmail(code: String!): User!
+    resendVerificationCode: Boolean!
     setUserStatus(userId: ID!, status: UserStatus!): User!
     setUserRole(userId: ID!, role: UserRole!): User!
 }

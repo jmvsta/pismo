@@ -1,18 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuestionnaireStore } from '../../store/questionnaireStore.ts'
+import type { QuestionnaireKind } from '../../services/questionnaire/index.ts'
 import QuestionnaireQuestion from './QuestionnaireQuestion.tsx'
 import './Questionnaire.css'
 
 function Questionnaire() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const [searchParams] = useSearchParams()
+  const kind = (searchParams.get('kind') as QuestionnaireKind | null) ?? 'REGISTRATION'
+  const returnTo = (location.state as { returnTo?: string } | null)?.returnTo ?? '/'
   const { definition, answers, status, error, load, setAnswer, save, submit } = useQuestionnaireStore()
   const [sectionIndex, setSectionIndex] = useState(0)
   const [actionError, setActionError] = useState<string | null>(null)
 
   useEffect(() => {
-    load('REGISTRATION')
-  }, [load])
+    load(kind)
+  }, [kind, load])
 
   const sections = definition?.sections ?? []
   const currentSection = sections[sectionIndex]
@@ -31,7 +36,7 @@ function Questionnaire() {
       await save()
       if (isLastSection) {
         await submit()
-        navigate('/')
+        navigate(returnTo)
       } else {
         setSectionIndex((index) => index + 1)
       }
@@ -44,7 +49,7 @@ function Questionnaire() {
     setActionError(null)
     try {
       await save()
-      navigate('/')
+      navigate(returnTo)
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Could not save your answers.')
     }

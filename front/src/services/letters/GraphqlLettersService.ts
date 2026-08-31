@@ -90,6 +90,20 @@ const RECEIVED_LETTERS_QUERY = `
   }
 `
 
+const PENDING_INCOMING_LETTER_COUNT_QUERY = `
+  query PendingIncomingLetterCount {
+    pendingIncomingLetterCount
+  }
+`
+
+const CONFIRM_LETTER_DELIVERY_MUTATION = `
+  mutation ConfirmLetterDelivery($id: ID!, $code: String!) {
+    confirmLetterDelivery(id: $id, code: $code) {
+      ${LETTER_FIELDS}
+    }
+  }
+`
+
 const CREATE_LETTER_MUTATION = `
   mutation CreateLetter($input: CreateLetterInput!) {
     createLetter(input: $input) {
@@ -146,6 +160,13 @@ export class GraphqlLettersService implements LettersService {
     return data.receivedLetters
   }
 
+  async pendingIncomingLetterCount(): Promise<number> {
+    const data = await this.client.request<{ pendingIncomingLetterCount: number }>(
+      PENDING_INCOMING_LETTER_COUNT_QUERY,
+    )
+    return data.pendingIncomingLetterCount
+  }
+
   async createLetter(input: CreateLetterInput): Promise<Letter> {
     const data = await this.client.request<{ createLetter: Letter }, { input: CreateLetterInput }>(
       CREATE_LETTER_MUTATION,
@@ -165,6 +186,14 @@ export class GraphqlLettersService implements LettersService {
       { id: string; status: LetterStatus; location?: string; note?: string }
     >(UPDATE_LETTER_STATUS_MUTATION, { id, status, location, note })
     return data.updateLetterStatus
+  }
+
+  async confirmLetterDelivery(id: string, code: string): Promise<Letter> {
+    const data = await this.client.request<{ confirmLetterDelivery: Letter }, { id: string; code: string }>(
+      CONFIRM_LETTER_DELIVERY_MUTATION,
+      { id, code },
+    )
+    return data.confirmLetterDelivery
   }
 
   async submitLetterFeedback(input: SubmitLetterFeedbackInput): Promise<LetterFeedback> {
