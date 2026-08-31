@@ -37,15 +37,17 @@ function Forum() {
   const selectedPost = posts.find((post) => post.id === selectedPostId) ?? null
 
   useEffect(() => {
+    if (!currentUser) return
     loadWallet()
-  }, [loadWallet])
+  }, [loadWallet, currentUser])
 
   useEffect(() => {
+    if (!currentUser) return
     matchingService
       .suggestedProfiles(undefined, 3)
       .then(setSuggestedProfiles)
       .catch(() => {})
-  }, [])
+  }, [currentUser])
 
   useEffect(() => {
     forumService
@@ -140,19 +142,23 @@ function Forum() {
         <Link to="/matches" className="nav-link">
           Find a pen pal
         </Link>
-        <Link to="/profile?tab=penpals" className="nav-link">
-          My pen pals
-        </Link>
-        <span className="forum-wallet-pill">
-          Wallet · {wallet ? formatMinorAmount(wallet.balanceMinor, wallet.currency) : '—'}
-        </span>
-        <Link
-          to="/profile"
-          className={`forum-nav-avatar${avatarUrl ? '' : ' photo-placeholder'}`}
-          aria-label="My profile"
-        >
-          {avatarUrl && <img src={avatarUrl} alt="" />}
-        </Link>
+        {currentUser && (
+          <>
+            <Link to="/profile?tab=penpals" className="nav-link">
+              My pen pals
+            </Link>
+            <span className="forum-wallet-pill">
+              Wallet · {wallet ? formatMinorAmount(wallet.balanceMinor, wallet.currency) : '—'}
+            </span>
+            <Link
+              to="/profile"
+              className={`forum-nav-avatar${avatarUrl ? '' : ' photo-placeholder'}`}
+              aria-label="My profile"
+            >
+              {avatarUrl && <img src={avatarUrl} alt="" />}
+            </Link>
+          </>
+        )}
       </div>
 
       <div className="forum-body">
@@ -241,6 +247,7 @@ function Forum() {
           )}
         </main>
 
+        {currentUser && (
         <aside className="forum-sidebar-right">
           <div>
             <h6>Suggested pen pals</h6>
@@ -283,6 +290,7 @@ function Forum() {
             </Link>
           </div>
         </aside>
+        )}
       </div>
 
       {isNewPostOpen && (

@@ -12,6 +12,7 @@ interface MatchCardProps {
   variant: MatchCardVariant
   hasIncomingRequest?: boolean
   requestState?: 'idle' | 'sending' | 'sent' | 'error'
+  pendingActionDisabled?: boolean
   onReachOut?: () => void
   onHide?: () => void
   onAccept?: () => void
@@ -33,6 +34,7 @@ function MatchCard({
   variant,
   hasIncomingRequest,
   requestState = 'idle',
+  pendingActionDisabled = false,
   onReachOut,
   onHide,
   onAccept,
@@ -123,10 +125,10 @@ function MatchCard({
 
         {variant === 'pending' && (
           <>
-            <button type="button" className="btn btn-primary" onClick={onAccept}>
+            <button type="button" className="btn btn-primary" onClick={onAccept} disabled={pendingActionDisabled}>
               Accept
             </button>
-            <button type="button" className="btn btn-secondary" onClick={onDecline}>
+            <button type="button" className="btn btn-secondary" onClick={onDecline} disabled={pendingActionDisabled}>
               Decline
             </button>
           </>

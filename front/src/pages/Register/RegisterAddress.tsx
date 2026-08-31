@@ -58,15 +58,16 @@ function RegisterAddress() {
           </p>
           <ol className="register-steps">
             <li>01 — Register</li>
-            <li>02 — Bio</li>
-            <li className="is-current">03 — Address</li>
-            <li>04 — Fill the questionnaire</li>
-            <li>05 — Get matched. Write.</li>
+            <li>02 — Verify email</li>
+            <li>03 — Bio</li>
+            <li className="is-current">04 — Address</li>
+            <li>05 — Fill the questionnaire</li>
+            <li>06 — Get matched. Write.</li>
           </ol>
         </aside>
 
         <form className="register-form" onSubmit={handleSubmit}>
-          <h6>Step 03</h6>
+          <h6>Step 04</h6>
           <h2>Where should letters find you?</h2>
           <p className="text-muted" style={{ marginBottom: 'var(--space-4)' }}>
             Confidential — never shown to other users. Only shared with a pen pal once you're matched and choose to.

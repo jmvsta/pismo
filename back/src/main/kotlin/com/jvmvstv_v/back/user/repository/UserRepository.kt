@@ -22,6 +22,9 @@ interface UserRepository {
     fun setAuthToken(userId: UUID, token: String, expiresAt: OffsetDateTime)
     fun clearAuthToken(userId: UUID)
     fun findActiveUserByToken(token: String): AuthenticatedPrincipal?
+    fun setEmailVerificationCode(userId: UUID, code: String, expiresAt: OffsetDateTime)
+    fun findEmailVerificationCode(userId: UUID): Pair<String, OffsetDateTime>?
+    fun markEmailVerified(userId: UUID)
     fun setStatus(userId: UUID, status: UserStatus): User
     fun setRole(userId: UUID, role: UserRole): User
     fun findUserIdByOauthAccount(provider: OauthProvider, providerUserId: String): UUID?

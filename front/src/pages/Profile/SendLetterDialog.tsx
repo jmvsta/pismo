@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { lettersService } from '../../services/letters/index.ts'
 import type { Letter } from '../../services/letters/index.ts'
 import type { UserAddress } from '../../services/address/index.ts'
@@ -10,6 +10,7 @@ interface SendLetterDialogProps {
   recipientAddress: UserAddress | null
   existingLetter: Letter | null
   onClose: () => void
+  onDraftCreated: (letter: Letter) => void
   onSent: (letter: Letter) => void
 }
 
@@ -26,6 +27,7 @@ function SendLetterDialog({
   recipientAddress,
   existingLetter,
   onClose,
+  onDraftCreated,
   onSent,
 }: SendLetterDialogProps) {
   const [letter, setLetter] = useState<Letter | null>(existingLetter)
@@ -33,6 +35,10 @@ function SendLetterDialog({
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const onDraftCreatedRef = useRef(onDraftCreated)
+  useEffect(() => {
+    onDraftCreatedRef.current = onDraftCreated
+  })
 
   useEffect(() => {
     if (existingLetter) return
@@ -40,7 +46,10 @@ function SendLetterDialog({
     lettersService
       .createLetter({ connectionId, recipientId })
       .then((created) => {
-        if (!cancelled) setLetter(created)
+        if (!cancelled) {
+          setLetter(created)
+          onDraftCreatedRef.current(created)
+        }
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Could not start this letter.')

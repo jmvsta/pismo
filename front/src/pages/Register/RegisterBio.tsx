@@ -44,15 +44,16 @@ function RegisterBio() {
           </p>
           <ol className="register-steps">
             <li>01 — Register</li>
-            <li className="is-current">02 — Bio</li>
-            <li>03 — Address</li>
-            <li>04 — Fill the questionnaire</li>
-            <li>05 — Get matched. Write.</li>
+            <li>02 — Verify email</li>
+            <li className="is-current">03 — Bio</li>
+            <li>04 — Address</li>
+            <li>05 — Fill the questionnaire</li>
+            <li>06 — Get matched. Write.</li>
           </ol>
         </aside>
 
         <form className="register-form" onSubmit={handleSubmit}>
-          <h6>Step 02</h6>
+          <h6>Step 03</h6>
           <h2>Tell your future pen pal about yourself</h2>
 
           <div className="register-stack">

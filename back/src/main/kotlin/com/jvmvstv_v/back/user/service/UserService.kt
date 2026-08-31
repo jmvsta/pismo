@@ -18,6 +18,8 @@ interface UserService {
     fun login(input: LoginInput): User
     fun loginWithOauth(provider: OauthProvider, providerUserId: String, email: String, suggestedNickname: String?): User
     fun logout()
+    fun confirmEmail(code: String): User
+    fun resendVerificationCode()
     fun listUsers(): List<User>
     fun setUserStatus(userId: UUID, status: UserStatus): User
     fun setUserRole(userId: UUID, role: UserRole): User

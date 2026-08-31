@@ -254,6 +254,7 @@ function ProfilePenPals({ onGoToAddressTab }: ProfilePenPalsProps) {
               recipientAddress={recipientAddress}
               existingLetter={letterDialogFor.existing}
               onClose={() => setLetterDialogFor(null)}
+              onDraftCreated={(letter) => replaceLetter(letterDialogFor.connection.id, letter)}
               onSent={(letter) => replaceLetter(letterDialogFor.connection.id, letter)}
             />
           )
