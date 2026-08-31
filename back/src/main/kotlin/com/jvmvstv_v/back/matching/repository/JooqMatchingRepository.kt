@@ -99,17 +99,20 @@ class JooqMatchingRepository(
     override fun respondToRequest(id: UUID, accept: Boolean): PenPalRequest {
         val request = findRequestById(id) ?: error("Pen pal request $id not found")
         val newStatus = if (accept) PenPalRequestStatus.ACCEPTED else PenPalRequestStatus.DECLINED
-        dsl.update(REQUESTS)
-            .set(R_STATUS, newStatus.name)
-            .set(R_RESPONDED_AT, OffsetDateTime.now())
-            .where(R_ID.eq(id))
-            .execute()
-        if (accept) {
-            val (userA, userB) = orderedPair(request.requester.id, request.addressee.id)
-            dsl.insertInto(CONNECTIONS)
-                .columns(C_ID, C_USER_A, C_USER_B, C_REQUEST_ID, C_ESTABLISHED_AT)
-                .values(UUID.randomUUID(), userA, userB, id, OffsetDateTime.now())
+        dsl.transaction { config ->
+            val tx = config.dsl()
+            tx.update(REQUESTS)
+                .set(R_STATUS, newStatus.name)
+                .set(R_RESPONDED_AT, OffsetDateTime.now())
+                .where(R_ID.eq(id))
                 .execute()
+            if (accept) {
+                val (userA, userB) = orderedPair(request.requester.id, request.addressee.id)
+                tx.insertInto(CONNECTIONS)
+                    .columns(C_ID, C_USER_A, C_USER_B, C_REQUEST_ID, C_ESTABLISHED_AT)
+                    .values(UUID.randomUUID(), userA, userB, id, OffsetDateTime.now())
+                    .execute()
+            }
         }
         return findRequestById(id) ?: error("Pen pal request $id not found")
     }

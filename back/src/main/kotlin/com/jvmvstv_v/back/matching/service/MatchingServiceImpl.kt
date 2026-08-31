@@ -36,8 +36,17 @@ class MatchingServiceImpl(private val matchingRepository: MatchingRepository) : 
     override fun myConnections(): List<PenPalConnection> =
         matchingRepository.findConnectionsForUser(CurrentUser.id)
 
-    override fun sendPenPalRequest(addresseeId: UUID, message: String?): PenPalRequest =
-        matchingRepository.createRequest(CurrentUser.id, addresseeId, message)
+    override fun sendPenPalRequest(addresseeId: UUID, message: String?): PenPalRequest {
+        val requesterId = CurrentUser.id
+        if (addresseeId == requesterId) throw AuthException("You can't send a pen pal request to yourself")
+        if (matchingRepository.isConnected(requesterId, addresseeId)) {
+            throw AuthException("You're already pen pals with this person")
+        }
+        val hasPending = matchingRepository.findRequestsForUser(requesterId, PenPalRequestStatus.PENDING)
+            .any { it.requester.id == requesterId && it.addressee.id == addresseeId }
+        if (hasPending) throw AuthException("You already have a pending request to this person")
+        return matchingRepository.createRequest(requesterId, addresseeId, message)
+    }
 
     override fun respondToPenPalRequest(id: UUID, accept: Boolean): PenPalRequest {
         val request = matchingRepository.findRequestById(id) ?: error("Pen pal request $id not found")
