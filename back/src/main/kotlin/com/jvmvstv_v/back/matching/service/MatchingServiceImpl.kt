@@ -1,5 +1,6 @@
 package com.jvmvstv_v.back.matching.service
 
+import com.jvmvstv_v.back.common.AuthException
 import com.jvmvstv_v.back.common.CurrentUser
 import com.jvmvstv_v.back.matching.model.PenPalConnection
 import com.jvmvstv_v.back.matching.model.PenPalRequest
@@ -35,15 +36,50 @@ class MatchingServiceImpl(private val matchingRepository: MatchingRepository) : 
     override fun myConnections(): List<PenPalConnection> =
         matchingRepository.findConnectionsForUser(CurrentUser.id)
 
-    override fun sendPenPalRequest(addresseeId: UUID, message: String?): PenPalRequest =
-        matchingRepository.createRequest(CurrentUser.id, addresseeId, message)
+    override fun sendPenPalRequest(addresseeId: UUID, message: String?): PenPalRequest {
+        val requesterId = CurrentUser.id
+        if (addresseeId == requesterId) throw AuthException("You can't send a pen pal request to yourself")
+        if (matchingRepository.isConnected(requesterId, addresseeId)) {
+            throw AuthException("You're already pen pals with this person")
+        }
+        val hasPending = matchingRepository.findRequestsForUser(requesterId, PenPalRequestStatus.PENDING)
+            .any { it.requester.id == requesterId && it.addressee.id == addresseeId }
+        if (hasPending) throw AuthException("You already have a pending request to this person")
+        return matchingRepository.createRequest(requesterId, addresseeId, message)
+    }
 
-    override fun respondToPenPalRequest(id: UUID, accept: Boolean): PenPalRequest =
-        matchingRepository.respondToRequest(id, accept)
+    override fun respondToPenPalRequest(id: UUID, accept: Boolean): PenPalRequest {
+        val request = matchingRepository.findRequestById(id) ?: error("Pen pal request $id not found")
+        if (request.addressee.id != CurrentUser.id) {
+            throw AuthException("Only the addressee can respond to this request")
+        }
+        if (request.status != PenPalRequestStatus.PENDING) {
+            throw AuthException("This request is no longer pending")
+        }
+        return matchingRepository.respondToRequest(id, accept)
+    }
 
-    override fun cancelPenPalRequest(id: UUID): PenPalRequest = matchingRepository.cancelRequest(id)
+    override fun cancelPenPalRequest(id: UUID): PenPalRequest {
+        val request = matchingRepository.findRequestById(id) ?: error("Pen pal request $id not found")
+        if (request.requester.id != CurrentUser.id) {
+            throw AuthException("Only the requester can cancel this request")
+        }
+        if (request.status != PenPalRequestStatus.PENDING) {
+            throw AuthException("This request is no longer pending")
+        }
+        return matchingRepository.cancelRequest(id)
+    }
 
-    override fun endConnection(id: UUID): PenPalConnection = matchingRepository.endConnection(id)
+    override fun endConnection(id: UUID): PenPalConnection {
+        val connection = matchingRepository.findConnectionById(id) ?: error("Pen pal connection $id not found")
+        if (connection.userA.id != CurrentUser.id && connection.userB.id != CurrentUser.id) {
+            throw AuthException("Only a member of this connection can end it")
+        }
+        if (connection.endedAt != null) {
+            throw AuthException("This connection has already ended")
+        }
+        return matchingRepository.endConnection(id)
+    }
 
     override fun suggestedProfiles(search: String?, limit: Int?, offset: Int?): List<SuggestedProfile> {
         val viewerId = CurrentUser.id
