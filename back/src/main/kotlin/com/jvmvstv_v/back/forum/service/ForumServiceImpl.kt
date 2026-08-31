@@ -57,9 +57,17 @@ class ForumServiceImpl(
         return forumRepository.updateReply(id, body)
     }
 
-    override fun thankPost(postId: UUID): ForumPost = forumRepository.thankPost(postId, CurrentUser.id)
+    override fun thankPost(postId: UUID): ForumPost {
+        val post = forumRepository.findPostById(postId) ?: throw AuthException("Post not found")
+        if (post.author.id == CurrentUser.id) throw AuthException("You can't thank your own post")
+        return forumRepository.thankPost(postId, CurrentUser.id)
+    }
 
-    override fun thankReply(replyId: UUID): ForumReply = forumRepository.thankReply(replyId, CurrentUser.id)
+    override fun thankReply(replyId: UUID): ForumReply {
+        val reply = forumRepository.findReplyById(replyId) ?: throw AuthException("Reply not found")
+        if (reply.author.id == CurrentUser.id) throw AuthException("You can't thank your own reply")
+        return forumRepository.thankReply(replyId, CurrentUser.id)
+    }
 
     override fun createTopic(input: CreateForumTopicInput): ForumTopic {
         CurrentUser.requireModerator()
