@@ -1,5 +1,6 @@
 package com.jvmvstv_v.back.wallet.service
 
+import com.jvmvstv_v.back.common.AuthException
 import com.jvmvstv_v.back.common.CurrentUser
 import com.jvmvstv_v.back.user.repository.UserRepository
 import com.jvmvstv_v.back.wallet.model.PaymentMethod
@@ -29,8 +30,11 @@ class WalletServiceImpl(
     override fun myMonthlyAllowance(): UserMonthlyAllowance? =
         walletRepository.findMonthlyAllowanceForUser(CurrentUser.id)
 
-    override fun initiateTopUp(amountMinor: Int, currency: String): WalletTransaction =
-        walletRepository.initiateTopUp(CurrentUser.id, amountMinor, currency)
+    override fun initiateTopUp(amountMinor: Int, currency: String): WalletTransaction {
+        if (amountMinor <= 0) throw AuthException("Top-up amount must be positive")
+        if (!currency.matches(Regex("^[A-Z]{3}$"))) throw AuthException("Currency must be a 3-letter code, e.g. EUR")
+        return walletRepository.initiateTopUp(CurrentUser.id, amountMinor, currency)
+    }
 
     override fun subscribeToPlan(planId: Int): PlanSubscription =
         walletRepository.subscribeToPlan(CurrentUser.id, planId)
