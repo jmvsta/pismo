@@ -2,6 +2,7 @@ import type { GraphqlClient } from '../graphqlClient.ts'
 import { LETTER_SUMMARY_FIELDS } from '../letters/GraphqlLettersService.ts'
 import { USER_SUMMARY_FIELDS } from '../user/GraphqlUserService.ts'
 import type {
+  PaymentMethod,
   PlanSubscription,
   SubscriptionMember,
   SubscriptionPlan,
@@ -78,6 +79,7 @@ interface PlanSubscriptionWire {
   currentPeriodEnd: string
   cancelledAt: string | null
   externalRef: string | null
+  autoRenew: boolean
   members: SubscriptionMemberWire[]
   createdAt: string
   updatedAt: string
@@ -93,9 +95,20 @@ const SUBSCRIPTION_FIELDS = `
   currentPeriodEnd
   cancelledAt
   externalRef
+  autoRenew
   members { ${MEMBER_FIELDS} }
   createdAt
   updatedAt
+`
+
+const PAYMENT_METHOD_FIELDS = `
+  id
+  brand
+  last4
+  expMonth
+  expYear
+  isDefault
+  createdAt
 `
 
 // The two member mutations return a SubscriptionMember with no PlanSubscription
@@ -206,6 +219,42 @@ const REMOVE_SUBSCRIPTION_MEMBER_MUTATION = `
   }
 `
 
+const SET_AUTO_RENEW_MUTATION = `
+  mutation SetAutoRenew($subscriptionId: ID!, $autoRenew: Boolean!) {
+    setAutoRenew(subscriptionId: $subscriptionId, autoRenew: $autoRenew) {
+      ${SUBSCRIPTION_FIELDS}
+    }
+  }
+`
+
+const MY_PAYMENT_METHODS_QUERY = `
+  query MyPaymentMethods {
+    myPaymentMethods {
+      ${PAYMENT_METHOD_FIELDS}
+    }
+  }
+`
+
+const CREATE_SETUP_INTENT_MUTATION = `
+  mutation CreateSetupIntent {
+    createSetupIntent
+  }
+`
+
+const ADD_CARD_MUTATION = `
+  mutation AddCard($paymentMethodId: String!) {
+    addCard(paymentMethodId: $paymentMethodId) {
+      ${PAYMENT_METHOD_FIELDS}
+    }
+  }
+`
+
+const REMOVE_CARD_MUTATION = `
+  mutation RemoveCard($id: ID!) {
+    removeCard(id: $id)
+  }
+`
+
 export class GraphqlWalletService implements WalletService {
   private readonly client: GraphqlClient
 
@@ -281,5 +330,36 @@ export class GraphqlWalletService implements WalletService {
       { subscriptionId: string; userId: string }
     >(REMOVE_SUBSCRIPTION_MEMBER_MUTATION, { subscriptionId, userId })
     return toSubscriptionMember(data.removeSubscriptionMember)
+  }
+
+  async setAutoRenew(subscriptionId: string, autoRenew: boolean): Promise<PlanSubscription> {
+    const data = await this.client.request<
+      { setAutoRenew: PlanSubscriptionWire },
+      { subscriptionId: string; autoRenew: boolean }
+    >(SET_AUTO_RENEW_MUTATION, { subscriptionId, autoRenew })
+    return toPlanSubscription(data.setAutoRenew)
+  }
+
+  async myPaymentMethods(): Promise<PaymentMethod[]> {
+    const data = await this.client.request<{ myPaymentMethods: PaymentMethod[] }>(MY_PAYMENT_METHODS_QUERY)
+    return data.myPaymentMethods
+  }
+
+  async createSetupIntent(): Promise<string> {
+    const data = await this.client.request<{ createSetupIntent: string }>(CREATE_SETUP_INTENT_MUTATION)
+    return data.createSetupIntent
+  }
+
+  async addCard(paymentMethodId: string): Promise<PaymentMethod> {
+    const data = await this.client.request<{ addCard: PaymentMethod }, { paymentMethodId: string }>(
+      ADD_CARD_MUTATION,
+      { paymentMethodId },
+    )
+    return data.addCard
+  }
+
+  async removeCard(id: string): Promise<boolean> {
+    const data = await this.client.request<{ removeCard: boolean }, { id: string }>(REMOVE_CARD_MUTATION, { id })
+    return data.removeCard
   }
 }

@@ -15,6 +15,17 @@ spring:
     schema:
       introspection:
         enabled: false
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${GMAIL_USERNAME}
+    password: ${GMAIL_APP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 server:
   forward-headers-strategy: framework
@@ -30,3 +41,6 @@ app:
     api-key: ${STRIPE_API_KEY}
   email-verification:
     enforced: true
+  email:
+    provider: google
+    from: ${GMAIL_USERNAME}
