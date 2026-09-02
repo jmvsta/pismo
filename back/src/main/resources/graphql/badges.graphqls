@@ -1,6 +1,8 @@
 extend type Query {
     badges: [Badge!]!
     myBadges: [UserBadge!]!
+    letterRankBadges: [LetterRankBadge!]!
+    myLetterRankBadges: [UserLetterRankBadge!]!
 }
 
 type Badge {
@@ -16,5 +18,22 @@ type Badge {
 type UserBadge {
     user: User!
     badge: Badge!
+    awardedAt: String!
+}
+
+"""Awarded automatically once a user's count of actually-sent letters reaches minLetters; accumulates across tiers."""
+type LetterRankBadge {
+    id: ID!
+    code: String!
+    title: String!
+    minLetters: Int!
+    maxLetters: Int
+    iconUrl: String
+    position: Int!
+}
+
+type UserLetterRankBadge {
+    user: User!
+    badge: LetterRankBadge!
     awardedAt: String!
 }

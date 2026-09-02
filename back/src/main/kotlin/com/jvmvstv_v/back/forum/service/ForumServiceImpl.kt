@@ -9,6 +9,7 @@ import com.jvmvstv_v.back.forum.model.ForumPost
 import com.jvmvstv_v.back.forum.model.ForumReply
 import com.jvmvstv_v.back.forum.model.ForumTopic
 import com.jvmvstv_v.back.forum.model.NewForumPostPhoto
+import com.jvmvstv_v.back.forum.model.NewForumReplyPhoto
 import com.jvmvstv_v.back.forum.model.UpdateForumPostInput
 import com.jvmvstv_v.back.forum.repository.ForumRepository
 import com.jvmvstv_v.back.image.model.ImageOwnerType
@@ -42,7 +43,12 @@ class ForumServiceImpl(
     override fun createReply(input: CreateForumReplyInput): ForumReply {
         val post = forumRepository.findPostById(input.postId) ?: throw AuthException("Post not found")
         if (!post.topic.active) throw AuthException("This topic is frozen and isn't accepting new replies")
-        return forumRepository.createReply(CurrentUser.id, input)
+        val photos = input.photos.orEmpty().map { photo ->
+            val photoId = UUID.randomUUID()
+            val image = imageService.store(ImageOwnerType.FORUM_REPLY_PHOTO, photoId, photo.mimeType, photo.imageBase64)
+            NewForumReplyPhoto(id = photoId, imageId = image.id, caption = photo.caption)
+        }
+        return forumRepository.createReply(CurrentUser.id, input, photos)
     }
 
     override fun updatePost(id: UUID, input: UpdateForumPostInput): ForumPost {

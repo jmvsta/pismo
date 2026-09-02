@@ -8,6 +8,8 @@ export type {
   ForumPostPhoto,
   NewForumPostPhotoInput,
   ForumReply,
+  ForumReplyPhoto,
+  NewForumReplyPhotoInput,
   CreateForumPostInput,
   CreateForumReplyInput,
   CreateForumTopicInput,

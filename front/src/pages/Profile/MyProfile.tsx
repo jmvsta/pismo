@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useUserStore } from '../../store/userStore.ts'
 import { badgesService } from '../../services/badges/index.ts'
-import type { UserBadge } from '../../services/badges/index.ts'
+import type { UserBadge, UserLetterRankBadge } from '../../services/badges/index.ts'
 import { lettersService } from '../../services/letters/index.ts'
 import { matchingService } from '../../services/matching/index.ts'
 import { forumService } from '../../services/forum/index.ts'
@@ -18,6 +18,7 @@ import ProfileAddressForm from './ProfileAddressForm.tsx'
 import ProfilePenPals from './ProfilePenPals.tsx'
 import { toLetterRows, type LetterRow } from './letterRows.ts'
 import BadgeChips from './BadgeChips.tsx'
+import LetterRankBadgeChips from './LetterRankBadgeChips.tsx'
 import './Profile.css'
 
 type TabId = 'penpals' | 'letters' | 'forum' | 'questionnaire' | 'address' | 'badges'
@@ -53,6 +54,7 @@ function MyProfile() {
   const initialTab = TABS.some((tab) => tab.id === requestedTab) ? (requestedTab as TabId) : 'penpals'
   const [activeTab, setActiveTab] = useState<TabId>(initialTab)
   const [badges, setBadges] = useState<UserBadge[]>([])
+  const [letterRankBadges, setLetterRankBadges] = useState<UserLetterRankBadge[]>([])
   const [letterRows, setLetterRows] = useState<LetterRow[]>([])
   const [activePenPalCount, setActivePenPalCount] = useState(0)
   const [activityError, setActivityError] = useState<string | null>(null)
@@ -88,11 +90,12 @@ function MyProfile() {
 
     async function loadActivity() {
       try {
-        const [sent, received, connections, myBadges, posts, slots] = await Promise.all([
+        const [sent, received, connections, myBadges, myLetterRankBadges, posts, slots] = await Promise.all([
           lettersService.sentLetters(),
           lettersService.receivedLetters(),
           matchingService.myConnections(),
           badgesService.myBadges(),
+          badgesService.myLetterRankBadges(),
           forumService.forumPosts(),
           loadQuestionnaireSlots(),
         ])
@@ -100,6 +103,7 @@ function MyProfile() {
         setLetterRows(toLetterRows(sent, received))
         setActivePenPalCount(connections.filter((connection) => !connection.endedAt).length)
         setBadges(myBadges)
+        setLetterRankBadges(myLetterRankBadges)
         setAllForumPosts(posts)
         setQuestionnaireSlots(slots)
       } catch (err) {
@@ -205,12 +209,21 @@ function MyProfile() {
             </div>
           )}
           {activeTab === 'address' && <ProfileAddressForm />}
-          {activeTab === 'badges' &&
-            (badges.length === 0 ? (
-              <p className="text-muted profile-empty">No badges earned yet.</p>
-            ) : (
-              <BadgeChips badges={badges} />
-            ))}
+          {activeTab === 'badges' && (
+            <div className="flex flex-col gap-6">
+              {badges.length === 0 ? (
+                <p className="text-muted profile-empty">No badges earned yet.</p>
+              ) : (
+                <BadgeChips badges={badges} />
+              )}
+              {letterRankBadges.length > 0 && (
+                <div>
+                  <h6>Letter-writing rank</h6>
+                  <LetterRankBadgeChips badges={letterRankBadges} />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

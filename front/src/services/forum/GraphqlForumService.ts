@@ -36,6 +36,7 @@ interface ForumReplyWire {
   author: UserSummary
   body: string
   thanksCount: number
+  photos: ForumReply['photos']
   createdAt: string
   updatedAt: string
 }
@@ -46,6 +47,7 @@ const REPLY_FIELDS = `
   author { ${USER_SUMMARY_FIELDS} }
   body
   thanksCount
+  photos { ${PHOTO_FIELDS} }
   createdAt
   updatedAt
 `
@@ -87,6 +89,7 @@ function toForumReply(wire: ForumReplyWire): ForumReply {
     author: wire.author,
     body: wire.body,
     thanksCount: wire.thanksCount,
+    photos: wire.photos,
     createdAt: wire.createdAt,
     updatedAt: wire.updatedAt,
   }
