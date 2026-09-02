@@ -113,12 +113,19 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     }
 
     override fun findActiveUserByToken(token: String): AuthenticatedPrincipal? =
-        dsl.select(ID, EMAIL, ROLE)
+        dsl.select(ID, EMAIL, ROLE, EMAIL_VERIFIED_AT)
             .from(USERS)
             .where(AUTH_TOKEN.eq(token))
             .and(AUTH_TOKEN_EXPIRES_AT.gt(OffsetDateTime.now()))
             .and(DELETED_AT.isNull)
-            .fetchOne { AuthenticatedPrincipal(id = it[ID]!!, email = it[EMAIL]!!, role = UserRole.valueOf(it[ROLE]!!)) }
+            .fetchOne {
+                AuthenticatedPrincipal(
+                    id = it[ID]!!,
+                    email = it[EMAIL]!!,
+                    role = UserRole.valueOf(it[ROLE]!!),
+                    emailVerified = it[EMAIL_VERIFIED_AT] != null,
+                )
+            }
 
     override fun findAll(): List<User> =
         dsl.select(ID, NICKNAME, EMAIL, DATE_OF_BIRTH, AVATAR_IMAGE_ID, BIO, CITY, COUNTRY_CODE, ROLE, STATUS,

@@ -1,3 +1,8 @@
+/* Tailwind utilities only -- no preflight/base layer, since the hand-rolled reset and
+   element defaults below already cover that and shouldn't be fought with Tailwind's. */
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
 /* Pismo na DAR — design tokens and shared component classes.
    Ported from the "Modernist" system in the layout mockup
    (layouts/Pismo na DAR - UI Mockups.dc.html): Archivo, flat, zero

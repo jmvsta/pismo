@@ -3,17 +3,15 @@ import { Link, Navigate } from 'react-router-dom'
 import AdminUsersPanel from './AdminUsersPanel.tsx'
 import AdminTopicsPanel from './AdminTopicsPanel.tsx'
 import AdminQuestionnairePanel from './AdminQuestionnairePanel.tsx'
-import AdminAboutPanel from './AdminAboutPanel.tsx'
 import { useUserStore } from '../../store/userStore.ts'
 import './Admin.css'
 
-type AdminTabId = 'users' | 'questionnaire' | 'topics' | 'about'
+type AdminTabId = 'users' | 'questionnaire' | 'topics'
 
 const TABS: { id: AdminTabId; label: string }[] = [
   { id: 'users', label: 'Users' },
   { id: 'questionnaire', label: 'Questionnaire' },
   { id: 'topics', label: 'Topics' },
-  { id: 'about', label: 'About page' },
 ]
 
 function Admin() {
@@ -38,6 +36,9 @@ function Admin() {
         <div className="admin-header">
           <h6>Admin</h6>
           <h2>Moderation</h2>
+          <p className="text-muted text-sm">
+            Looking to edit the About page? Use the <Link to="/about">Edit page</Link> button there instead.
+          </p>
         </div>
 
         <div className="admin-tabs">
@@ -55,7 +56,6 @@ function Admin() {
         {activeTab === 'users' && <AdminUsersPanel />}
         {activeTab === 'topics' && <AdminTopicsPanel />}
         {activeTab === 'questionnaire' && <AdminQuestionnairePanel />}
-        {activeTab === 'about' && <AdminAboutPanel />}
       </div>
     </div>
   )

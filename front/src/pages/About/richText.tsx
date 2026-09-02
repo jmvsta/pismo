@@ -40,7 +40,7 @@ function renderParagraph(block: string, key: number): ReactNode {
 }
 
 /**
- * A hand-rolled subset of markdown -- `#`/`##`/`###` headings, `**bold**`,
+ * A hand-rolled subset of markdown -- `#`/`##`/`###`/`####` headings, `**bold**`,
  * `*italic*`/`_italic_` -- rendered straight to React elements (never
  * dangerouslySetInnerHTML) so admin-authored body text can't inject markup.
  */
@@ -51,9 +51,10 @@ export function renderRichText(source: string): ReactNode {
   return (
     <>
       {blocks.map((block, index) => {
-        if (block.startsWith('### ')) return <h4 key={index}>{parseInline(block.slice(4))}</h4>
-        if (block.startsWith('## ')) return <h3 key={index}>{parseInline(block.slice(3))}</h3>
-        if (block.startsWith('# ')) return <h2 key={index}>{parseInline(block.slice(2))}</h2>
+        if (block.startsWith('#### ')) return <h5 key={index}>{parseInline(block.slice(5))}</h5>
+        if (block.startsWith('### ')) return <h3 key={index}>{parseInline(block.slice(4))}</h3>
+        if (block.startsWith('## ')) return <h2 key={index}>{parseInline(block.slice(3))}</h2>
+        if (block.startsWith('# ')) return <h1 key={index}>{parseInline(block.slice(2))}</h1>
         return renderParagraph(block, index)
       })}
     </>
