@@ -8,6 +8,8 @@ import com.jvmvstv_v.back.matching.model.PenPalRequestStatus
 import com.jvmvstv_v.back.matching.model.SuggestedProfile
 import com.jvmvstv_v.back.matching.model.UserMatch
 import com.jvmvstv_v.back.matching.repository.MatchingRepository
+import com.jvmvstv_v.back.notification.model.NotificationType
+import com.jvmvstv_v.back.notification.service.NotificationService
 import com.jvmvstv_v.back.user.model.User
 import org.springframework.stereotype.Service
 import java.util.UUID
@@ -15,7 +17,10 @@ import java.util.UUID
 private const val DEFAULT_SUGGESTED_PROFILES_LIMIT = 20
 
 @Service
-class MatchingServiceImpl(private val matchingRepository: MatchingRepository) : MatchingService {
+class MatchingServiceImpl(
+    private val matchingRepository: MatchingRepository,
+    private val notificationService: NotificationService,
+) : MatchingService {
     override fun myMatches(limit: Int?): List<UserMatch> {
         val viewerId = CurrentUser.id
         return matchingRepository.findMatchesForUser(viewerId, limit).map {
@@ -45,7 +50,14 @@ class MatchingServiceImpl(private val matchingRepository: MatchingRepository) : 
         val hasPending = matchingRepository.findRequestsForUser(requesterId, PenPalRequestStatus.PENDING)
             .any { it.requester.id == requesterId && it.addressee.id == addresseeId }
         if (hasPending) throw AuthException("You already have a pending request to this person")
-        return matchingRepository.createRequest(requesterId, addresseeId, message)
+        val request = matchingRepository.createRequest(requesterId, addresseeId, message)
+        notificationService.notify(
+            addresseeId,
+            NotificationType.PEN_PAL_REQUEST,
+            "New pen pal request",
+            "${request.requester.nickname} wants to connect",
+        )
+        return request
     }
 
     override fun respondToPenPalRequest(id: UUID, accept: Boolean): PenPalRequest {

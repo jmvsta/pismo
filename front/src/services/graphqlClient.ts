@@ -38,6 +38,10 @@ export class GraphqlClient {
     }
   }
 
+  getAuthToken(): string | null {
+    return this.authToken
+  }
+
   async request<TData, TVariables extends Record<string, unknown> = Record<string, never>>(
     query: string,
     variables?: TVariables,
