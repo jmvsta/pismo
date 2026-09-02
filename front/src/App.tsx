@@ -3,6 +3,7 @@ import { Route, Routes, useLocation } from 'react-router-dom'
 import AuthBar from './components/AuthBar.tsx'
 import { useUserStore } from './store/userStore.ts'
 import Forum from './pages/Forum/Forum.tsx'
+import About from './pages/About/About.tsx'
 import Register from './pages/Register/Register.tsx'
 import Login from './pages/Login/Login.tsx'
 import OauthCallback from './pages/OauthCallback/OauthCallback.tsx'
@@ -27,6 +28,7 @@ function App() {
       {!AUTH_PAGES.includes(location.pathname) && <AuthBar />}
       <Routes>
         <Route path="/" element={<Forum />} />
+        <Route path="/about" element={<About />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/oauth-callback" element={<OauthCallback />} />

@@ -1,0 +1,24 @@
+extend type Query {
+    aboutPage: AboutPage!
+}
+
+extend type Mutation {
+    updateAboutPageBody(body: String!): AboutPage!
+    addAboutPagePhoto(mimeType: String!, imageBase64: String!, caption: String): AboutPage!
+    removeAboutPagePhoto(id: ID!): AboutPage!
+}
+
+"""Singleton "About us" page. body is a light markdown subset (headings, bold, italic)
+rendered client-side; photos are an ordered gallery. Editable by admins only."""
+type AboutPage {
+    body: String!
+    photos: [AboutPagePhoto!]!
+    updatedAt: String!
+}
+
+type AboutPagePhoto {
+    id: ID!
+    imageId: ID!
+    caption: String
+    position: Int!
+}
