@@ -80,9 +80,21 @@ export interface PlanSubscription {
   currentPeriodEnd: string
   cancelledAt: string | null
   externalRef: string | null
+  autoRenew: boolean
   members: SubscriptionMember[]
   createdAt: string
   updatedAt: string
+}
+
+/** Only a Stripe PaymentMethod reference and display metadata -- raw card numbers never pass through this API. */
+export interface PaymentMethod {
+  id: string
+  brand: string | null
+  last4: string | null
+  expMonth: number | null
+  expYear: number | null
+  isDefault: boolean
+  createdAt: string
 }
 
 /** Effective monthly limit = plan quota + bonus columns for that period. */

@@ -10,6 +10,13 @@ interface WalletSubscriptionPanelProps {
   onCancelled: (subscription: PlanSubscription) => void
 }
 
+function planTariffSummary(plan: SubscriptionPlan): string {
+  const parts = [`${plan.lettersSendPerMonth} sent/mo`, `${plan.lettersReceivePerMonth} received/mo`]
+  if (plan.addressAllowance > 0) parts.push(`${plan.addressAllowance} addresses/mo`)
+  if (plan.maxMembers > 1) parts.push(`up to ${plan.maxMembers} members`)
+  return parts.join(' · ')
+}
+
 function WalletSubscriptionPanel({ plans, subscription, onSubscribed, onCancelled }: WalletSubscriptionPanelProps) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -41,10 +48,25 @@ function WalletSubscriptionPanel({ plans, subscription, onSubscribed, onCancelle
     }
   }
 
+  const handleToggleAutoRenew = async () => {
+    if (!subscription) return
+    setBusy(true)
+    setError(null)
+    try {
+      const result = await walletService.setAutoRenew(subscription.id, !subscription.autoRenew)
+      onSubscribed(result)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update autopay.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   if (subscription && subscription.status === 'ACTIVE') {
     return (
       <div className="wallet-subscription">
         <div className="wallet-subscription-plan">{subscription.plan.name}</div>
+        <div className="text-muted">{planTariffSummary(subscription.plan)}</div>
         <div className="text-muted">
           Renews{' '}
           {new Date(subscription.currentPeriodEnd).toLocaleDateString('en-GB', {
@@ -54,9 +76,14 @@ function WalletSubscriptionPanel({ plans, subscription, onSubscribed, onCancelle
           })}
         </div>
         {error && <p className="text-muted">{error}</p>}
-        <button type="button" className="btn btn-secondary" onClick={handleCancel} disabled={busy}>
-          {busy ? 'Cancelling…' : 'Cancel subscription'}
-        </button>
+        <div className="flex gap-2">
+          <button type="button" className="btn btn-secondary" onClick={handleToggleAutoRenew} disabled={busy}>
+            {busy ? 'Working…' : subscription.autoRenew ? 'Autopay: On' : 'Autopay: Off'}
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={handleCancel} disabled={busy}>
+            {busy ? 'Cancelling…' : 'Cancel subscription'}
+          </button>
+        </div>
       </div>
     )
   }
@@ -71,6 +98,7 @@ function WalletSubscriptionPanel({ plans, subscription, onSubscribed, onCancelle
             <div className="text-muted">
               {formatMinorAmount(plan.priceMinor, plan.currency)} / {plan.billingPeriod.toLowerCase()}
             </div>
+            <div className="text-muted">{planTariffSummary(plan)}</div>
           </div>
           <button type="button" className="btn btn-primary" onClick={() => handleSubscribe(plan.id)} disabled={busy}>
             {busy ? 'Working…' : 'Subscribe →'}
