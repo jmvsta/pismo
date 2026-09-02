@@ -1,16 +1,26 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useUserStore } from '../store/userStore.ts'
+import { useNotificationStore } from '../store/notificationStore.ts'
 import { matchingService } from '../services/matching/index.ts'
 import { lettersService } from '../services/letters/index.ts'
 import EnvelopeIcon from './icons/EnvelopeIcon.tsx'
+import NotificationBell from './NotificationBell/NotificationBell.tsx'
 import './AuthBar.css'
 
 function AuthBar() {
   const currentUser = useUserStore((state) => state.currentUser)
   const logout = useUserStore((state) => state.logout)
+  const connectNotifications = useNotificationStore((state) => state.connect)
+  const disconnectNotifications = useNotificationStore((state) => state.disconnect)
   const [pendingCount, setPendingCount] = useState(0)
   const [pendingLetterCount, setPendingLetterCount] = useState(0)
+
+  useEffect(() => {
+    if (!currentUser) return
+    connectNotifications()
+    return () => disconnectNotifications()
+  }, [currentUser, connectNotifications, disconnectNotifications])
 
   useEffect(() => {
     if (!currentUser) return
@@ -48,6 +58,7 @@ function AuthBar() {
       <div className="auth-bar">
         {currentUser ? (
           <>
+            <NotificationBell />
             {pendingCount > 0 && (
               <Link
                 to="/matches?tab=pending"

@@ -1,0 +1,24 @@
+extend type Query {
+    myNotifications(unreadOnly: Boolean): [Notification!]!
+    unreadNotificationCount: Int!
+}
+
+extend type Mutation {
+    markNotificationRead(id: ID!): Notification!
+}
+
+"""Persisted history of what's also pushed live over the /ws/notifications WebSocket."""
+type Notification {
+    id: ID!
+    type: NotificationType!
+    title: String!
+    body: String
+    readAt: String
+    createdAt: String!
+}
+
+enum NotificationType {
+    PEN_PAL_REQUEST
+    LETTER_SENT
+    LETTER_DELIVERED
+}
