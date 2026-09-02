@@ -53,8 +53,29 @@ data class ForumReply(
     val author: User,
     val body: String,
     val thanksCount: Int,
+    val photos: List<ForumReplyPhoto>,
     val createdAt: String,
     val updatedAt: String,
+)
+
+data class ForumReplyPhoto(
+    val id: UUID,
+    val imageId: UUID,
+    val caption: String?,
+    val position: Int,
+    val createdAt: String,
+)
+
+data class NewForumReplyPhotoInput(
+    val mimeType: String,
+    val imageBase64: String,
+    val caption: String?,
+)
+
+data class NewForumReplyPhoto(
+    val id: UUID,
+    val imageId: UUID,
+    val caption: String?,
 )
 
 data class CreateForumPostInput(
@@ -68,6 +89,7 @@ data class CreateForumReplyInput(
     val postId: UUID,
     val parentReplyId: UUID?,
     val body: String,
+    val photos: List<NewForumReplyPhotoInput>?,
 )
 
 data class CreateForumTopicInput(

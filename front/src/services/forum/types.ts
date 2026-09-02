@@ -23,6 +23,20 @@ export interface NewForumPostPhotoInput {
   caption?: string
 }
 
+export interface ForumReplyPhoto {
+  id: string
+  imageId: string
+  caption: string | null
+  position: number
+  createdAt: string
+}
+
+export interface NewForumReplyPhotoInput {
+  mimeType: string
+  imageBase64: string
+  caption?: string
+}
+
 /** parentReplyId is set for a threaded reply-to-a-reply; null for a top-level reply to the post. */
 export interface ForumReply {
   id: string
@@ -30,6 +44,7 @@ export interface ForumReply {
   author: UserSummary
   body: string
   thanksCount: number
+  photos: ForumReplyPhoto[]
   createdAt: string
   updatedAt: string
 }
@@ -60,6 +75,7 @@ export interface CreateForumReplyInput {
   postId: string
   parentReplyId?: string
   body: string
+  photos?: NewForumReplyPhotoInput[]
 }
 
 export interface CreateForumTopicInput {
