@@ -81,3 +81,18 @@
 .auth-bar-nickname:hover {
   color: var(--color-accent);
 }
+
+/* The hover-reveal sliver above never gets a hover event on a touchscreen, so on mobile
+   the bar (and with it, Login/Register) never appeared at all. Below this width, drop the
+   hover mechanism entirely and just show the bar in normal document flow. */
+@media (max-width: 900px) {
+  .auth-bar-zone {
+    position: static;
+    height: auto;
+  }
+  .auth-bar {
+    position: static;
+    transform: none;
+    transition: none;
+  }
+}

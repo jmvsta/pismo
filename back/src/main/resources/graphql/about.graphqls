@@ -1,0 +1,55 @@
+extend type Query {
+    aboutPage: AboutPage!
+}
+
+extend type Mutation {
+    updateAboutPageBody(body: String!): AboutPage!
+    addAboutPageTextBlock(text: String!, x: Float!, y: Float!, width: Float!, height: Float!): AboutPage!
+    addAboutPagePhotoBlock(
+        mimeType: String!
+        imageBase64: String!
+        x: Float!
+        y: Float!
+        width: Float!
+        height: Float!
+    ): AboutPage!
+    updateAboutPageBlockLayout(id: ID!, x: Float!, y: Float!, width: Float!, height: Float!): AboutPage!
+    updateAboutPageBlockAlign(id: ID!, align: AboutPageBlockAlign!): AboutPage!
+    updateAboutPageBlockText(id: ID!, text: String!): AboutPage!
+    removeAboutPageBlock(id: ID!): AboutPage!
+}
+
+"""Singleton "About us" page. body is a light markdown subset (headings, bold, italic)
+rendered client-side; blocks are a freeform canvas of admin-placed text/photo items,
+each with its own drag-to-position (x, y) and resizable (width, height) footprint,
+given as percentages of the canvas. Everything here is editable by admins only."""
+type AboutPage {
+    body: String!
+    blocks: [AboutPageBlock!]!
+    updatedAt: String!
+}
+
+enum AboutPageBlockType {
+    TEXT
+    PHOTO
+}
+
+enum AboutPageBlockAlign {
+    LEFT
+    CENTER
+    RIGHT
+}
+
+"""A single item on the freeform canvas. x/y is the top-left corner and width/height is
+the footprint, all as percentages of the canvas so the layout is responsive."""
+type AboutPageBlock {
+    id: ID!
+    type: AboutPageBlockType!
+    text: String
+    imageId: ID
+    x: Float!
+    y: Float!
+    width: Float!
+    height: Float!
+    align: AboutPageBlockAlign!
+}
