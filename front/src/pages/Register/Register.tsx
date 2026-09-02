@@ -39,7 +39,7 @@ function Register() {
         dateOfBirth: dob || undefined,
         acceptedRules,
       })
-      navigate('/questionnaire')
+      navigate('/register/verify-email')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed.')
     } finally {
@@ -66,8 +66,11 @@ function Register() {
           </p>
           <ol className="register-steps">
             <li className="is-current">01 — Register</li>
-            <li>02 — Fill the questionnaire</li>
-            <li>03 — Get matched. Write.</li>
+            <li>02 — Verify email</li>
+            <li>03 — Bio</li>
+            <li>04 — Address</li>
+            <li>05 — Fill the questionnaire</li>
+            <li>06 — Get matched. Write.</li>
           </ol>
         </aside>
 

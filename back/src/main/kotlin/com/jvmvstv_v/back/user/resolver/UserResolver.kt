@@ -40,6 +40,15 @@ class UserResolver(private val userService: UserService) {
         return true
     }
 
+    @MutationMapping
+    fun confirmEmail(@Argument code: String): User = userService.confirmEmail(code)
+
+    @MutationMapping
+    fun resendVerificationCode(): Boolean {
+        userService.resendVerificationCode()
+        return true
+    }
+
     @QueryMapping
     fun users(): List<User> = userService.listUsers()
 

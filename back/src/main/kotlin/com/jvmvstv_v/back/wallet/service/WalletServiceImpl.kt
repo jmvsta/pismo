@@ -1,5 +1,6 @@
 package com.jvmvstv_v.back.wallet.service
 
+import com.jvmvstv_v.back.common.AuthException
 import com.jvmvstv_v.back.common.CurrentUser
 import com.jvmvstv_v.back.user.repository.UserRepository
 import com.jvmvstv_v.back.wallet.model.PaymentMethod
@@ -29,28 +30,43 @@ class WalletServiceImpl(
     override fun myMonthlyAllowance(): UserMonthlyAllowance? =
         walletRepository.findMonthlyAllowanceForUser(CurrentUser.id)
 
-    override fun initiateTopUp(amountMinor: Int, currency: String): WalletTransaction =
-        walletRepository.initiateTopUp(CurrentUser.id, amountMinor, currency)
+    override fun initiateTopUp(amountMinor: Int, currency: String): WalletTransaction {
+        if (amountMinor <= 0) throw AuthException("Top-up amount must be positive")
+        if (!currency.matches(Regex("^[A-Z]{3}$"))) throw AuthException("Currency must be a 3-letter code, e.g. EUR")
+        return walletRepository.initiateTopUp(CurrentUser.id, amountMinor, currency)
+    }
 
     override fun subscribeToPlan(planId: Int): PlanSubscription =
         walletRepository.subscribeToPlan(CurrentUser.id, planId)
 
     override fun cancelSubscription(id: UUID): PlanSubscription {
+        requireOwnSubscription(id)
         walletRepository.findStripeSubscriptionId(id)?.let { stripeGateway.cancelSubscription(it) }
         return walletRepository.cancelSubscription(id)
     }
 
-    override fun addSubscriptionMember(subscriptionId: UUID, userId: UUID, isMinor: Boolean): SubscriptionMember =
-        walletRepository.addSubscriptionMember(subscriptionId, userId, isMinor)
+    override fun addSubscriptionMember(subscriptionId: UUID, userId: UUID, isMinor: Boolean): SubscriptionMember {
+        requireOwnSubscription(subscriptionId)
+        return walletRepository.addSubscriptionMember(subscriptionId, userId, isMinor)
+    }
 
-    override fun removeSubscriptionMember(subscriptionId: UUID, userId: UUID): SubscriptionMember =
-        walletRepository.removeSubscriptionMember(subscriptionId, userId)
+    override fun removeSubscriptionMember(subscriptionId: UUID, userId: UUID): SubscriptionMember {
+        requireOwnSubscription(subscriptionId)
+        return walletRepository.removeSubscriptionMember(subscriptionId, userId)
+    }
 
     override fun setAutoRenew(subscriptionId: UUID, autoRenew: Boolean): PlanSubscription {
+        requireOwnSubscription(subscriptionId)
         walletRepository.findStripeSubscriptionId(subscriptionId)?.let {
             stripeGateway.setCancelAtPeriodEnd(it, cancelAtPeriodEnd = !autoRenew)
         }
         return walletRepository.updateAutoRenew(subscriptionId, autoRenew)
+    }
+
+    private fun requireOwnSubscription(subscriptionId: UUID) {
+        if (walletRepository.findSubscriptionForUser(CurrentUser.id)?.id != subscriptionId) {
+            throw AuthException("You don't have a subscription to manage")
+        }
     }
 
     override fun myPaymentMethods(): List<PaymentMethod> = walletRepository.findPaymentMethodsForUser(CurrentUser.id)
@@ -69,6 +85,8 @@ class WalletServiceImpl(
     }
 
     override fun removeCard(id: UUID): Boolean {
+        val owned = walletRepository.findPaymentMethodsForUser(CurrentUser.id).any { it.id == id }
+        if (!owned) throw AuthException("This isn't your payment method")
         walletRepository.findStripePaymentMethodId(id)?.let { stripeGateway.detachPaymentMethod(it) }
         return walletRepository.removePaymentMethod(id)
     }

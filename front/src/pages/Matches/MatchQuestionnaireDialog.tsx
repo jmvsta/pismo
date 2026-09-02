@@ -49,7 +49,7 @@ function MatchQuestionnaireDialog({ userId, nickname, onClose }: MatchQuestionna
 
   return (
     <div className="forum-modal-backdrop" onClick={onClose}>
-      <div className="forum-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="forum-modal forum-modal-wide" onClick={(e) => e.stopPropagation()}>
         <div className="forum-modal-header">
           <h5>{nickname}'s questionnaire</h5>
           <button type="button" className="btn btn-icon" onClick={onClose} aria-label="Close">

@@ -3,11 +3,13 @@ extend type Query {
     lettersForConnection(connectionId: ID!): [Letter!]!
     sentLetters: [Letter!]!
     receivedLetters: [Letter!]!
+    pendingIncomingLetterCount: Int!
 }
 
 extend type Mutation {
     createLetter(input: CreateLetterInput!): Letter!
     updateLetterStatus(id: ID!, status: LetterStatus!, location: String, note: String): Letter!
+    confirmLetterDelivery(id: ID!, code: String!): Letter!
     submitLetterFeedback(input: SubmitLetterFeedbackInput!): LetterFeedback!
 }
 

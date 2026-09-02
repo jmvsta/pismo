@@ -19,10 +19,20 @@ class AddressServiceImpl(private val addressRepository: AddressRepository) : Add
     override fun createAddress(input: CreateAddressInput): UserAddress =
         addressRepository.create(CurrentUser.id, input)
 
-    override fun updateAddress(id: UUID, input: UpdateAddressInput): UserAddress =
-        addressRepository.update(id, input)
+    override fun updateAddress(id: UUID, input: UpdateAddressInput): UserAddress {
+        requireOwnAddress(id)
+        return addressRepository.update(id, input)
+    }
 
-    override fun deleteAddress(id: UUID): Boolean = addressRepository.delete(id)
+    override fun deleteAddress(id: UUID): Boolean {
+        requireOwnAddress(id)
+        return addressRepository.delete(id)
+    }
+
+    private fun requireOwnAddress(id: UUID) {
+        val owned = addressRepository.findForUser(CurrentUser.id).any { it.id == id }
+        if (!owned) error("Address $id not found")
+    }
 
     override fun grantConsent(connectionId: UUID, addressId: UUID): ConnectionAddressConsent =
         addressRepository.grantConsent(connectionId, CurrentUser.id, addressId)

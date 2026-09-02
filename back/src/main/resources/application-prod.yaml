@@ -28,3 +28,5 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS}
   stripe:
     api-key: ${STRIPE_API_KEY}
+  email-verification:
+    enforced: true

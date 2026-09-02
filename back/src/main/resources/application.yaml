@@ -14,3 +14,10 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+
+app:
+  email-verification:
+    # Off by default so any environment without an explicit override (in particular local
+    # dev, which has no real mail server) isn't locked out by an unconfirmed email. prod
+    # turns this on explicitly.
+    enforced: false

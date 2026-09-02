@@ -11,6 +11,7 @@ export interface LettersService {
   lettersForConnection(connectionId: string): Promise<Letter[]>
   sentLetters(): Promise<Letter[]>
   receivedLetters(): Promise<Letter[]>
+  pendingIncomingLetterCount(): Promise<number>
   createLetter(input: CreateLetterInput): Promise<Letter>
   updateLetterStatus(
     id: string,
@@ -18,5 +19,6 @@ export interface LettersService {
     location?: string,
     note?: string,
   ): Promise<Letter>
+  confirmLetterDelivery(id: string, code: string): Promise<Letter>
   submitLetterFeedback(input: SubmitLetterFeedbackInput): Promise<LetterFeedback>
 }

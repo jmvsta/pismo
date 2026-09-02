@@ -87,6 +87,20 @@ const LOGOUT_MUTATION = `
   }
 `
 
+const CONFIRM_EMAIL_MUTATION = `
+  mutation ConfirmEmail($code: String!) {
+    confirmEmail(code: $code) {
+      ${USER_FIELDS}
+    }
+  }
+`
+
+const RESEND_VERIFICATION_CODE_MUTATION = `
+  mutation ResendVerificationCode {
+    resendVerificationCode
+  }
+`
+
 const USERS_QUERY = `
   query Users {
     users {
@@ -168,6 +182,18 @@ export class GraphqlUserService implements UserService {
     } finally {
       this.client.setAuthToken(null)
     }
+  }
+
+  async confirmEmail(code: string): Promise<User> {
+    const data = await this.client.request<{ confirmEmail: User }, { code: string }>(
+      CONFIRM_EMAIL_MUTATION,
+      { code },
+    )
+    return data.confirmEmail
+  }
+
+  async resendVerificationCode(): Promise<void> {
+    await this.client.request<{ resendVerificationCode: boolean }>(RESEND_VERIFICATION_CODE_MUTATION)
   }
 
   async users(): Promise<User[]> {

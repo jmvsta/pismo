@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { MatchProfile } from '../../services/matching/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
+import EnvelopeIcon from '../../components/icons/EnvelopeIcon.tsx'
 
 export type MatchCardVariant = 'new' | 'pending' | 'hidden' | 'matched'
 
@@ -11,6 +12,7 @@ interface MatchCardProps {
   variant: MatchCardVariant
   hasIncomingRequest?: boolean
   requestState?: 'idle' | 'sending' | 'sent' | 'error'
+  pendingActionDisabled?: boolean
   onReachOut?: () => void
   onHide?: () => void
   onAccept?: () => void
@@ -32,6 +34,7 @@ function MatchCard({
   variant,
   hasIncomingRequest,
   requestState = 'idle',
+  pendingActionDisabled = false,
   onReachOut,
   onHide,
   onAccept,
@@ -48,7 +51,7 @@ function MatchCard({
         {avatarUrl ? <img src={avatarUrl} alt={profile.nickname} /> : <span>avatar</span>}
         {hasIncomingRequest && (
           <span className="match-card-envelope" title="Already reached out to you" aria-hidden="true">
-            ✉️
+            <EnvelopeIcon />
           </span>
         )}
       </div>
@@ -122,10 +125,10 @@ function MatchCard({
 
         {variant === 'pending' && (
           <>
-            <button type="button" className="btn btn-primary" onClick={onAccept}>
+            <button type="button" className="btn btn-primary" onClick={onAccept} disabled={pendingActionDisabled}>
               Accept
             </button>
-            <button type="button" className="btn btn-secondary" onClick={onDecline}>
+            <button type="button" className="btn btn-secondary" onClick={onDecline} disabled={pendingActionDisabled}>
               Decline
             </button>
           </>

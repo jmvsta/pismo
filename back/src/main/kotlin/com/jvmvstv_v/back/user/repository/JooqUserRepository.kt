@@ -40,6 +40,9 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     private val DELETED_AT = DSL.field("deleted_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
     private val AUTH_TOKEN = DSL.field("auth_token", SQLDataType.VARCHAR)
     private val AUTH_TOKEN_EXPIRES_AT = DSL.field("auth_token_expires_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
+    private val EMAIL_VERIFICATION_CODE = DSL.field("email_verification_code", SQLDataType.VARCHAR)
+    private val EMAIL_VERIFICATION_CODE_EXPIRES_AT =
+        DSL.field("email_verification_code_expires_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
 
     private val OAUTH_ACCOUNTS = DSL.table("user_oauth_accounts")
     private val OAUTH_ID = DSL.field("id", SQLDataType.UUID)
@@ -126,6 +129,33 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
                     emailVerified = it[EMAIL_VERIFIED_AT] != null,
                 )
             }
+
+     override fun setEmailVerificationCode(userId: UUID, code: String, expiresAt: OffsetDateTime) {
+            dsl.update(USERS)
+                .set(EMAIL_VERIFICATION_CODE, code)
+                .set(EMAIL_VERIFICATION_CODE_EXPIRES_AT, expiresAt)
+                .where(ID.eq(userId))
+                .execute()
+        }
+
+        override fun findEmailVerificationCode(userId: UUID): Pair<String, OffsetDateTime>? {
+            val record = dsl.select(EMAIL_VERIFICATION_CODE, EMAIL_VERIFICATION_CODE_EXPIRES_AT)
+                .from(USERS)
+                .where(ID.eq(userId))
+                .fetchOne() ?: return null
+            val code = record[EMAIL_VERIFICATION_CODE] ?: return null
+            val expiresAt = record[EMAIL_VERIFICATION_CODE_EXPIRES_AT] ?: return null
+            return code to expiresAt
+        }
+
+        override fun markEmailVerified(userId: UUID) {
+            dsl.update(USERS)
+                .set(EMAIL_VERIFIED_AT, OffsetDateTime.now())
+                .set(EMAIL_VERIFICATION_CODE, null as String?)
+                .set(EMAIL_VERIFICATION_CODE_EXPIRES_AT, null as OffsetDateTime?)
+                .where(ID.eq(userId))
+                .execute()
+        }
 
     override fun findAll(): List<User> =
         dsl.select(ID, NICKNAME, EMAIL, DATE_OF_BIRTH, AVATAR_IMAGE_ID, BIO, CITY, COUNTRY_CODE, ROLE, STATUS,

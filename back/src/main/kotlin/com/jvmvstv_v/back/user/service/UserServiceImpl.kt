@@ -6,6 +6,7 @@ import com.jvmvstv_v.back.common.SecureTokenGenerator
 import com.jvmvstv_v.back.image.model.ImageOwnerType
 import com.jvmvstv_v.back.image.service.ImageService
 import com.jvmvstv_v.back.matching.service.MatchingService
+import com.jvmvstv_v.back.user.email.EmailGateway
 import com.jvmvstv_v.back.user.model.LoginInput
 import com.jvmvstv_v.back.user.model.OauthProvider
 import com.jvmvstv_v.back.user.model.RegisterInput
@@ -22,6 +23,7 @@ import java.util.UUID
 import kotlin.random.Random
 
 private val TOKEN_LIFETIME: Duration = Duration.ofHours(1)
+private val VERIFICATION_CODE_LIFETIME: Duration = Duration.ofHours(24)
 
 @Service
 class UserServiceImpl(
@@ -29,6 +31,7 @@ class UserServiceImpl(
     private val passwordEncoder: PasswordEncoder,
     private val imageService: ImageService,
     private val matchingService: MatchingService,
+    private val emailGateway: EmailGateway,
 ) : UserService {
     override fun currentUser(): User? = CurrentUser.idOrNull?.let { userRepository.findById(it) }
 
@@ -53,6 +56,7 @@ class UserServiceImpl(
         validateRegistration(input)
         val passwordHash = passwordEncoder.encode(input.password) ?: error("Password hashing failed")
         val user = userRepository.create(input, passwordHash)
+        issueVerificationCode(user.id, user.email)
         return user.copy(authToken = issueToken(user.id))
     }
 
@@ -103,6 +107,25 @@ class UserServiceImpl(
 
     override fun logout() = userRepository.clearAuthToken(CurrentUser.id)
 
+    override fun confirmEmail(code: String): User {
+        val userId = CurrentUser.id
+        val (storedCode, expiresAt) = userRepository.findEmailVerificationCode(userId)
+            ?: throw AuthException("No verification code is pending")
+        if (OffsetDateTime.now().isAfter(expiresAt)) {
+            throw AuthException("This code has expired -- request a new one")
+        }
+        if (storedCode != code) throw AuthException("Incorrect code")
+        userRepository.markEmailVerified(userId)
+        return userRepository.findById(userId) ?: error("User $userId not found")
+    }
+
+    override fun resendVerificationCode() {
+        val userId = CurrentUser.id
+        val user = userRepository.findById(userId) ?: error("User $userId not found")
+        if (user.emailVerifiedAt != null) throw AuthException("Your email is already verified")
+        issueVerificationCode(userId, user.email)
+    }
+
     override fun listUsers(): List<User> {
         CurrentUser.requireAdmin()
         return userRepository.findAll()
@@ -116,6 +139,12 @@ class UserServiceImpl(
     override fun setUserRole(userId: UUID, role: UserRole): User {
         CurrentUser.requireAdmin()
         return userRepository.setRole(userId, role)
+    }
+
+    private fun issueVerificationCode(userId: UUID, email: String) {
+        val code = Random.nextInt(0, 1_000_000).toString().padStart(6, '0')
+        userRepository.setEmailVerificationCode(userId, code, OffsetDateTime.now().plus(VERIFICATION_CODE_LIFETIME))
+        emailGateway.sendVerificationCode(email, code)
     }
 
     private fun issueToken(userId: UUID): String {
