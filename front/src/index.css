@@ -1,7 +1,9 @@
-/* Tailwind utilities only -- no preflight/base layer, since the hand-rolled reset and
-   element defaults below already cover that and shouldn't be fought with Tailwind's. */
-@import 'tailwindcss/theme.css' layer(theme);
-@import 'tailwindcss/utilities.css' layer(utilities);
+/* Tailwind has to be the first import: it declares the cascade layer order
+   (theme, base, components, utilities). Importing theme.css/utilities.css
+   separately beforehand registered those layers early, which pushed `base`
+   (preflight) *after* `utilities` -- preflight's `*{margin:0;padding:0}` then
+   beat every spacing utility, so classes like `px-6` silently did nothing.
+   Everything below this import is unlayered and still wins over Tailwind. */
 
 /* Pismo na DAR — design tokens and shared component classes.
    Ported from the "Modernist" system in the layout mockup
@@ -97,6 +99,14 @@ h6 {
   line-height: 1.12;
   letter-spacing: -0.015em;
   margin: 0 0 var(--space-2);
+}
+/* Page and section titles carry the brand accent. The smaller headings (h4-h6)
+   stay in body colour: they are used as quiet kickers and labels ("Step 01",
+   "Topics", dialog titles), where accent would fight the red active states. */
+h1,
+h2,
+h3 {
+  color: var(--color-accent);
 }
 h1 {
   font-size: 42px;
@@ -394,10 +404,13 @@ textarea.input {
 }
 
 /* — navigation — */
+/* Wraps to new rows rather than squeezing items: without flex-wrap the links
+   just got narrower until their labels broke mid-phrase ("My / pen / pals"). */
 .nav {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-2) var(--space-4);
   padding: var(--space-3) var(--space-4);
   border-bottom: 2px solid var(--color-divider);
 }
@@ -408,17 +421,33 @@ textarea.input {
   margin-right: auto;
   text-decoration: none;
   color: inherit;
+  white-space: nowrap;
 }
 .nav a,
 .nav .nav-link {
   color: inherit;
   text-decoration: none;
   font-size: 14px;
+  white-space: nowrap;
 }
+
 .nav a:hover,
 .nav a[aria-current='page'],
 .nav .nav-link[aria-current='page'] {
   color: var(--color-accent);
+}
+
+/* Narrow screens: the brand takes its own row so the links below it line up as
+   one evenly spaced group instead of trailing off the brand's right edge. */
+@media (max-width: 640px) {
+  .nav {
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-3);
+  }
+  .nav-brand {
+    flex: 1 0 100%;
+    margin-right: 0;
+  }
 }
 
 /* — tables — */
