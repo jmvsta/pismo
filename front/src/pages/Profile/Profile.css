@@ -21,6 +21,7 @@
 .profile-header {
   padding: 28px 40px 28px;
   display: flex;
+  flex-wrap: wrap;
   gap: 28px;
   border-bottom: 2px solid var(--color-divider);
 }
@@ -67,14 +68,17 @@
 
 .profile-identity {
   flex: 1;
+  min-width: 0;
 }
 .profile-name-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: 10px;
 }
 .profile-name-row h2 {
   margin: 0;
+  overflow-wrap: anywhere;
 }
 .profile-name-row span {
   font-size: 13px;
@@ -182,4 +186,24 @@
 .profile-questionnaire-question {
   font-weight: 600;
   margin-bottom: 4px;
+}
+
+@media (max-width: 640px) {
+  .profile-page {
+    padding: var(--space-4);
+  }
+  .profile-back,
+  .profile-header,
+  .profile-stat,
+  .profile-tabs-panel {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
+  .profile-stats {
+    flex-wrap: wrap;
+  }
+  .profile-stat {
+    flex: 1 1 50%;
+    border-right: none;
+  }
 }

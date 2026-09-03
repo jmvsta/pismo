@@ -23,30 +23,32 @@ function ProfileLettersTable({ rows }: ProfileLettersTableProps) {
   }
 
   return (
-    <table className="table">
-      <thead>
-        <tr>
-          <th>Pen pal</th>
-          <th>Direction</th>
-          <th>Status</th>
-          <th>Since</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => (
-          <tr key={row.id}>
-            <td className="profile-letter-name">{row.penPalName}</td>
-            <td>{row.direction === 'outgoing' ? '→ outgoing' : '← incoming'}</td>
-            <td>
-              <span className={isInProgressStatus(row.status) ? 'tag tag-accent' : 'tag tag-neutral'}>
-                {formatLetterStatus(row.status)}
-              </span>
-            </td>
-            <td className="text-muted">{formatDate(row.since)}</td>
+    <div className="table-scroll">
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Pen pal</th>
+            <th>Direction</th>
+            <th>Status</th>
+            <th>Since</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.id}>
+              <td className="profile-letter-name">{row.penPalName}</td>
+              <td>{row.direction === 'outgoing' ? '→ outgoing' : '← incoming'}</td>
+              <td>
+                <span className={isInProgressStatus(row.status) ? 'tag tag-accent' : 'tag tag-neutral'}>
+                  {formatLetterStatus(row.status)}
+                </span>
+              </td>
+              <td className="text-muted">{formatDate(row.since)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
 
