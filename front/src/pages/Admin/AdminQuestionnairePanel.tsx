@@ -185,38 +185,40 @@ function AdminQuestionnairePanel() {
       )}
 
       {!editing && status === 'ready' && (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Version</th>
-              <th>Status</th>
-              <th>Created</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {versions.map((version) => (
-              <tr key={version.id}>
-                <td>v{version.version}</td>
-                <td>
-                  <span className={version.isActive ? 'tag tag-accent' : 'tag tag-neutral'}>
-                    {version.isActive ? 'Active' : 'Archived'}
-                  </span>
-                </td>
-                <td className="text-muted">{new Date(version.createdAt).toLocaleDateString()}</td>
-                <td>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setEditing(JSON.parse(version.definition) as QuestionnaireDefinition)}
-                  >
-                    Edit
-                  </button>
-                </td>
+        <div className="table-scroll">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Version</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {versions.map((version) => (
+                <tr key={version.id}>
+                  <td>v{version.version}</td>
+                  <td>
+                    <span className={version.isActive ? 'tag tag-accent' : 'tag tag-neutral'}>
+                      {version.isActive ? 'Active' : 'Archived'}
+                    </span>
+                  </td>
+                  <td className="text-muted">{new Date(version.createdAt).toLocaleDateString()}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setEditing(JSON.parse(version.definition) as QuestionnaireDefinition)}
+                    >
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {editing && (

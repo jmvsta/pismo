@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono
 
 private val PUBLIC_FIELDS = setOf(
     "login", "register", "__schema", "__type", "__typename",
-    "forumTopics", "forumPosts", "forumPost",
+    "forumTopics", "forumPosts", "forumPost", "aboutPage",
 )
 
 private val ALLOWED_WHILE_UNVERIFIED = setOf("confirmEmail", "resendVerificationCode", "logout", "me")

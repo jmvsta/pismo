@@ -6,7 +6,7 @@ import java.util.UUID
 
 class AuthException(message: String) : RuntimeException(message)
 
-data class AuthenticatedPrincipal(val id: UUID, val email: String, val role: UserRole, val emailVerifiedAt: String?)
+data class AuthenticatedPrincipal(val id: UUID, val email: String, val role: UserRole, val emailVerified: Boolean)
 
 object CurrentUser {
     val id: UUID get() = idOrNull ?: throw AuthException("You must be logged in")
@@ -16,7 +16,7 @@ object CurrentUser {
 
     val role: UserRole get() = principal()?.role ?: throw AuthException("You must be logged in")
 
-    val emailVerified: Boolean get() = principal()?.emailVerifiedAt != null
+    val emailVerified: Boolean get() = principal()?.emailVerified ?: throw AuthException("You must be logged in")
 
     fun requireAdmin() {
         if (role != UserRole.ADMIN) throw AuthException("Admin access required")
