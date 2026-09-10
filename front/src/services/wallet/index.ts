@@ -14,6 +14,7 @@ export type {
   SubscriptionMember,
   SubscriptionMemberRole,
   UserMonthlyAllowance,
+  PaymentMethod,
 } from './types.ts'
 
 export const walletService = new GraphqlWalletService(graphqlClient)

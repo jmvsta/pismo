@@ -1,4 +1,5 @@
 import type {
+  PaymentMethod,
   PlanSubscription,
   SubscriptionMember,
   SubscriptionPlan,
@@ -21,4 +22,9 @@ export interface WalletService {
     isMinor: boolean,
   ): Promise<SubscriptionMember>
   removeSubscriptionMember(subscriptionId: string, userId: string): Promise<SubscriptionMember>
+  setAutoRenew(subscriptionId: string, autoRenew: boolean): Promise<PlanSubscription>
+  myPaymentMethods(): Promise<PaymentMethod[]>
+  createSetupIntent(): Promise<string>
+  addCard(paymentMethodId: string): Promise<PaymentMethod>
+  removeCard(id: string): Promise<boolean>
 }

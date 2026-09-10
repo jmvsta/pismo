@@ -6,6 +6,7 @@ import { formatMinorAmount } from '../../lib/money.ts'
 import WalletTopUpForm from './WalletTopUpForm.tsx'
 import WalletBillingList from './WalletBillingList.tsx'
 import WalletSubscriptionPanel from './WalletSubscriptionPanel.tsx'
+import WalletPaymentMethods from './WalletPaymentMethods.tsx'
 import './Wallet.css'
 
 function Wallet() {
@@ -65,6 +66,11 @@ function Wallet() {
         <div>
           <h6>Billing history</h6>
           <WalletBillingList transactions={wallet.transactions} />
+        </div>
+
+        <div>
+          <h6>Payment methods</h6>
+          <WalletPaymentMethods />
         </div>
 
         <div>
