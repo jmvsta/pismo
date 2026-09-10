@@ -4,6 +4,7 @@ import com.jvmvstv_v.back.about.model.AboutPage
 import com.jvmvstv_v.back.about.model.AboutPageBlock
 import com.jvmvstv_v.back.about.model.AboutPageBlockAlign
 import com.jvmvstv_v.back.about.model.AboutPageBlockType
+import com.jvmvstv_v.back.about.model.AboutPageCanvas
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.jooq.impl.SQLDataType
@@ -21,8 +22,15 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
     private val P_UPDATED_BY = DSL.field("updated_by", SQLDataType.UUID)
     private val P_UPDATED_AT = DSL.field("updated_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
 
+    private val CANVASES = DSL.table("about_page_canvases")
+    private val C_ID = DSL.field("id", SQLDataType.UUID)
+    private val C_HEIGHT = DSL.field("height", SQLDataType.DOUBLE)
+    private val C_POSITION = DSL.field("position", SQLDataType.INTEGER)
+    private val C_UPDATED_AT = DSL.field("updated_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
+
     private val BLOCKS = DSL.table("about_page_blocks")
     private val B_ID = DSL.field("id", SQLDataType.UUID)
+    private val B_CANVAS_ID = DSL.field("canvas_id", SQLDataType.UUID)
     private val B_TYPE = DSL.field("block_type", SQLDataType.VARCHAR)
     private val B_TEXT = DSL.field("text", SQLDataType.VARCHAR)
     private val B_IMAGE_ID = DSL.field("image_id", SQLDataType.UUID)
@@ -39,7 +47,7 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
             .fetchOne() ?: error("about_page singleton row missing")
         return AboutPage(
             body = record[P_BODY]!!,
-            blocks = findBlocks(),
+            canvases = findCanvases(),
             updatedAt = record[P_UPDATED_AT]!!.toString(),
         )
     }
@@ -54,13 +62,56 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
         return find()
     }
 
-    override fun addTextBlock(id: UUID, text: String, x: Double, y: Double, width: Double, height: Double): AboutPage {
-        insertBlock(id, AboutPageBlockType.TEXT, text, null, x, y, width, height)
+    override fun addCanvas(id: UUID): AboutPage {
+        val nextPosition = (dsl.select(DSL.max(C_POSITION)).from(CANVASES).fetchOne(0, Int::class.java) ?: -1) + 1
+        dsl.insertInto(CANVASES)
+            .columns(C_ID, C_POSITION)
+            .values(id, nextPosition)
+            .execute()
         return find()
     }
 
-    override fun addPhotoBlock(id: UUID, imageId: UUID, x: Double, y: Double, width: Double, height: Double): AboutPage {
-        insertBlock(id, AboutPageBlockType.PHOTO, null, imageId, x, y, width, height)
+    override fun updateCanvasHeight(id: UUID, height: Double): AboutPage {
+        dsl.update(CANVASES)
+            .set(C_HEIGHT, height)
+            .set(C_UPDATED_AT, OffsetDateTime.now())
+            .where(C_ID.eq(id))
+            .execute()
+        return find()
+    }
+
+    override fun removeCanvas(id: UUID): List<UUID> {
+        val imageIds = dsl.select(B_IMAGE_ID).from(BLOCKS)
+            .where(B_CANVAS_ID.eq(id)).and(B_IMAGE_ID.isNotNull)
+            .fetch(B_IMAGE_ID)
+            .filterNotNull()
+        dsl.deleteFrom(CANVASES).where(C_ID.eq(id)).execute()
+        return imageIds
+    }
+
+    override fun addTextBlock(
+        id: UUID,
+        canvasId: UUID,
+        text: String,
+        x: Double,
+        y: Double,
+        width: Double,
+        height: Double,
+    ): AboutPage {
+        insertBlock(id, canvasId, AboutPageBlockType.TEXT, text, null, x, y, width, height)
+        return find()
+    }
+
+    override fun addPhotoBlock(
+        id: UUID,
+        canvasId: UUID,
+        imageId: UUID,
+        x: Double,
+        y: Double,
+        width: Double,
+        height: Double,
+    ): AboutPage {
+        insertBlock(id, canvasId, AboutPageBlockType.PHOTO, null, imageId, x, y, width, height)
         return find()
     }
 
@@ -102,6 +153,7 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
 
     private fun insertBlock(
         id: UUID,
+        canvasId: UUID,
         type: AboutPageBlockType,
         text: String?,
         imageId: UUID?,
@@ -110,15 +162,17 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
         width: Double,
         height: Double,
     ) {
-        val nextZIndex = (dsl.select(DSL.max(B_Z_INDEX)).from(BLOCKS).fetchOne(0, Int::class.java) ?: -1) + 1
+        val nextZIndex = (dsl.select(DSL.max(B_Z_INDEX)).from(BLOCKS).where(B_CANVAS_ID.eq(canvasId))
+            .fetchOne(0, Int::class.java) ?: -1) + 1
         dsl.insertInto(BLOCKS)
-            .columns(B_ID, B_TYPE, B_TEXT, B_IMAGE_ID, B_X, B_Y, B_WIDTH, B_HEIGHT, B_ALIGN, B_Z_INDEX)
-            .values(id, type.name, text, imageId, x, y, width, height, AboutPageBlockAlign.LEFT.name, nextZIndex)
+            .columns(B_ID, B_CANVAS_ID, B_TYPE, B_TEXT, B_IMAGE_ID, B_X, B_Y, B_WIDTH, B_HEIGHT, B_ALIGN, B_Z_INDEX)
+            .values(id, canvasId, type.name, text, imageId, x, y, width, height, AboutPageBlockAlign.LEFT.name, nextZIndex)
             .execute()
     }
 
-    private fun findBlocks(): List<AboutPageBlock> =
-        dsl.select(B_ID, B_TYPE, B_TEXT, B_IMAGE_ID, B_X, B_Y, B_WIDTH, B_HEIGHT, B_ALIGN, B_Z_INDEX)
+    private fun findCanvases(): List<AboutPageCanvas> {
+        val blocksByCanvas = dsl
+            .select(B_ID, B_CANVAS_ID, B_TYPE, B_TEXT, B_IMAGE_ID, B_X, B_Y, B_WIDTH, B_HEIGHT, B_ALIGN, B_Z_INDEX)
             .from(BLOCKS)
             .orderBy(B_Z_INDEX)
             .fetch {
@@ -132,6 +186,20 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
                     width = it[B_WIDTH]!!,
                     height = it[B_HEIGHT]!!,
                     align = AboutPageBlockAlign.valueOf(it[B_ALIGN]!!),
+                ) to it[B_CANVAS_ID]!!
+            }
+            .groupBy({ it.second }, { it.first })
+
+        return dsl.select(C_ID, C_HEIGHT)
+            .from(CANVASES)
+            .orderBy(C_POSITION)
+            .fetch {
+                val canvasId = it[C_ID]!!
+                AboutPageCanvas(
+                    id = canvasId,
+                    height = it[C_HEIGHT]!!,
+                    blocks = blocksByCanvas[canvasId] ?: emptyList(),
                 )
             }
+    }
 }

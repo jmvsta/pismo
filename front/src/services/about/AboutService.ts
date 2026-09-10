@@ -3,8 +3,19 @@ import type { AboutPage, AboutPageBlockAlign } from './types.ts'
 export interface AboutService {
   aboutPage(): Promise<AboutPage>
   updateBody(body: string): Promise<AboutPage>
-  addTextBlock(text: string, x: number, y: number, width: number, height: number): Promise<AboutPage>
+  addCanvas(): Promise<AboutPage>
+  updateCanvasHeight(id: string, height: number): Promise<AboutPage>
+  removeCanvas(id: string): Promise<AboutPage>
+  addTextBlock(
+    canvasId: string,
+    text: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ): Promise<AboutPage>
   addPhotoBlock(
+    canvasId: string,
     mimeType: string,
     imageBase64: string,
     x: number,

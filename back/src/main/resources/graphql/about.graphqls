@@ -4,8 +4,19 @@ extend type Query {
 
 extend type Mutation {
     updateAboutPageBody(body: String!): AboutPage!
-    addAboutPageTextBlock(text: String!, x: Float!, y: Float!, width: Float!, height: Float!): AboutPage!
+    addAboutPageCanvas: AboutPage!
+    updateAboutPageCanvasHeight(id: ID!, height: Float!): AboutPage!
+    removeAboutPageCanvas(id: ID!): AboutPage!
+    addAboutPageTextBlock(
+        canvasId: ID!
+        text: String!
+        x: Float!
+        y: Float!
+        width: Float!
+        height: Float!
+    ): AboutPage!
     addAboutPagePhotoBlock(
+        canvasId: ID!
         mimeType: String!
         imageBase64: String!
         x: Float!
@@ -20,13 +31,22 @@ extend type Mutation {
 }
 
 """Singleton "About us" page. body is a light markdown subset (headings, bold, italic)
-rendered client-side; blocks are a freeform canvas of admin-placed text/photo items,
-each with its own drag-to-position (x, y) and resizable (width, height) footprint,
-given as percentages of the canvas. Everything here is editable by admins only."""
+rendered client-side; canvases is an ordered, admin-managed list of freeform canvases,
+each holding its own text/photo blocks and its own resizable height. Everything here is
+editable by admins only."""
 type AboutPage {
     body: String!
-    blocks: [AboutPageBlock!]!
+    canvases: [AboutPageCanvas!]!
     updatedAt: String!
+}
+
+"""A single freeform canvas on the About page. height is the canvas's own height as a
+percentage of its width (like an aspect ratio), resizable by admins. blocks are the
+text/photo items placed on it."""
+type AboutPageCanvas {
+    id: ID!
+    height: Float!
+    blocks: [AboutPageBlock!]!
 }
 
 enum AboutPageBlockType {
@@ -40,8 +60,8 @@ enum AboutPageBlockAlign {
     RIGHT
 }
 
-"""A single item on the freeform canvas. x/y is the top-left corner and width/height is
-the footprint, all as percentages of the canvas so the layout is responsive."""
+"""A single item on a canvas. x/y is the top-left corner and width/height is the
+footprint, all as percentages of the canvas so the layout is responsive."""
 type AboutPageBlock {
     id: ID!
     type: AboutPageBlockType!

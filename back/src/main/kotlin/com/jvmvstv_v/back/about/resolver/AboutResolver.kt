@@ -18,23 +18,35 @@ class AboutResolver(private val aboutService: AboutService) {
     fun updateAboutPageBody(@Argument body: String): AboutPage = aboutService.updateBody(body)
 
     @MutationMapping
+    fun addAboutPageCanvas(): AboutPage = aboutService.addCanvas()
+
+    @MutationMapping
+    fun updateAboutPageCanvasHeight(@Argument id: UUID, @Argument height: Double): AboutPage =
+        aboutService.updateCanvasHeight(id, height)
+
+    @MutationMapping
+    fun removeAboutPageCanvas(@Argument id: UUID): AboutPage = aboutService.removeCanvas(id)
+
+    @MutationMapping
     fun addAboutPageTextBlock(
+        @Argument canvasId: UUID,
         @Argument text: String,
         @Argument x: Double,
         @Argument y: Double,
         @Argument width: Double,
         @Argument height: Double,
-    ): AboutPage = aboutService.addTextBlock(text, x, y, width, height)
+    ): AboutPage = aboutService.addTextBlock(canvasId, text, x, y, width, height)
 
     @MutationMapping
     fun addAboutPagePhotoBlock(
+        @Argument canvasId: UUID,
         @Argument mimeType: String,
         @Argument imageBase64: String,
         @Argument x: Double,
         @Argument y: Double,
         @Argument width: Double,
         @Argument height: Double,
-    ): AboutPage = aboutService.addPhotoBlock(mimeType, imageBase64, x, y, width, height)
+    ): AboutPage = aboutService.addPhotoBlock(canvasId, mimeType, imageBase64, x, y, width, height)
 
     @MutationMapping
     fun updateAboutPageBlockLayout(

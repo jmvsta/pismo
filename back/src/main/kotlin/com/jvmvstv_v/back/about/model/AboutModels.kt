@@ -17,8 +17,14 @@ data class AboutPageBlock(
     val align: AboutPageBlockAlign,
 )
 
+data class AboutPageCanvas(
+    val id: UUID,
+    val height: Double,
+    val blocks: List<AboutPageBlock>,
+)
+
 data class AboutPage(
     val body: String,
-    val blocks: List<AboutPageBlock>,
+    val canvases: List<AboutPageCanvas>,
     val updatedAt: String,
 )

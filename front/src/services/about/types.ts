@@ -13,8 +13,14 @@ export interface AboutPageBlock {
   align: AboutPageBlockAlign
 }
 
+export interface AboutPageCanvas {
+  id: string
+  height: number
+  blocks: AboutPageBlock[]
+}
+
 export interface AboutPage {
   body: string
-  blocks: AboutPageBlock[]
+  canvases: AboutPageCanvas[]
   updatedAt: string
 }

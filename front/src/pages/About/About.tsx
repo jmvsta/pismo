@@ -97,24 +97,47 @@ function About() {
             <div className="flex flex-col gap-4 leading-relaxed">{renderRichText(page.body)}</div>
           )}
 
-          <AboutCanvas
-            blocks={page.blocks}
-            editable={editMode}
-            onAddText={async (text, x, y, width, height) =>
-              setPage(await aboutService.addTextBlock(text, x, y, width, height))
-            }
-            onAddPhoto={async (mimeType, imageBase64, x, y, width, height) =>
-              setPage(await aboutService.addPhotoBlock(mimeType, imageBase64, x, y, width, height))
-            }
-            onUpdateLayout={async (id, x, y, width, height) =>
-              setPage(await aboutService.updateBlockLayout(id, x, y, width, height))
-            }
-            onUpdateAlign={async (id: string, align: AboutPageBlockAlign) =>
-              setPage(await aboutService.updateBlockAlign(id, align))
-            }
-            onUpdateText={async (id, text) => setPage(await aboutService.updateBlockText(id, text))}
-            onRemove={async (id) => setPage(await aboutService.removeBlock(id))}
-          />
+          {page.canvases.map((canvas) => (
+            <AboutCanvas
+              key={canvas.id}
+              height={canvas.height}
+              blocks={canvas.blocks}
+              editable={editMode}
+              onAddText={async (text, x, y, width, height) =>
+                setPage(await aboutService.addTextBlock(canvas.id, text, x, y, width, height))
+              }
+              onAddPhoto={async (mimeType, imageBase64, x, y, width, height) =>
+                setPage(await aboutService.addPhotoBlock(canvas.id, mimeType, imageBase64, x, y, width, height))
+              }
+              onUpdateLayout={async (id, x, y, width, height) =>
+                setPage(await aboutService.updateBlockLayout(id, x, y, width, height))
+              }
+              onUpdateAlign={async (id: string, align: AboutPageBlockAlign) =>
+                setPage(await aboutService.updateBlockAlign(id, align))
+              }
+              onUpdateText={async (id, text) => setPage(await aboutService.updateBlockText(id, text))}
+              onRemove={async (id) => setPage(await aboutService.removeBlock(id))}
+              onUpdateHeight={async (height) => setPage(await aboutService.updateCanvasHeight(canvas.id, height))}
+              onRemoveCanvas={async () => setPage(await aboutService.removeCanvas(canvas.id))}
+            />
+          ))}
+
+          {editMode && (
+            <button
+              type="button"
+              className="btn btn-secondary self-start"
+              onClick={async () => {
+                setError(null)
+                try {
+                  setPage(await aboutService.addCanvas())
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : 'Could not add a canvas.')
+                }
+              }}
+            >
+              + Add canvas
+            </button>
+          )}
         </>
       )}
     </div>

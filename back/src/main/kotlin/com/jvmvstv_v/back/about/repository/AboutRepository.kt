@@ -7,8 +7,14 @@ import java.util.UUID
 interface AboutRepository {
     fun find(): AboutPage
     fun updateBody(body: String, updatedBy: UUID): AboutPage
-    fun addTextBlock(id: UUID, text: String, x: Double, y: Double, width: Double, height: Double): AboutPage
-    fun addPhotoBlock(id: UUID, imageId: UUID, x: Double, y: Double, width: Double, height: Double): AboutPage
+    fun addCanvas(id: UUID): AboutPage
+    fun updateCanvasHeight(id: UUID, height: Double): AboutPage
+
+    /** Removes the canvas and its blocks. Returns the image ids of any photo blocks, so the caller can delete their blobs. */
+    fun removeCanvas(id: UUID): List<UUID>
+
+    fun addTextBlock(id: UUID, canvasId: UUID, text: String, x: Double, y: Double, width: Double, height: Double): AboutPage
+    fun addPhotoBlock(id: UUID, canvasId: UUID, imageId: UUID, x: Double, y: Double, width: Double, height: Double): AboutPage
     fun updateBlockLayout(id: UUID, x: Double, y: Double, width: Double, height: Double): AboutPage
     fun updateBlockAlign(id: UUID, align: AboutPageBlockAlign): AboutPage
     fun updateBlockText(id: UUID, text: String): AboutPage
