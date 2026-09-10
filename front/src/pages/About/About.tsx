@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { aboutService } from '../../services/about/index.ts'
 import type { AboutPage, AboutPageBlockAlign } from '../../services/about/index.ts'
 import { useUserStore } from '../../store/userStore.ts'
-import { renderRichText } from './richText.tsx'
+import { renderRichText } from '../../lib/richText.tsx'
+import { useRichTextFormatting } from '../../hooks/useRichTextFormatting.ts'
+import RichTextLinkPrompt from '../../components/RichTextLinkPrompt/RichTextLinkPrompt.tsx'
 import AboutCanvas from './AboutCanvas.tsx'
 
 function About() {
@@ -16,6 +18,8 @@ function About() {
 
   const [body, setBody] = useState('')
   const [savingBody, setSavingBody] = useState(false)
+  const bodyRef = useRef<HTMLTextAreaElement>(null)
+  const bodyFormatting = useRichTextFormatting(bodyRef, body, setBody)
 
   useEffect(() => {
     let cancelled = false
@@ -75,16 +79,28 @@ function About() {
               <p className="text-muted text-sm">
                 Supports <code># Heading</code>, <code>## Subheading</code>, <code>### Subheading</code>,{' '}
                 <code>#### Smallest heading</code>, <code>**bold**</code>, <code>*italic*</code>,{' '}
-                <code>&lt;s&gt;strikethrough&lt;/s&gt;</code>, and{' '}
-                <code>&lt;a href='https://...'&gt;link&lt;/a&gt;</code>. Leave a blank line between paragraphs.
+                <code>&lt;s&gt;strikethrough&lt;/s&gt;</code>, <code>&lt;u&gt;underline&lt;/u&gt;</code>, and{' '}
+                <code>&lt;a href='https://...'&gt;link&lt;/a&gt;</code> (also <code>mailto:</code>). Leave a blank
+                line between paragraphs. Select text and press ctrl/cmd+b/i/u/s to format it, or ctrl/cmd+a to link
+                it.
               </p>
               <textarea
                 id="about-body"
+                ref={bodyRef}
                 className="input"
                 rows={10}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
+                onKeyDown={bodyFormatting.handleKeyDown}
               />
+              {bodyFormatting.linkPromptOpen && (
+                <RichTextLinkPrompt
+                  url={bodyFormatting.linkUrl}
+                  onUrlChange={bodyFormatting.setLinkUrl}
+                  onConfirm={bodyFormatting.confirmLink}
+                  onCancel={bodyFormatting.cancelLink}
+                />
+              )}
               <button
                 type="button"
                 className="btn btn-primary self-start"
