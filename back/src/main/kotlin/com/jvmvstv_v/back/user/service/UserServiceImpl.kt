@@ -15,8 +15,10 @@ import com.jvmvstv_v.back.user.model.User
 import com.jvmvstv_v.back.user.model.UserRole
 import com.jvmvstv_v.back.user.model.UserStatus
 import com.jvmvstv_v.back.user.repository.UserRepository
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -52,10 +54,18 @@ class UserServiceImpl(
         return updated
     }
 
+    // Transactional so a failure past this point (e.g. the verification email failing to
+    // send) rolls back the insert too -- otherwise a failed send leaves an orphaned account
+    // that permanently occupies its email/nickname without ever being able to verify.
+    @Transactional
     override fun register(input: RegisterInput): User {
         validateRegistration(input)
         val passwordHash = passwordEncoder.encode(input.password) ?: error("Password hashing failed")
-        val user = userRepository.create(input, passwordHash)
+        val user = try {
+            userRepository.create(input, passwordHash)
+        } catch (ex: DuplicateKeyException) {
+            throw AuthException("Email or nickname is already taken")
+        }
         issueVerificationCode(user.id, user.email)
         return user.copy(authToken = issueToken(user.id))
     }
