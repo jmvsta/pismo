@@ -2,7 +2,7 @@
 
 ALTER TABLE images DROP CONSTRAINT images_owner_type_check;
 ALTER TABLE images ADD CONSTRAINT images_owner_type_check
-    CHECK (owner_type IN ('USER_AVATAR', 'FORUM_POST_PHOTO', 'FORUM_REPLY_PHOTO'));
+    CHECK (owner_type IN ('USER_AVATAR', 'FORUM_POST_PHOTO', 'ABOUT_PAGE_PHOTO', 'FORUM_REPLY_PHOTO'));
 
 CREATE TABLE forum_reply_photos (
     id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),

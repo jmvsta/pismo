@@ -1,5 +1,6 @@
 package com.jvmvstv_v.back.letters.service
 
+import com.jvmvstv_v.back.badges.service.LetterRankBadgeService
 import com.jvmvstv_v.back.common.AuthException
 import com.jvmvstv_v.back.common.CurrentUser
 import com.jvmvstv_v.back.letters.model.CreateLetterInput
