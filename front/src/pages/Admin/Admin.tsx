@@ -36,6 +36,9 @@ function Admin() {
         <div className="admin-header">
           <h6>Admin</h6>
           <h2>Moderation</h2>
+          <p className="text-muted text-sm">
+            Looking to edit the About page? Use the <Link to="/about">Edit page</Link> button there instead.
+          </p>
         </div>
 
         <div className="admin-tabs">

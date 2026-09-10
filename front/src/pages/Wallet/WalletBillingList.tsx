@@ -19,33 +19,35 @@ function WalletBillingList({ transactions }: WalletBillingListProps) {
   }
 
   return (
-    <table className="table">
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Amount</th>
-          <th>Status</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        {transactions.map((transaction) => (
-          <tr key={transaction.id}>
-            <td>{formatEnumLabel(transaction.type)}</td>
-            <td className={transaction.amountMinor >= 0 ? 'wallet-amount-credit' : 'wallet-amount-debit'}>
-              {transaction.amountMinor >= 0 ? '+' : ''}
-              {formatMinorAmount(transaction.amountMinor, transaction.currency)}
-            </td>
-            <td>
-              <span className={transaction.status === 'COMPLETED' ? 'tag tag-accent' : 'tag tag-neutral'}>
-                {formatEnumLabel(transaction.status)}
-              </span>
-            </td>
-            <td className="text-muted">{formatDate(transaction.createdAt)}</td>
+    <div className="table-scroll">
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Date</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {transactions.map((transaction) => (
+            <tr key={transaction.id}>
+              <td>{formatEnumLabel(transaction.type)}</td>
+              <td className={transaction.amountMinor >= 0 ? 'wallet-amount-credit' : 'wallet-amount-debit'}>
+                {transaction.amountMinor >= 0 ? '+' : ''}
+                {formatMinorAmount(transaction.amountMinor, transaction.currency)}
+              </td>
+              <td>
+                <span className={transaction.status === 'COMPLETED' ? 'tag tag-accent' : 'tag tag-neutral'}>
+                  {formatEnumLabel(transaction.status)}
+                </span>
+              </td>
+              <td className="text-muted">{formatDate(transaction.createdAt)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
 

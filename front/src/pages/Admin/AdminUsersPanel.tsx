@@ -71,62 +71,64 @@ function AdminUsersPanel() {
   return (
     <div>
       {error && <p className="text-muted admin-empty">{error}</p>}
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Nickname</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user) => {
-            const isSelf = user.id === currentUser?.id
-            return (
-              <tr key={user.id}>
-                <td>{user.nickname}</td>
-                <td className="text-muted">{user.email}</td>
-                <td>
-                  {isAdmin ? (
-                    <select
-                      className="input"
-                      value={user.role}
+      <div className="table-scroll">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Nickname</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((user) => {
+              const isSelf = user.id === currentUser?.id
+              return (
+                <tr key={user.id}>
+                  <td>{user.nickname}</td>
+                  <td className="text-muted">{user.email}</td>
+                  <td>
+                    {isAdmin ? (
+                      <select
+                        className="input"
+                        value={user.role}
+                        disabled={isSelf}
+                        onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
+                      >
+                        {ROLES.map((role) => (
+                          <option key={role} value={role}>
+                            {role}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      // Moderators can't change roles -- read-only.
+                      <span>{user.role}</span>
+                    )}
+                  </td>
+                  <td>
+                    <span className={user.status === 'SUSPENDED' ? 'tag tag-neutral' : 'tag tag-accent'}>
+                      {user.status}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
                       disabled={isSelf}
-                      onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
+                      onClick={() => handleToggleStatus(user)}
                     >
-                      {ROLES.map((role) => (
-                        <option key={role} value={role}>
-                          {role}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    // Moderators can't change roles -- read-only.
-                    <span>{user.role}</span>
-                  )}
-                </td>
-                <td>
-                  <span className={user.status === 'SUSPENDED' ? 'tag tag-neutral' : 'tag tag-accent'}>
-                    {user.status}
-                  </span>
-                </td>
-                <td>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    disabled={isSelf}
-                    onClick={() => handleToggleStatus(user)}
-                  >
-                    {user.status === 'SUSPENDED' ? 'Unban' : 'Ban'}
-                  </button>
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+                      {user.status === 'SUSPENDED' ? 'Unban' : 'Ban'}
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

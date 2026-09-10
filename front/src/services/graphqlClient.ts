@@ -4,6 +4,7 @@ const AUTH_TOKEN_STORAGE_KEY = 'pismo_auth_token'
 
 export interface GraphqlError {
   message: string
+  extensions?: { classification?: string }
 }
 
 export class GraphqlRequestError extends Error {
@@ -18,6 +19,19 @@ export class GraphqlRequestError extends Error {
 interface GraphqlResponseBody<TData> {
   data?: TData
   errors?: GraphqlError[]
+}
+
+type UnauthorizedListener = () => void
+
+let unauthorizedListeners: UnauthorizedListener[] = []
+
+// Lets stores react (e.g. clear the current user) the instant any request comes back
+// unauthorized, instead of only the one page that happened to make that request.
+export function onUnauthorized(listener: UnauthorizedListener): () => void {
+  unauthorizedListeners.push(listener)
+  return () => {
+    unauthorizedListeners = unauthorizedListeners.filter((registered) => registered !== listener)
+  }
 }
 
 export class GraphqlClient {
@@ -36,6 +50,10 @@ export class GraphqlClient {
     } else {
       localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY)
     }
+  }
+
+  getAuthToken(): string | null {
+    return this.authToken
   }
 
   async request<TData, TVariables extends Record<string, unknown> = Record<string, never>>(
@@ -60,6 +78,10 @@ export class GraphqlClient {
     const body = (await response.json()) as GraphqlResponseBody<TData>
 
     if (body.errors?.length) {
+      if (body.errors.some((error) => error.extensions?.classification === 'UNAUTHORIZED')) {
+        this.setAuthToken(null)
+        unauthorizedListeners.forEach((listener) => listener())
+      }
       throw new GraphqlRequestError(body.errors)
     }
 

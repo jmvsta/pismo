@@ -81,40 +81,42 @@ function AdminTopicsPanel() {
   return (
     <div>
       {error && <p className="text-muted admin-empty">{error}</p>}
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Code</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {topics.map((topic) => (
-            <tr key={topic.id}>
-              <td>{topic.title}</td>
-              <td className="text-muted">{topic.code}</td>
-              <td>
-                <span className={topic.active ? 'tag tag-accent' : 'tag tag-neutral'}>
-                  {topic.active ? 'Active' : 'Frozen'}
-                </span>
-              </td>
-              <td className="admin-editor-row">
-                <button type="button" className="btn btn-secondary" onClick={() => handleToggleActive(topic)}>
-                  {topic.active ? 'Freeze' : 'Unfreeze'}
-                </button>
-                {/* Moderators can freeze/unfreeze but not delete topics. */}
-                {isAdmin && (
-                  <button type="button" className="btn btn-ghost" onClick={() => handleDelete(topic)}>
-                    Remove
-                  </button>
-                )}
-              </td>
+      <div className="table-scroll">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Code</th>
+              <th>Status</th>
+              <th></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {topics.map((topic) => (
+              <tr key={topic.id}>
+                <td>{topic.title}</td>
+                <td className="text-muted">{topic.code}</td>
+                <td>
+                  <span className={topic.active ? 'tag tag-accent' : 'tag tag-neutral'}>
+                    {topic.active ? 'Active' : 'Frozen'}
+                  </span>
+                </td>
+                <td className="admin-editor-row">
+                  <button type="button" className="btn btn-secondary" onClick={() => handleToggleActive(topic)}>
+                    {topic.active ? 'Freeze' : 'Unfreeze'}
+                  </button>
+                  {/* Moderators can freeze/unfreeze but not delete topics. */}
+                  {isAdmin && (
+                    <button type="button" className="btn btn-ghost" onClick={() => handleDelete(topic)}>
+                      Remove
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {/* Creating new topics is admin-only -- not one of the actions moderators were granted. */}
       {isAdmin && (

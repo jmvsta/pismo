@@ -155,3 +155,22 @@
 .register-signin {
   font-size: 13px;
 }
+
+@media (max-width: 640px) {
+  .register-page {
+    padding: var(--space-4);
+  }
+  .register-card {
+    flex-direction: column;
+  }
+  .register-side {
+    width: 100%;
+  }
+  .register-form {
+    padding: var(--space-6) var(--space-4);
+  }
+  .register-row {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+}

@@ -3,6 +3,7 @@ import { Route, Routes, useLocation } from 'react-router-dom'
 import AuthBar from './components/AuthBar.tsx'
 import { useUserStore } from './store/userStore.ts'
 import Forum from './pages/Forum/Forum.tsx'
+import About from './pages/About/About.tsx'
 import Register from './pages/Register/Register.tsx'
 import VerifyEmail from './pages/Register/VerifyEmail.tsx'
 import RegisterBio from './pages/Register/RegisterBio.tsx'
@@ -37,6 +38,7 @@ function App() {
       {!AUTH_PAGES.includes(location.pathname) && <AuthBar />}
       <Routes>
         <Route path="/" element={<Forum />} />
+        <Route path="/about" element={<About />} />
         <Route path="/register" element={<Register />} />
         <Route path="/register/verify-email" element={<VerifyEmail />} />
         <Route path="/register/bio" element={<RegisterBio />} />

@@ -1,6 +1,5 @@
 package com.jvmvstv_v.back.letters.service
 
-import com.jvmvstv_v.back.badges.service.LetterRankBadgeService
 import com.jvmvstv_v.back.common.AuthException
 import com.jvmvstv_v.back.common.CurrentUser
 import com.jvmvstv_v.back.letters.model.CreateLetterInput
@@ -11,6 +10,8 @@ import com.jvmvstv_v.back.letters.model.SubmitLetterFeedbackInput
 import com.jvmvstv_v.back.letters.repository.LetterRepository
 import com.jvmvstv_v.back.matching.model.PenPalConnection
 import com.jvmvstv_v.back.matching.repository.MatchingRepository
+import com.jvmvstv_v.back.notification.model.NotificationType
+import com.jvmvstv_v.back.notification.service.NotificationService
 import org.springframework.stereotype.Service
 import java.util.UUID
 
@@ -21,6 +22,7 @@ class LetterServiceImpl(
     private val letterRepository: LetterRepository,
     private val matchingRepository: MatchingRepository,
     private val letterRankBadgeService: LetterRankBadgeService,
+    private val notificationService: NotificationService,
 ) : LetterService {
     override fun findById(id: UUID): Letter? = letterRepository.findById(id)
 
@@ -61,10 +63,27 @@ class LetterServiceImpl(
 
     override fun updateStatus(id: UUID, status: LetterStatus, location: String?, note: String?): Letter {
         val updated = letterRepository.updateStatus(id, status, location, note)
-        if (status == LetterStatus.SENT) {
-            letterRankBadgeService.awardForLetterCount(updated.sender.id, letterRepository.countSentByUser(updated.sender.id))
-        }
+        letterRankBadgeService.awardForLetterCount(updated.sender.id, letterRepository.countSentByUser(updated.sender.id))
+        notifyStatusChange(updated, status)
         return updated
+    }
+
+    private fun notifyStatusChange(letter: Letter, status: LetterStatus) {
+        when (status) {
+            LetterStatus.SENT -> notificationService.notify(
+                letter.recipient.id,
+                NotificationType.LETTER_SENT,
+                "A letter is on its way",
+                "${letter.sender.nickname} sent you a letter",
+            )
+            LetterStatus.DELIVERED -> notificationService.notify(
+                letter.sender.id,
+                NotificationType.LETTER_DELIVERED,
+                "Your letter was delivered",
+                "${letter.recipient.nickname} received your letter",
+            )
+            else -> Unit
+        }
     }
 
     override fun confirmDelivery(id: UUID, code: String): Letter {
@@ -74,7 +93,7 @@ class LetterServiceImpl(
             throw AuthException("This letter isn't awaiting delivery confirmation")
         }
         if (letter.trackingCode != code) throw AuthException("Incorrect code")
-        return letterRepository.updateStatus(id, LetterStatus.DELIVERED, null, null)
+        return updateStatus(id, LetterStatus.DELIVERED, null, null)
     }
 
     override fun submitFeedback(input: SubmitLetterFeedbackInput): LetterFeedback =
