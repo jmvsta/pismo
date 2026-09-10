@@ -10,6 +10,9 @@ import com.jvmvstv_v.back.image.service.ImageService
 import org.springframework.stereotype.Service
 import java.util.UUID
 
+private const val MIN_CANVAS_HEIGHT = 10.0
+private const val MAX_CANVAS_HEIGHT = 300.0
+
 @Service
 class AboutServiceImpl(
     private val aboutRepository: AboutRepository,
@@ -22,13 +25,33 @@ class AboutServiceImpl(
         return aboutRepository.updateBody(body, CurrentUser.id)
     }
 
-    override fun addTextBlock(text: String, x: Double, y: Double, width: Double, height: Double): AboutPage {
+    override fun addCanvas(): AboutPage {
+        CurrentUser.requireAdmin()
+        return aboutRepository.addCanvas(UUID.randomUUID())
+    }
+
+    override fun updateCanvasHeight(id: UUID, height: Double): AboutPage {
+        CurrentUser.requireAdmin()
+        if (height !in MIN_CANVAS_HEIGHT..MAX_CANVAS_HEIGHT) {
+            throw AuthException("Canvas height must be between $MIN_CANVAS_HEIGHT and $MAX_CANVAS_HEIGHT")
+        }
+        return aboutRepository.updateCanvasHeight(id, height)
+    }
+
+    override fun removeCanvas(id: UUID): AboutPage {
+        CurrentUser.requireAdmin()
+        aboutRepository.removeCanvas(id).forEach { imageService.delete(it) }
+        return aboutRepository.find()
+    }
+
+    override fun addTextBlock(canvasId: UUID, text: String, x: Double, y: Double, width: Double, height: Double): AboutPage {
         CurrentUser.requireAdmin()
         requireValidLayout(x, y, width, height)
-        return aboutRepository.addTextBlock(UUID.randomUUID(), text, x, y, width, height)
+        return aboutRepository.addTextBlock(UUID.randomUUID(), canvasId, text, x, y, width, height)
     }
 
     override fun addPhotoBlock(
+        canvasId: UUID,
         mimeType: String,
         imageBase64: String,
         x: Double,
@@ -40,7 +63,7 @@ class AboutServiceImpl(
         requireValidLayout(x, y, width, height)
         val blockId = UUID.randomUUID()
         val image = imageService.store(ImageOwnerType.ABOUT_PAGE_PHOTO, blockId, mimeType, imageBase64)
-        return aboutRepository.addPhotoBlock(blockId, image.id, x, y, width, height)
+        return aboutRepository.addPhotoBlock(blockId, canvasId, image.id, x, y, width, height)
     }
 
     override fun updateBlockLayout(id: UUID, x: Double, y: Double, width: Double, height: Double): AboutPage {

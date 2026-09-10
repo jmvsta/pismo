@@ -29,11 +29,14 @@ function textAlignFor(align: AboutPageBlockAlign): 'left' | 'center' | 'right' {
 const DEFAULT_TEXT_LAYOUT = { x: 30, y: 5, width: 40, height: 15 }
 const DEFAULT_PHOTO_LAYOUT = { x: 35, y: 25, width: 30, height: 30 }
 const MIN_SIZE = 6
+const MIN_CANVAS_HEIGHT = 10
+const MAX_CANVAS_HEIGHT = 300
 
 type DragMode = 'move' | 'resize'
 type LiveLayout = { id: string; x: number; y: number; width: number; height: number }
 
 interface AboutCanvasProps {
+  height: number
   blocks: AboutPageBlock[]
   editable: boolean
   onAddText: (text: string, x: number, y: number, width: number, height: number) => Promise<void>
@@ -49,9 +52,12 @@ interface AboutCanvasProps {
   onUpdateAlign: (id: string, align: AboutPageBlockAlign) => Promise<void>
   onUpdateText: (id: string, text: string) => Promise<void>
   onRemove: (id: string) => Promise<void>
+  onUpdateHeight: (height: number) => Promise<void>
+  onRemoveCanvas: () => Promise<void>
 }
 
 function AboutCanvas({
+  height,
   blocks,
   editable,
   onAddText,
@@ -60,6 +66,8 @@ function AboutCanvas({
   onUpdateAlign,
   onUpdateText,
   onRemove,
+  onUpdateHeight,
+  onRemoveCanvas,
 }: AboutCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -68,6 +76,7 @@ function AboutCanvas({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draftText, setDraftText] = useState('')
   const [liveLayout, setLiveLayout] = useState<LiveLayout | null>(null)
+  const [liveHeight, setLiveHeight] = useState<number | null>(null)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -126,6 +135,49 @@ function AboutCanvas({
 
     window.addEventListener('pointermove', handleMove)
     window.addEventListener('pointerup', handleUp)
+  }
+
+  const beginCanvasResize = (e: React.PointerEvent) => {
+    if (!editable) return
+    e.stopPropagation()
+    e.preventDefault()
+    e.currentTarget.setPointerCapture(e.pointerId)
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const startClientY = e.clientY
+    const canvasWidthPx = canvas.getBoundingClientRect().width
+    const startHeight = height
+
+    const handleMove = (moveEvent: PointerEvent) => {
+      const dyPct = ((moveEvent.clientY - startClientY) / canvasWidthPx) * 100
+      setLiveHeight(clamp(startHeight + dyPct, MIN_CANVAS_HEIGHT, MAX_CANVAS_HEIGHT))
+    }
+
+    const handleUp = () => {
+      window.removeEventListener('pointermove', handleMove)
+      window.removeEventListener('pointerup', handleUp)
+      setLiveHeight((current) => {
+        if (current !== null) {
+          onUpdateHeight(current).catch((err) => {
+            setError(err instanceof Error ? err.message : 'Could not resize this canvas.')
+          })
+        }
+        return null
+      })
+    }
+
+    window.addEventListener('pointermove', handleMove)
+    window.addEventListener('pointerup', handleUp)
+  }
+
+  const handleRemoveCanvas = async () => {
+    setError(null)
+    try {
+      await onRemoveCanvas()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not remove this canvas.')
+    }
   }
 
   const startEditingText = (block: AboutPageBlock) => {
@@ -207,13 +259,20 @@ function AboutCanvas({
             onChange={handlePhotoChosen}
             hidden
           />
+          <button
+            type="button"
+            className="btn btn-secondary ml-auto text-[var(--color-accent)]"
+            onClick={handleRemoveCanvas}
+          >
+            Remove canvas
+          </button>
         </div>
       )}
 
       <div
         ref={canvasRef}
         className={editable ? 'relative w-full border border-dashed border-[var(--color-divider)]' : 'relative w-full'}
-        style={{ aspectRatio: '16 / 9' }}
+        style={{ aspectRatio: `100 / ${liveHeight ?? height}` }}
         onPointerDown={() => editable && setSelectedId(null)}
       >
         {blocks.map((block) => {
@@ -324,6 +383,16 @@ function AboutCanvas({
             </div>
           )
         })}
+
+        {editable && (
+          <div
+            className="absolute inset-x-0 bottom-0 flex h-3 cursor-ns-resize items-center justify-center"
+            style={{ touchAction: 'none' }}
+            onPointerDown={beginCanvasResize}
+          >
+            <div className="h-1 w-10 bg-[var(--color-accent)]" />
+          </div>
+        )}
       </div>
 
       {error && <p className="text-muted">{error}</p>}
