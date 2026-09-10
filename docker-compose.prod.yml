@@ -18,7 +18,7 @@ services:
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
       STRIPE_API_KEY: ${STRIPE_API_KEY}
       RESEND_API_KEY: ${RESEND_API_KEY}
-      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-noreply@pismonadar.com}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-noreply@contact.pismonadar.com}
     restart: unless-stopped
 
   front:

@@ -29,7 +29,7 @@ app:
   stripe:
     api-key: ${STRIPE_API_KEY}
   email:
-    from: ${EMAIL_FROM_ADDRESS:noreply@pismonadar.com}
+    from: ${EMAIL_FROM_ADDRESS:noreply@contact.pismonadar.com}
     resend:
       api-key: ${RESEND_API_KEY}
   email-verification:
