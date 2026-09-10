@@ -74,8 +74,9 @@ function About() {
               </label>
               <p className="text-muted text-sm">
                 Supports <code># Heading</code>, <code>## Subheading</code>, <code>### Subheading</code>,{' '}
-                <code>#### Smallest heading</code>, <code>**bold**</code>, and <code>*italic*</code>. Leave a blank
-                line between paragraphs.
+                <code>#### Smallest heading</code>, <code>**bold**</code>, <code>*italic*</code>,{' '}
+                <code>&lt;s&gt;strikethrough&lt;/s&gt;</code>, and{' '}
+                <code>&lt;a href='https://...'&gt;link&lt;/a&gt;</code>. Leave a blank line between paragraphs.
               </p>
               <textarea
                 id="about-body"
