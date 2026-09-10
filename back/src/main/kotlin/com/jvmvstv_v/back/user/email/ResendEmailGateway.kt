@@ -1,12 +1,12 @@
 package com.jvmvstv_v.back.user.email
 
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 
 @Component
-@ConditionalOnProperty(prefix = "app.email.resend", name = ["api-key"])
+@ConditionalOnExpression("!'\${app.email.resend.api-key:}'.isBlank()")
 class ResendEmailGateway(
     @Value("\${app.email.resend.api-key}") apiKey: String,
     @Value("\${app.email.from}") private val fromAddress: String,
