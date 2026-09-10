@@ -1,0 +1,32 @@
+/* Block width/height are percentages of the canvas, so heading text needs to scale the
+   same way -- otherwise a heading sized for a wide desktop canvas overflows a block's
+   fixed-height, overflow:hidden box once the canvas (and so the block, in pixels) shrinks
+   on a narrow phone screen, clipping the glyphs. Container query units tie font-size to
+   the canvas's own width so it shrinks in lockstep with the blocks, capped at the normal
+   heading size so desktop is unaffected. */
+/* Scales with the canvas the same way font-size below does -- a fixed px padding would,
+   like a fixed px font-size, eat a disproportionate share of a block once it shrinks. */
+.about-canvas-block-text {
+  padding: clamp(1px, 1cqw, 8px);
+}
+
+/* The floors here are only a last-resort safety net against zero/negative font-size --
+   they must stay well below any font-size these blocks reach at realistic phone widths,
+   or they reintroduce the same overflow they're meant to prevent (a block that fits
+   exactly at its authored width relies on every element shrinking at the *same* rate as
+   the block itself; a floor that kicks in early makes text shrink slower than its box). */
+.about-canvas-block-text h1 {
+  font-size: clamp(8px, 5cqw, 42px);
+}
+.about-canvas-block-text h2 {
+  font-size: clamp(8px, 3.8cqw, 32px);
+}
+.about-canvas-block-text h3 {
+  font-size: clamp(8px, 3cqw, 25px);
+}
+.about-canvas-block-text h5 {
+  font-size: clamp(7px, 2cqw, 16px);
+}
+.about-canvas-block-text p {
+  font-size: clamp(7px, 1.8cqw, 14px);
+}

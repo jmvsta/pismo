@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { forumService } from '../../services/forum/index.ts'
 import type { ForumReply, NewForumReplyPhotoInput } from '../../services/forum/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
+import { renderRichText } from '../../lib/richText.tsx'
 import ThanksButton from './ThanksButton.tsx'
 import ForumReplyComposer from './ForumReplyComposer.tsx'
 
@@ -30,7 +31,7 @@ function ForumReplyThread({ reply, childrenByParentId, postId, onReplyPosted, on
   return (
     <div className="forum-reply">
       <div className="forum-reply-meta text-muted">{reply.author.nickname}</div>
-      <p className="forum-reply-body">{reply.body}</p>
+      <div className="forum-reply-body">{renderRichText(reply.body)}</div>
       {reply.photos.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {reply.photos.map((photo) => (

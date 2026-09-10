@@ -2,6 +2,8 @@ import { useRef, useState, type FormEvent } from 'react'
 import type { NewForumReplyPhotoInput } from '../../services/forum/index.ts'
 import EmojiPicker from '../../components/EmojiPicker/EmojiPicker.tsx'
 import PhotoAttachments, { type PendingPhoto } from '../../components/PhotoAttachments/PhotoAttachments.tsx'
+import { useRichTextFormatting } from '../../hooks/useRichTextFormatting.ts'
+import RichTextLinkPrompt from '../../components/RichTextLinkPrompt/RichTextLinkPrompt.tsx'
 
 interface ForumReplyComposerProps {
   placeholder?: string
@@ -16,6 +18,7 @@ function ForumReplyComposer({ placeholder, submitLabel = 'Reply →', onSubmit, 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
+  const formatting = useRichTextFormatting(bodyRef, body, setBody)
 
   const handleEmojiSelect = (emoji: string) => {
     const cursor = bodyRef.current?.selectionStart ?? body.length
@@ -50,9 +53,19 @@ function ForumReplyComposer({ placeholder, submitLabel = 'Reply →', onSubmit, 
         rows={2}
         value={body}
         onChange={(e) => setBody(e.target.value)}
+        onKeyDown={formatting.handleKeyDown}
         placeholder={placeholder ?? 'Write a reply…'}
+        title="Select text and press ctrl/cmd+b/i/u/s to format it, or ctrl/cmd+a to link it. Also supports # headings and <a href='mailto:...'>."
       />
       <EmojiPicker onSelect={handleEmojiSelect} />
+      {formatting.linkPromptOpen && (
+        <RichTextLinkPrompt
+          url={formatting.linkUrl}
+          onUrlChange={formatting.setLinkUrl}
+          onConfirm={formatting.confirmLink}
+          onCancel={formatting.cancelLink}
+        />
+      )}
       <PhotoAttachments photos={photos} onChange={setPhotos} disabled={submitting} />
       {error && <p className="text-muted">{error}</p>}
       <div className="forum-reply-composer-actions">

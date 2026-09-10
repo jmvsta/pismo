@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { forumService } from '../../services/forum/index.ts'
 import type { ForumPost, ForumReply, NewForumReplyPhotoInput } from '../../services/forum/index.ts'
+import { renderRichText } from '../../lib/richText.tsx'
 import ThanksButton from './ThanksButton.tsx'
 import ForumReplyComposer from './ForumReplyComposer.tsx'
 import ForumReplyThread from './ForumReplyThread.tsx'
@@ -59,7 +60,7 @@ function ForumPostDetail({ post, onClose, onPostThanked, onReplyAdded, onReplyTh
           <span className="tag tag-accent">{post.topic.title}</span>
           <span className="text-muted">{post.author.nickname}</span>
         </div>
-        <p className="forum-post-detail-body">{post.body}</p>
+        <div className="forum-post-detail-body">{renderRichText(post.body)}</div>
         <ThanksButton count={post.thanksCount} onThank={handlePostThank} />
 
         <div className="forum-reply-thread">

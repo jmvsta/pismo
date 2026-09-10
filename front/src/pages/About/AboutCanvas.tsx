@@ -1,7 +1,11 @@
 import { useRef, useState } from 'react'
+import './AboutCanvas.css'
 import type { AboutPageBlock, AboutPageBlockAlign } from '../../services/about/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
-import { renderRichText } from './richText.tsx'
+import { renderRichText } from '../../lib/richText.tsx'
+import { useRichTextFormatting } from '../../hooks/useRichTextFormatting.ts'
+import RichTextLinkPrompt from '../../components/RichTextLinkPrompt/RichTextLinkPrompt.tsx'
+import EmojiPicker from '../../components/EmojiPicker/EmojiPicker.tsx'
 
 function readAsBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -71,6 +75,7 @@ function AboutCanvas({
 }: AboutCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null)
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -79,6 +84,7 @@ function AboutCanvas({
   const [liveHeight, setLiveHeight] = useState<number | null>(null)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const editFormatting = useRichTextFormatting(editTextareaRef, draftText, setDraftText)
 
   if (!editable && blocks.length === 0) return null
 
@@ -184,6 +190,7 @@ function AboutCanvas({
     setSelectedId(block.id)
     setEditingId(block.id)
     setDraftText(block.text ?? '')
+    editFormatting.cancelLink()
   }
 
   const saveEditingText = async (block: AboutPageBlock) => {
@@ -195,6 +202,11 @@ function AboutCanvas({
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save this text.')
     }
+  }
+
+  const handleEmojiInsert = (emoji: string) => {
+    const cursor = editTextareaRef.current?.selectionStart ?? draftText.length
+    setDraftText(draftText.slice(0, cursor) + emoji + draftText.slice(cursor))
   }
 
   const handleAddText = async () => {
@@ -271,8 +283,12 @@ function AboutCanvas({
 
       <div
         ref={canvasRef}
-        className={editable ? 'relative w-full border border-dashed border-[var(--color-divider)]' : 'relative w-full'}
-        style={{ aspectRatio: `100 / ${liveHeight ?? height}` }}
+        className={
+          editable
+            ? 'about-canvas relative w-full border border-dashed border-[var(--color-divider)]'
+            : 'about-canvas relative w-full'
+        }
+        style={{ aspectRatio: `100 / ${liveHeight ?? height}`, containerType: 'inline-size' }}
         onPointerDown={() => editable && setSelectedId(null)}
       >
         {blocks.map((block) => {
@@ -309,17 +325,43 @@ function AboutCanvas({
                     draggable={false}
                   />
                 ) : isEditingText ? (
-                  <textarea
-                    className="input h-full w-full resize-none"
-                    autoFocus
-                    value={draftText}
-                    onChange={(e) => setDraftText(e.target.value)}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onBlur={() => saveEditingText(block)}
-                  />
+                  <div
+                    className="relative h-full w-full"
+                    onBlur={(e) => {
+                      if (e.currentTarget.contains(e.relatedTarget as Node)) return
+                      saveEditingText(block)
+                    }}
+                  >
+                    <textarea
+                      ref={editTextareaRef}
+                      className="input h-full w-full resize-none"
+                      autoFocus
+                      value={draftText}
+                      onChange={(e) => setDraftText(e.target.value)}
+                      onKeyDown={editFormatting.handleKeyDown}
+                      onPointerDown={(e) => e.stopPropagation()}
+                    />
+                    <div
+                      className="absolute flex flex-col gap-1"
+                      style={{ top: -34, left: 0, zIndex: 101 }}
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center gap-1 bg-[var(--color-bg)] p-1 shadow-sm">
+                        <EmojiPicker onSelect={handleEmojiInsert} />
+                      </div>
+                      {editFormatting.linkPromptOpen && (
+                        <RichTextLinkPrompt
+                          url={editFormatting.linkUrl}
+                          onUrlChange={editFormatting.setLinkUrl}
+                          onConfirm={editFormatting.confirmLink}
+                          onCancel={editFormatting.cancelLink}
+                        />
+                      )}
+                    </div>
+                  </div>
                 ) : (
                   <div
-                    className="h-full w-full overflow-hidden p-2 text-sm leading-relaxed [&_*]:m-0"
+                    className="about-canvas-block-text h-full w-full overflow-hidden text-sm leading-relaxed [&_*]:m-0"
                     style={{ textAlign: textAlignFor(block.align) }}
                     onDoubleClick={() => editable && startEditingText(block)}
                   >
