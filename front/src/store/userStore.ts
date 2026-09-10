@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { userService } from '../services/user/index.ts'
+import { onUnauthorized } from '../services/graphqlClient.ts'
 import type { LoginInput, RegisterInput, UpdateProfileInput, User } from '../services/user/index.ts'
 
 type UserStatus = 'idle' | 'loading' | 'ready' | 'error'
@@ -83,3 +84,10 @@ export const useUserStore = create<UserState>((set) => ({
     await userService.resendVerificationCode()
   },
 }))
+
+// A token can go stale between page loads (expiry, logout elsewhere, etc.). Whenever any
+// request comes back unauthorized, drop the cached user everywhere at once so every page --
+// including one the user navigates back to -- renders its signed-out state immediately.
+onUnauthorized(() => {
+  useUserStore.setState({ currentUser: null, status: 'error', error: 'You have been signed out.' })
+})
