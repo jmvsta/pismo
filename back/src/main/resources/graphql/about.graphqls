@@ -30,10 +30,10 @@ extend type Mutation {
     removeAboutPageBlock(id: ID!): AboutPage!
 }
 
-"""Singleton "About us" page. body is a light markdown subset (headings, bold, italic)
-rendered client-side; canvases is an ordered, admin-managed list of freeform canvases,
-each holding its own text/photo blocks and its own resizable height. Everything here is
-editable by admins only."""
+"""Singleton "About us" page. body is a light markdown subset (headings, bold, italic,
+strikethrough, links) rendered client-side; canvases is an ordered, admin-managed list of
+freeform canvases, each holding its own text/photo blocks and its own resizable height.
+Everything here is editable by admins only."""
 type AboutPage {
     body: String!
     canvases: [AboutPageCanvas!]!
