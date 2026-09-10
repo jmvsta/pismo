@@ -7,6 +7,10 @@ function isSafeHref(href: string): boolean {
   return /^https?:\/\//i.test(href) || /^mailto:/i.test(href)
 }
 
+function isMailto(href: string): boolean {
+  return /^mailto:/i.test(href)
+}
+
 function parseInline(text: string): ReactNode[] {
   const nodes: ReactNode[] = []
   let remaining = text
@@ -27,10 +31,19 @@ function parseInline(text: string): ReactNode[] {
     } else if (underline !== undefined) {
       nodes.push(<u key={key++}>{underline}</u>)
     } else if (href !== undefined && linkText !== undefined && isSafeHref(href)) {
+      // target="_blank" opens http(s) links in a new tab, but on mailto: links it silently
+      // fails to hand off to the mail app on several mobile/desktop browsers (there's no
+      // page to load in that new tab) -- so only http(s) gets it.
       nodes.push(
-        <a key={key++} href={href} target="_blank" rel="noopener noreferrer">
-          {linkText}
-        </a>,
+        isMailto(href) ? (
+          <a key={key++} href={href}>
+            {linkText}
+          </a>
+        ) : (
+          <a key={key++} href={href} target="_blank" rel="noopener noreferrer">
+            {linkText}
+          </a>
+        ),
       )
     } else if (href !== undefined && linkText !== undefined) {
       nodes.push(linkText)
