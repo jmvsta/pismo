@@ -55,8 +55,23 @@ type ForumReply {
     author: User!
     body: String!
     thanksCount: Int!
+    photos: [ForumReplyPhoto!]!
     createdAt: String!
     updatedAt: String!
+}
+
+type ForumReplyPhoto {
+    id: ID!
+    imageId: ID!
+    caption: String
+    position: Int!
+    createdAt: String!
+}
+
+input NewForumReplyPhotoInput {
+    mimeType: String!
+    imageBase64: String!
+    caption: String
 }
 
 input CreateForumPostInput {
@@ -76,6 +91,7 @@ input CreateForumReplyInput {
     postId: ID!
     parentReplyId: ID
     body: String!
+    photos: [NewForumReplyPhotoInput!]
 }
 
 input CreateForumTopicInput {

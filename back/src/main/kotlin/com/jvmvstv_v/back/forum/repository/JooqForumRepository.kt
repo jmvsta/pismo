@@ -6,8 +6,10 @@ import com.jvmvstv_v.back.forum.model.CreateForumTopicInput
 import com.jvmvstv_v.back.forum.model.ForumPost
 import com.jvmvstv_v.back.forum.model.ForumPostPhoto
 import com.jvmvstv_v.back.forum.model.ForumReply
+import com.jvmvstv_v.back.forum.model.ForumReplyPhoto
 import com.jvmvstv_v.back.forum.model.ForumTopic
 import com.jvmvstv_v.back.forum.model.NewForumPostPhoto
+import com.jvmvstv_v.back.forum.model.NewForumReplyPhoto
 import com.jvmvstv_v.back.forum.model.UpdateForumPostInput
 import com.jvmvstv_v.back.user.repository.UserRepository
 import org.jooq.DSLContext
@@ -63,6 +65,14 @@ class JooqForumRepository(
     private val RP_UPDATED_AT = DSL.field("updated_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
     private val RP_DELETED_AT = DSL.field("deleted_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
 
+    private val REPLY_PHOTOS = DSL.table("forum_reply_photos")
+    private val RPH_ID = DSL.field("id", SQLDataType.UUID)
+    private val RPH_REPLY_ID = DSL.field("reply_id", SQLDataType.UUID)
+    private val RPH_IMAGE_ID = DSL.field("image_id", SQLDataType.UUID)
+    private val RPH_CAPTION = DSL.field("caption", SQLDataType.VARCHAR)
+    private val RPH_POSITION = DSL.field("position", SQLDataType.INTEGER)
+    private val RPH_CREATED_AT = DSL.field("created_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
+
     private val POST_THANKS = DSL.table("forum_post_thanks")
     private val PT_POST_ID = DSL.field("post_id", SQLDataType.UUID)
     private val PT_USER_ID = DSL.field("user_id", SQLDataType.UUID)
@@ -114,13 +124,19 @@ class JooqForumRepository(
         return findPostById(id) ?: error("Forum post $id not found")
     }
 
-    override fun createReply(authorId: UUID, input: CreateForumReplyInput): ForumReply {
+    override fun createReply(authorId: UUID, input: CreateForumReplyInput, photos: List<NewForumReplyPhoto>): ForumReply {
         val id = UUID.randomUUID()
         val now = OffsetDateTime.now()
         dsl.insertInto(REPLIES)
             .columns(RP_ID, RP_POST_ID, RP_PARENT_ID, RP_AUTHOR_ID, RP_BODY, RP_CREATED_AT, RP_UPDATED_AT)
             .values(id, input.postId, input.parentReplyId, authorId, input.body, now, now)
             .execute()
+        photos.forEachIndexed { index, photo ->
+            dsl.insertInto(REPLY_PHOTOS)
+                .columns(RPH_ID, RPH_REPLY_ID, RPH_IMAGE_ID, RPH_CAPTION, RPH_POSITION, RPH_CREATED_AT)
+                .values(photo.id, id, photo.imageId, photo.caption, index, now)
+                .execute()
+        }
         dsl.update(POSTS)
             .set(P_REPLY_COUNT, P_REPLY_COUNT.plus(1))
             .where(P_ID.eq(input.postId))
@@ -252,13 +268,32 @@ class JooqForumRepository(
         )
     }
 
-    private fun toReply(record: Record): ForumReply = ForumReply(
-        id = record[RP_ID]!!,
-        parentReply = record[RP_PARENT_ID]?.let { findReplyById(it) },
-        author = userRepository.findById(record[RP_AUTHOR_ID]!!) ?: error("User not found"),
-        body = record[RP_BODY]!!,
-        thanksCount = record[RP_THANKS_COUNT]!!,
-        createdAt = record[RP_CREATED_AT]!!.toString(),
-        updatedAt = record[RP_UPDATED_AT]!!.toString(),
-    )
+    private fun findPhotosForReply(replyId: UUID): List<ForumReplyPhoto> =
+        dsl.select(RPH_ID, RPH_IMAGE_ID, RPH_CAPTION, RPH_POSITION, RPH_CREATED_AT)
+            .from(REPLY_PHOTOS)
+            .where(RPH_REPLY_ID.eq(replyId))
+            .orderBy(RPH_POSITION)
+            .fetch {
+                ForumReplyPhoto(
+                    id = it[RPH_ID]!!,
+                    imageId = it[RPH_IMAGE_ID]!!,
+                    caption = it[RPH_CAPTION],
+                    position = it[RPH_POSITION]!!,
+                    createdAt = it[RPH_CREATED_AT]!!.toString(),
+                )
+            }
+
+    private fun toReply(record: Record): ForumReply {
+        val id = record[RP_ID]!!
+        return ForumReply(
+            id = id,
+            parentReply = record[RP_PARENT_ID]?.let { findReplyById(it) },
+            author = userRepository.findById(record[RP_AUTHOR_ID]!!) ?: error("User not found"),
+            body = record[RP_BODY]!!,
+            thanksCount = record[RP_THANKS_COUNT]!!,
+            photos = findPhotosForReply(id),
+            createdAt = record[RP_CREATED_AT]!!.toString(),
+            updatedAt = record[RP_UPDATED_AT]!!.toString(),
+        )
+    }
 }

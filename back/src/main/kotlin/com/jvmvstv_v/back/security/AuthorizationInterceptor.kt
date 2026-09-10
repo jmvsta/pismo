@@ -22,6 +22,16 @@ private val PUBLIC_FIELDS = setOf(
 
 private val ALLOWED_WHILE_UNVERIFIED = setOf("confirmEmail", "resendVerificationCode", "logout", "me")
 
+// Matching and profile-viewing are closed to unverified accounts unconditionally --
+// unlike the broader app.email-verification.enforced gate below (which is off in local
+// dev, since there's no real mail server), being visible/discoverable to other members
+// isn't something a dev-convenience toggle should ever open up.
+private val RESTRICTED_WHILE_UNVERIFIED = setOf(
+    "myMatches", "penPalRequests", "myConnections", "suggestedProfiles", "hiddenProfiles",
+    "pendingIncomingRequestCount", "sendPenPalRequest", "respondToPenPalRequest",
+    "cancelPenPalRequest", "endConnection", "hideProfile", "user",
+)
+
 @Component
 class AuthorizationInterceptor(
     @Value("\${app.email-verification.enforced:true}") private val emailVerificationEnforced: Boolean,
@@ -32,19 +42,23 @@ class AuthorizationInterceptor(
         if (requiresAuth && CurrentUser.idOrNull == null) {
             return unauthorized("You must be logged in", request)
         }
-        if (requiresAuth && emailVerificationEnforced && CurrentUser.idOrNull != null && !CurrentUser.emailVerified) {
-            val requiresVerification = fields.any { it !in PUBLIC_FIELDS && it !in ALLOWED_WHILE_UNVERIFIED }
+        if (requiresAuth && CurrentUser.idOrNull != null && !CurrentUser.emailVerified) {
+            val requiresVerification = fields.any { it in RESTRICTED_WHILE_UNVERIFIED } ||
+                (emailVerificationEnforced && fields.any { it !in PUBLIC_FIELDS && it !in ALLOWED_WHILE_UNVERIFIED })
             if (requiresVerification) {
-                return unauthorized("Please verify your email before continuing", request)
+                return errorResponse("Please verify your email before continuing", ErrorType.FORBIDDEN, request)
             }
         }
         return chain.next(request)
     }
 
-    private fun unauthorized(message: String, request: WebGraphQlRequest): Mono<WebGraphQlResponse> {
+    private fun unauthorized(message: String, request: WebGraphQlRequest): Mono<WebGraphQlResponse> =
+        errorResponse(message, ErrorType.UNAUTHORIZED, request)
+
+    private fun errorResponse(message: String, errorType: ErrorType, request: WebGraphQlRequest): Mono<WebGraphQlResponse> {
         val error = GraphqlErrorBuilder.newError()
             .message(message)
-            .errorType(ErrorType.UNAUTHORIZED)
+            .errorType(errorType)
             .build()
         val result = DefaultExecutionGraphQlResponse(request.toExecutionInput(), ExecutionResultImpl(error))
         return Mono.just(WebGraphQlResponse(result))

@@ -15,3 +15,19 @@ export interface UserBadge {
   badge: Badge
   awardedAt: string
 }
+
+export interface LetterRankBadge {
+  id: string
+  code: string
+  title: string
+  minLetters: number
+  maxLetters: number | null
+  iconUrl: string | null
+  position: number
+}
+
+export interface UserLetterRankBadge {
+  user: UserSummary
+  badge: LetterRankBadge
+  awardedAt: string
+}

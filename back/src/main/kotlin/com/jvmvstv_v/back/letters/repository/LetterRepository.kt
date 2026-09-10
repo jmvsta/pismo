@@ -13,6 +13,7 @@ interface LetterRepository {
     fun findSentByUser(userId: UUID): List<Letter>
     fun findReceivedByUser(userId: UUID): List<Letter>
     fun countPendingIncoming(recipientId: UUID): Int
+    fun countSentByUser(userId: UUID): Int
     fun create(senderId: UUID, input: CreateLetterInput): Letter
     fun updateStatus(id: UUID, status: LetterStatus, location: String?, note: String?): Letter
     fun submitFeedback(raterId: UUID, input: SubmitLetterFeedbackInput): LetterFeedback

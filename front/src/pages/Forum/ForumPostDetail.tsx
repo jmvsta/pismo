@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { forumService } from '../../services/forum/index.ts'
-import type { ForumPost, ForumReply } from '../../services/forum/index.ts'
+import type { ForumPost, ForumReply, NewForumReplyPhotoInput } from '../../services/forum/index.ts'
 import ThanksButton from './ThanksButton.tsx'
 import ForumReplyComposer from './ForumReplyComposer.tsx'
 import ForumReplyThread from './ForumReplyThread.tsx'
@@ -40,8 +40,8 @@ function ForumPostDetail({ post, onClose, onPostThanked, onReplyAdded, onReplyTh
     onPostThanked(updated)
   }
 
-  const handleTopLevelReply = async (body: string) => {
-    const created = await forumService.createForumReply({ postId: post.id, body })
+  const handleTopLevelReply = async (body: string, photos: NewForumReplyPhotoInput[]) => {
+    const created = await forumService.createForumReply({ postId: post.id, body, photos })
     onReplyAdded(post.id, created)
   }
 

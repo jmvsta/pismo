@@ -229,7 +229,7 @@ function Forum() {
                                 ))}
                             </div>
                             <Link to="/matches" className="btn btn-ghost forum-see-all">
-                                See all matches →
+                                See all recommended →
                             </Link>
                         </div>
 

@@ -1,5 +1,6 @@
 package com.jvmvstv_v.back.letters.service
 
+import com.jvmvstv_v.back.badges.service.LetterRankBadgeService
 import com.jvmvstv_v.back.common.AuthException
 import com.jvmvstv_v.back.common.CurrentUser
 import com.jvmvstv_v.back.letters.model.CreateLetterInput
@@ -21,6 +22,7 @@ private val OPEN_STATUSES = setOf(LetterStatus.DRAFT, LetterStatus.SENT, LetterS
 class LetterServiceImpl(
     private val letterRepository: LetterRepository,
     private val matchingRepository: MatchingRepository,
+    private val letterRankBadgeService: LetterRankBadgeService,
     private val notificationService: NotificationService,
 ) : LetterService {
     override fun findById(id: UUID): Letter? = letterRepository.findById(id)
@@ -62,6 +64,7 @@ class LetterServiceImpl(
 
     override fun updateStatus(id: UUID, status: LetterStatus, location: String?, note: String?): Letter {
         val updated = letterRepository.updateStatus(id, status, location, note)
+        letterRankBadgeService.awardForLetterCount(updated.sender.id, letterRepository.countSentByUser(updated.sender.id))
         notifyStatusChange(updated, status)
         return updated
     }

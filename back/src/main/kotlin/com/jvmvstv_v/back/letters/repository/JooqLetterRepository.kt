@@ -89,6 +89,12 @@ class JooqLetterRepository(
             .and(L_STATUS.`in`(LetterStatus.SENT.name, LetterStatus.IN_TRANSIT.name))
             .fetchOne(0, Int::class.java) ?: 0
 
+    override fun countSentByUser(userId: UUID): Int =
+        dsl.selectCount().from(LETTERS)
+            .where(L_SENDER_ID.eq(userId))
+            .and(L_STATUS.ne(LetterStatus.DRAFT.name))
+            .fetchOne(0, Int::class.java) ?: 0
+
     override fun create(senderId: UUID, input: CreateLetterInput): Letter {
         val id = UUID.randomUUID()
         val now = OffsetDateTime.now()
