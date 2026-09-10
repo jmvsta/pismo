@@ -16,6 +16,7 @@ import ProfileForumActivity from './ProfileForumActivity.tsx'
 import ProfileQuestionnaireAnswers from './ProfileQuestionnaireAnswers.tsx'
 import ProfileAddressForm from './ProfileAddressForm.tsx'
 import ProfilePenPals from './ProfilePenPals.tsx'
+import ProfileVerifyEmailBanner from './ProfileVerifyEmailBanner.tsx'
 import { toLetterRows, type LetterRow } from './letterRows.ts'
 import BadgeChips from './BadgeChips.tsx'
 import './Profile.css'
@@ -149,6 +150,8 @@ function MyProfile() {
           onBioChange={(bio) => updateProfile({ bio })}
         />
 
+        {!currentUser.emailVerifiedAt && <ProfileVerifyEmailBanner />}
+
         <div className="profile-stats">
           <div className="profile-stat">
             <div className="profile-stat-value">{lettersSentCount}</div>
@@ -177,7 +180,7 @@ function MyProfile() {
             ))}
           </div>
 
-          {activityError && <p className="text-muted profile-empty">{activityError}</p>}
+          {activityError && activeTab !== 'penpals' && <p className="text-muted profile-empty">{activityError}</p>}
 
           {activeTab === 'penpals' && <ProfilePenPals onGoToAddressTab={() => setActiveTab('address')} />}
           {activeTab === 'letters' && <ProfileLettersTable rows={letterRows} />}

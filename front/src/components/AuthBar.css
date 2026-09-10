@@ -1,98 +1,100 @@
-/* A thin sliver pinned to the very top of the viewport -- this is the hover target that
-   reveals the bar. It has to be a separate fixed element from .auth-bar itself because
-   .auth-bar starts translated off-screen (display: none would kill hover entirely, and
-   visibility: hidden still needs *something* present at the top edge to hover over). */
-.auth-bar-zone {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 14px;
-  z-index: 60;
-}
-
-/* position: fixed takes this out of normal flow entirely, so it never occupies layout
-   space -- unlike the old always-visible version, page content no longer gets pushed down
-   by its height. Hidden by sliding up out of view; hovering the thin zone above (or the
-   bar itself, once revealed -- :hover bubbles from a fixed-position descendant to its
-   DOM ancestor regardless of visual overflow) slides it back down. */
 .auth-bar {
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: flex-end;
-  gap: 0.75rem;
+  gap: 0.75rem 1.5rem;
   padding: 0.75rem 1.5rem;
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-divider);
-  transform: translateY(-100%);
-  transition: transform 0.25s ease;
   z-index: 60;
 }
 
-.auth-bar-zone:hover .auth-bar {
-  transform: translateY(0);
+.auth-bar-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  justify-self: start;
 }
 
-.auth-bar-envelope {
-  font-size: 18px;
-  line-height: 1;
-  text-decoration: none;
-  display: inline-block;
-  transform-origin: 50% 0%;
-  animation: auth-bar-ring 4s ease-in-out infinite;
-}
-
-/* Ringing lives in a short burst near the start of each cycle, then rests -- a gentle
-   reminder rather than a constant wiggle. */
-@keyframes auth-bar-ring {
-  0%, 8%, 100% {
-    transform: rotate(0deg);
-  }
-  1% {
-    transform: rotate(-12deg);
-  }
-  2% {
-    transform: rotate(10deg);
-  }
-  3% {
-    transform: rotate(-8deg);
-  }
-  4% {
-    transform: rotate(6deg);
-  }
-  5% {
-    transform: rotate(-4deg);
-  }
-  6% {
-    transform: rotate(2deg);
-  }
-}
-
-.auth-bar-nickname {
+.auth-bar-nav a {
   color: var(--color-text);
   font-weight: 600;
   text-decoration: none;
-  cursor: pointer;
+  white-space: nowrap;
 }
-.auth-bar-nickname:hover {
+.auth-bar-nav a:hover {
   color: var(--color-accent);
 }
 
-/* The hover-reveal sliver above never gets a hover event on a touchscreen, so on mobile
-   the bar (and with it, Login/Register) never appeared at all. Below this width, drop the
-   hover mechanism entirely and just show the bar in normal document flow. */
+.auth-bar-brand {
+  justify-self: center;
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  font-size: 18px;
+  text-decoration: none;
+  color: inherit;
+  white-space: nowrap;
+}
+
+.auth-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-self: end;
+}
+
+.auth-bar-wallet-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--color-divider);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.auth-bar-avatar {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--color-divider);
+}
+.auth-bar-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.auth-bar-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
 @media (max-width: 900px) {
-  .auth-bar-zone {
-    position: static;
-    height: auto;
-  }
   .auth-bar {
-    position: static;
-    transform: none;
-    transition: none;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+  .auth-bar-brand {
+    order: -1;
+  }
+  .auth-bar-nav,
+  .auth-bar-actions {
+    justify-self: center;
+    flex-wrap: wrap;
+    justify-content: center;
   }
 }

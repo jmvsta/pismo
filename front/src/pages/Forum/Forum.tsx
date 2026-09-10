@@ -7,7 +7,6 @@ import { useUserStore } from '../../store/userStore.ts'
 import { matchingService } from '../../services/matching/index.ts'
 import type { SuggestedProfile } from '../../services/matching/index.ts'
 import { formatMinorAmount } from '../../lib/money.ts'
-import { imageUrl } from '../../services/imageUrl.ts'
 import ForumPostCard from './ForumPostCard.tsx'
 import ForumNewPostDialog from './ForumNewPostDialog.tsx'
 import ForumNewTopicDialog from './ForumNewTopicDialog.tsx'
@@ -30,16 +29,10 @@ function Forum() {
     const [isNewPostOpen, setIsNewPostOpen] = useState(false)
     const [isNewTopicOpen, setIsNewTopicOpen] = useState(false)
     const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
-    const { wallet, loadWallet } = useWalletStore()
+    const wallet = useWalletStore((state) => state.wallet)
     const currentUser = useUserStore((state) => state.currentUser)
-    const avatarUrl = imageUrl(currentUser?.avatarImageId)
     const [suggestedProfiles, setSuggestedProfiles] = useState<SuggestedProfile[]>([])
     const selectedPost = posts.find((post) => post.id === selectedPostId) ?? null
-
-    useEffect(() => {
-        if (!currentUser) return
-        loadWallet()
-    }, [loadWallet, currentUser])
 
     useEffect(() => {
         if (!currentUser) return
@@ -132,38 +125,6 @@ function Forum() {
 
     return (
         <div className="forum-page">
-            <div className="nav">
-                <Link to="/" className="nav-brand">
-                    PISMO NA DAR
-                </Link>
-                <Link to="/" className="nav-link" aria-current="page">
-                    Feed
-                </Link>
-                <Link to="/about" className="nav-link">
-                    About us
-                </Link>
-                {currentUser && (
-                    <>
-                        <Link to="/matches" className="nav-link">
-                            Find a pen pal
-                        </Link>
-                        <Link to="/profile?tab=penpals" className="nav-link">
-                            My pen pals
-                        </Link>
-                        <span className="forum-wallet-pill">
-              Wallet · {wallet ? formatMinorAmount(wallet.balanceMinor, wallet.currency) : '—'}
-            </span>
-                        <Link
-                            to="/profile"
-                            className={`forum-nav-avatar${avatarUrl ? '' : ' photo-placeholder'}`}
-                            aria-label="My profile"
-                        >
-                            {avatarUrl && <img src={avatarUrl} alt="" />}
-                        </Link>
-                    </>
-                )}
-            </div>
-
             <div className="forum-body">
                 <aside className="forum-sidebar-left">
                     <button
