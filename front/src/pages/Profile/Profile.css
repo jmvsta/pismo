@@ -7,7 +7,7 @@
 
 .profile-card {
   width: 100%;
-  max-width: 960px;
+  max-width: 1200px;
   background: var(--color-bg);
   border: 1px solid var(--color-divider);
 }
@@ -132,10 +132,6 @@
 .profile-stat {
   flex: 1;
   padding: 16px 40px;
-  border-right: 1px solid var(--color-divider);
-}
-.profile-stat-last {
-  border-right: none;
 }
 .profile-stat-value {
   font-size: 26px;
@@ -210,6 +206,5 @@
   }
   .profile-stat {
     flex: 1 1 50%;
-    border-right: none;
   }
 }

@@ -145,7 +145,10 @@ function ProfilePenPals({ onGoToAddressTab }: ProfilePenPalsProps) {
         const isMyTurnToSend = !openLetter && eligibleSenderId === currentUserId
 
         return (
-          <div key={row.connection.id} className="border border-[var(--color-divider)] p-3">
+          <div
+            key={row.connection.id}
+            className="border border-[var(--color-divider)] p-3 transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-accent)_6%,transparent)] hover:border-[var(--color-accent)]"
+          >
             <div className="flex items-center gap-3">
               <div className={`profile-avatar${avatarUrl ? '' : ' photo-placeholder'}`} style={{ width: 48, height: 48 }}>
                 {avatarUrl ? <img src={avatarUrl} alt={other.nickname} /> : <span>avatar</span>}

@@ -329,18 +329,11 @@ function Forum() {
                             ) : letterRequestState === 'error' ? (
                                 <div className="forum-mailbox-copy">Something went wrong — try again.</div>
                             ) : (
-                                <div className="forum-mailbox-copy forum-mailbox-poem">
-                                    {[
-                                        'I wish to share with you a letter.',
-                                        'Handwritten, with a carefully',
-                                        'chosen paper and a stamp, taken to',
-                                        'the post office, mailed the old style.',
-                                        'Dozen mailed already, plenty',
-                                        'received in return.',
-                                        'If this idea makes You smile,',
-                                        'come and share with us!',
-                                        'May I send you a letter?',
-                                    ].join('\n')}
+                                <div className="forum-mailbox-copy">
+                                    I wish to share with you a letter. Handwritten, with a carefully chosen paper
+                                    and a stamp, taken to the post office, mailed the old style. Dozen mailed
+                                    already, plenty received in return. If this idea makes You smile, come and
+                                    share with us! May I send you a letter?
                                 </div>
                             )}
                         </button>

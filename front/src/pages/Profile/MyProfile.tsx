@@ -165,7 +165,7 @@ function MyProfile() {
             <div className="profile-stat-value">{lettersReceivedCount}</div>
             <div className="text-muted">letters received</div>
           </div>
-          <div className="profile-stat profile-stat-last">
+          <div className="profile-stat">
             <div className="profile-stat-value">{activePenPalCount}</div>
             <div className="text-muted">active pen pals</div>
           </div>

@@ -238,9 +238,6 @@
 .forum-mailbox-box:disabled {
   cursor: default;
 }
-.forum-mailbox-poem {
-  white-space: pre-line;
-}
 .forum-mailbox-icon {
   color: var(--color-bg);
   margin-bottom: 10px;
