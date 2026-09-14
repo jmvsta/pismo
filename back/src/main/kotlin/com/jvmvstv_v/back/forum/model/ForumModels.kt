@@ -101,4 +101,12 @@ data class CreateForumTopicInput(
 data class UpdateForumPostInput(
     val title: String?,
     val body: String?,
+    val photos: List<NewForumPostPhotoInput>?,
+    val removePhotoIds: List<UUID>?,
+)
+
+data class UpdateForumReplyInput(
+    val body: String?,
+    val photos: List<NewForumReplyPhotoInput>?,
+    val removePhotoIds: List<UUID>?,
 )

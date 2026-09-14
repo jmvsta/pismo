@@ -83,3 +83,16 @@ export interface CreateForumTopicInput {
   title: string
   description?: string
 }
+
+export interface UpdateForumPostInput {
+  title?: string
+  body?: string
+  photos?: NewForumPostPhotoInput[]
+  removePhotoIds?: string[]
+}
+
+export interface UpdateForumReplyInput {
+  body?: string
+  photos?: NewForumReplyPhotoInput[]
+  removePhotoIds?: string[]
+}

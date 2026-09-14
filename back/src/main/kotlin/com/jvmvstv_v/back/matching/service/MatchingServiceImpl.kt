@@ -56,6 +56,7 @@ class MatchingServiceImpl(
             NotificationType.PEN_PAL_REQUEST,
             "New pen pal request",
             "${request.requester.nickname} wants to connect",
+            subjectId = requesterId,
         )
         return request
     }
@@ -68,7 +69,17 @@ class MatchingServiceImpl(
         if (request.status != PenPalRequestStatus.PENDING) {
             throw AuthException("This request is no longer pending")
         }
-        return matchingRepository.respondToRequest(id, accept)
+        val updated = matchingRepository.respondToRequest(id, accept)
+        if (accept) {
+            notificationService.notify(
+                request.requester.id,
+                NotificationType.PEN_PAL_ACCEPTED,
+                "New pen pal accepted",
+                "${request.addressee.nickname} accepted your pen pal request",
+                subjectId = request.addressee.id,
+            )
+        }
+        return updated
     }
 
     override fun cancelPenPalRequest(id: UUID): PenPalRequest {

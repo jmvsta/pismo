@@ -13,8 +13,8 @@ class NotificationServiceImpl(
     private val notificationRepository: NotificationRepository,
     private val notificationSocketRegistry: NotificationSocketRegistry,
 ) : NotificationService {
-    override fun notify(userId: UUID, type: NotificationType, title: String, body: String?) {
-        val notification = notificationRepository.insert(userId, type, title, body)
+    override fun notify(userId: UUID, type: NotificationType, title: String, body: String?, subjectId: UUID?) {
+        val notification = notificationRepository.insert(userId, type, title, body, subjectId)
         notificationSocketRegistry.send(userId, notification)
     }
 

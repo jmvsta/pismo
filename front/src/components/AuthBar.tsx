@@ -6,6 +6,7 @@ import { useWalletStore } from '../store/walletStore.ts'
 import { imageUrl } from '../services/imageUrl.ts'
 import { formatMinorAmount } from '../lib/money.ts'
 import NotificationBell from './NotificationBell/NotificationBell.tsx'
+import ThemeToggle from './ThemeToggle/ThemeToggle.tsx'
 import './AuthBar.css'
 
 function AuthBar() {
@@ -39,7 +40,7 @@ function AuthBar() {
     <div className="auth-bar">
       <nav className="auth-bar-nav">
         <Link to="/">Feed</Link>
-        <Link to="/about">About us</Link>
+        <Link to="/about">About</Link>
         {currentUser && (
           <>
             <Link to="/matches">Find a pen pal</Link>
@@ -57,6 +58,7 @@ function AuthBar() {
               Wallet · {wallet ? formatMinorAmount(wallet.balanceMinor, wallet.currency) : '—'}
             </span>
             <NotificationBell />
+            <ThemeToggle />
             {canModerate && (
               <Link to="/admin" className="btn btn-ghost">
                 Moderate
@@ -75,6 +77,7 @@ function AuthBar() {
           </>
         ) : (
           <>
+            <ThemeToggle />
             <Link to="/login" className="btn btn-ghost">
               Log in
             </Link>

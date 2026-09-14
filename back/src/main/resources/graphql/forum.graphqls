@@ -8,7 +8,9 @@ extend type Mutation {
     createForumPost(input: CreateForumPostInput!): ForumPost!
     createForumReply(input: CreateForumReplyInput!): ForumReply!
     updateForumPost(id: ID!, input: UpdateForumPostInput!): ForumPost!
-    updateForumReply(id: ID!, body: String!): ForumReply!
+    updateForumReply(id: ID!, input: UpdateForumReplyInput!): ForumReply!
+    deleteForumPost(id: ID!): Boolean!
+    deleteForumReply(id: ID!): Boolean!
     thankForumPost(postId: ID!): ForumPost!
     thankForumReply(replyId: ID!): ForumReply!
     createForumTopic(input: CreateForumTopicInput!): ForumTopic!
@@ -103,4 +105,12 @@ input CreateForumTopicInput {
 input UpdateForumPostInput {
     title: String
     body: String
+    photos: [NewForumPostPhotoInput!]
+    removePhotoIds: [ID!]
+}
+
+input UpdateForumReplyInput {
+    body: String
+    photos: [NewForumReplyPhotoInput!]
+    removePhotoIds: [ID!]
 }

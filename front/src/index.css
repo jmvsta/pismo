@@ -72,6 +72,48 @@
   color-scheme: light;
 }
 
+/* Dark theme is the site default; :root above stays as the light palette a
+   visitor can opt back into via the toggle in AuthBar (persisted in
+   localStorage, applied as data-theme on <html> before first paint). */
+:root[data-theme="dark"] {
+  --color-bg: #1b1919;
+  --color-surface: #252222;
+  --color-text: #f2f0ef;
+  --color-divider: color-mix(in srgb, #f2f0ef 22%, transparent);
+
+  --color-neutral-100: #2d2b2b;
+  --color-neutral-200: #444141;
+  --color-neutral-300: #605d5d;
+  --color-neutral-400: #7d7979;
+  --color-neutral-500: #9b9797;
+  --color-neutral-600: #bab6b6;
+  --color-neutral-700: #d7d3d3;
+  --color-neutral-800: #eae7e7;
+  --color-neutral-900: #f8f4f4;
+
+  --color-accent-100: #4d170e;
+  --color-accent-200: #7c1405;
+  --color-accent-300: #ae1800;
+  --color-accent-400: #dd2b0f;
+  --color-accent-500: #ff563c;
+  --color-accent-600: #ff9783;
+  --color-accent-700: #ffc4b8;
+  --color-accent-800: #ffe0d9;
+  --color-accent-900: #fff2ef;
+
+  --color-accent-2-100: #471d16;
+  --color-accent-2-200: #71261b;
+  --color-accent-2-300: #9e3526;
+  --color-accent-2-400: #c94b39;
+  --color-accent-2-500: #ef6853;
+  --color-accent-2-600: #ff9784;
+  --color-accent-2-700: #ffc4b9;
+  --color-accent-2-800: #ffe0da;
+  --color-accent-2-900: #fff2ef;
+
+  color-scheme: dark;
+}
+
 *,
 *::before,
 *::after {
@@ -259,7 +301,7 @@ figcaption {
 }
 .input:focus-visible {
   border-color: var(--color-accent);
-  outline-offset: 0;
+  outline: none;
 }
 textarea.input {
   min-height: 90px;

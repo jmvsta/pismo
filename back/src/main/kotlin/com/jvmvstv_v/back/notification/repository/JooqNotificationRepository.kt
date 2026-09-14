@@ -18,21 +18,28 @@ class JooqNotificationRepository(private val dsl: DSLContext) : NotificationRepo
     private val TYPE = DSL.field("type", SQLDataType.VARCHAR)
     private val TITLE = DSL.field("title", SQLDataType.VARCHAR)
     private val BODY = DSL.field("body", SQLDataType.VARCHAR)
+    private val SUBJECT_ID = DSL.field("subject_id", SQLDataType.UUID)
     private val READ_AT = DSL.field("read_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
     private val CREATED_AT = DSL.field("created_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
 
-    override fun insert(userId: UUID, type: NotificationType, title: String, body: String?): Notification {
+    override fun insert(
+        userId: UUID,
+        type: NotificationType,
+        title: String,
+        body: String?,
+        subjectId: UUID?,
+    ): Notification {
         val id = UUID.randomUUID()
         val now = OffsetDateTime.now()
         dsl.insertInto(NOTIFICATIONS)
-            .columns(ID, USER_ID, TYPE, TITLE, BODY, CREATED_AT)
-            .values(id, userId, type.name, title, body, now)
+            .columns(ID, USER_ID, TYPE, TITLE, BODY, SUBJECT_ID, CREATED_AT)
+            .values(id, userId, type.name, title, body, subjectId, now)
             .execute()
         return findById(id) ?: error("Notification $id not found")
     }
 
     override fun findForUser(userId: UUID, unreadOnly: Boolean): List<Notification> {
-        val step = dsl.select(ID, TYPE, TITLE, BODY, READ_AT, CREATED_AT)
+        val step = dsl.select(ID, TYPE, TITLE, BODY, SUBJECT_ID, READ_AT, CREATED_AT)
             .from(NOTIFICATIONS)
             .where(USER_ID.eq(userId))
         val filtered = if (unreadOnly) step.and(READ_AT.isNull) else step
@@ -53,7 +60,7 @@ class JooqNotificationRepository(private val dsl: DSLContext) : NotificationRepo
             .fetchOne(0, Int::class.java) ?: 0
 
     private fun findById(id: UUID): Notification? =
-        dsl.select(ID, TYPE, TITLE, BODY, READ_AT, CREATED_AT)
+        dsl.select(ID, TYPE, TITLE, BODY, SUBJECT_ID, READ_AT, CREATED_AT)
             .from(NOTIFICATIONS)
             .where(ID.eq(id))
             .fetchOne { toNotification(it) }
@@ -63,6 +70,7 @@ class JooqNotificationRepository(private val dsl: DSLContext) : NotificationRepo
         type = NotificationType.valueOf(record[TYPE]!!),
         title = record[TITLE]!!,
         body = record[BODY],
+        subjectId = record[SUBJECT_ID],
         readAt = record[READ_AT]?.toString(),
         createdAt = record[CREATED_AT]!!.toString(),
     )

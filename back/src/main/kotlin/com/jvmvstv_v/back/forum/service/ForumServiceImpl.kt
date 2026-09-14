@@ -11,6 +11,7 @@ import com.jvmvstv_v.back.forum.model.ForumTopic
 import com.jvmvstv_v.back.forum.model.NewForumPostPhoto
 import com.jvmvstv_v.back.forum.model.NewForumReplyPhoto
 import com.jvmvstv_v.back.forum.model.UpdateForumPostInput
+import com.jvmvstv_v.back.forum.model.UpdateForumReplyInput
 import com.jvmvstv_v.back.forum.repository.ForumRepository
 import com.jvmvstv_v.back.image.model.ImageOwnerType
 import com.jvmvstv_v.back.image.service.ImageService
@@ -53,14 +54,59 @@ class ForumServiceImpl(
 
     override fun updatePost(id: UUID, input: UpdateForumPostInput): ForumPost {
         val post = forumRepository.findPostById(id) ?: throw AuthException("Post not found")
-        if (post.author.id != CurrentUser.id) throw AuthException("You can only edit your own post")
+        if (post.author.id != CurrentUser.id && !CurrentUser.canModerate) {
+            throw AuthException("You can only edit your own post")
+        }
+        if (!input.removePhotoIds.isNullOrEmpty()) {
+            forumRepository.removePostPhotos(id, input.removePhotoIds).forEach { imageService.delete(it) }
+        }
+        if (!input.photos.isNullOrEmpty()) {
+            val newPhotos = input.photos.map { photo ->
+                val photoId = UUID.randomUUID()
+                val image = imageService.store(ImageOwnerType.FORUM_POST_PHOTO, photoId, photo.mimeType, photo.imageBase64)
+                NewForumPostPhoto(id = photoId, imageId = image.id, caption = photo.caption)
+            }
+            forumRepository.addPostPhotos(id, newPhotos)
+        }
         return forumRepository.updatePost(id, input)
     }
 
-    override fun updateReply(id: UUID, body: String): ForumReply {
+    override fun updateReply(id: UUID, input: UpdateForumReplyInput): ForumReply {
         val reply = forumRepository.findReplyById(id) ?: throw AuthException("Reply not found")
-        if (reply.author.id != CurrentUser.id) throw AuthException("You can only edit your own reply")
-        return forumRepository.updateReply(id, body)
+        if (reply.author.id != CurrentUser.id && !CurrentUser.canModerate) {
+            throw AuthException("You can only edit your own reply")
+        }
+        if (!input.removePhotoIds.isNullOrEmpty()) {
+            forumRepository.removeReplyPhotos(id, input.removePhotoIds).forEach { imageService.delete(it) }
+        }
+        if (!input.photos.isNullOrEmpty()) {
+            val newPhotos = input.photos.map { photo ->
+                val photoId = UUID.randomUUID()
+                val image = imageService.store(ImageOwnerType.FORUM_REPLY_PHOTO, photoId, photo.mimeType, photo.imageBase64)
+                NewForumReplyPhoto(id = photoId, imageId = image.id, caption = photo.caption)
+            }
+            forumRepository.addReplyPhotos(id, newPhotos)
+        }
+        return forumRepository.updateReply(id, input.body)
+    }
+
+    override fun deletePost(id: UUID) {
+        val post = forumRepository.findPostById(id) ?: throw AuthException("Post not found")
+        if (post.author.id != CurrentUser.id && !CurrentUser.canModerate) {
+            throw AuthException("You can only delete your own post")
+        }
+        forumRepository.deletePost(id)
+    }
+
+    override fun deleteReply(id: UUID) {
+        val reply = forumRepository.findReplyById(id) ?: throw AuthException("Reply not found")
+        if (reply.author.id != CurrentUser.id && !CurrentUser.canModerate) {
+            throw AuthException("You can only delete your own reply")
+        }
+        if (forumRepository.hasReplyChildren(id)) {
+            throw AuthException("Cannot delete a reply that still has replies")
+        }
+        forumRepository.deleteReply(id)
     }
 
     override fun thankPost(postId: UUID): ForumPost {

@@ -33,11 +33,20 @@
 .forum-topics span {
   padding: 6px 8px;
   cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.forum-topics span:hover {
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  border-color: var(--color-divider);
 }
 .forum-topics span.is-active {
   font-weight: 800;
   color: var(--color-accent);
   background: var(--color-accent-100);
+}
+.forum-topics span.is-active:hover {
+  border-color: var(--color-accent);
 }
 .forum-topics-frozen-label {
   margin: 10px 0 4px;
@@ -173,47 +182,31 @@
   margin-top: 8px;
 }
 
-.forum-plus-box {
+.forum-mailbox-box {
+  display: block;
   background: var(--color-accent);
   color: var(--color-bg);
   padding: var(--space-4);
+  text-decoration: none;
+  transition: background-color 0.15s ease;
 }
-.forum-plus-title {
+.forum-mailbox-box:hover {
+  background: var(--color-accent-600);
+}
+.forum-mailbox-icon {
+  color: var(--color-bg);
+  margin-bottom: 10px;
+}
+.forum-mailbox-title {
   font-size: 20px;
   font-weight: 800;
   line-height: 1.15;
 }
-.forum-plus-copy {
+.forum-mailbox-copy {
   font-size: 12px;
   line-height: 1.6;
-  margin: 8px 0 14px;
+  margin: 8px 0 0;
   opacity: 0.92;
-}
-.forum-plus-btn {
-  background: var(--color-bg);
-  color: var(--color-text);
-  width: 100%;
-  justify-content: flex-start;
-}
-
-.forum-wallet-box {
-  border: 1px solid var(--color-divider);
-  padding: var(--space-4);
-}
-.forum-wallet-box h6 {
-  margin: 0 0 6px;
-}
-.forum-wallet-amount {
-  font-size: 24px;
-  font-weight: 800;
-}
-.forum-wallet-hint {
-  font-size: 11.5px;
-  margin: 4px 0 10px;
-}
-.forum-wallet-btn {
-  width: 100%;
-  justify-content: flex-start;
 }
 
 .forum-modal-backdrop {
@@ -299,6 +292,8 @@
   border-bottom: 1px solid var(--color-divider);
 }
 .forum-reply-meta {
+  display: flex;
+  align-items: center;
   font-size: 12px;
   font-weight: 600;
   margin-bottom: 4px;
@@ -340,6 +335,21 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.forum-item-actions {
+  display: inline-flex;
+  gap: 10px;
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.forum-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0;
 }
 
 @media (max-width: 900px) {

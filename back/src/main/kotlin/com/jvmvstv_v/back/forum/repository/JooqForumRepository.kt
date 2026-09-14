@@ -152,14 +152,75 @@ class JooqForumRepository(
         return findPostById(id) ?: error("Forum post $id not found")
     }
 
-    override fun updateReply(id: UUID, body: String): ForumReply {
-        dsl.update(REPLIES)
-            .set(RP_BODY, body)
-            .set(RP_UPDATED_AT, OffsetDateTime.now())
-            .where(RP_ID.eq(id))
-            .execute()
+    override fun updateReply(id: UUID, body: String?): ForumReply {
+        val step = dsl.update(REPLIES).set(RP_UPDATED_AT, OffsetDateTime.now())
+        body?.let { step.set(RP_BODY, it) }
+        step.where(RP_ID.eq(id)).execute()
         return findReplyById(id) ?: error("Forum reply $id not found")
     }
+
+    override fun addPostPhotos(postId: UUID, photos: List<NewForumPostPhoto>) {
+        if (photos.isEmpty()) return
+        val now = OffsetDateTime.now()
+        val startPosition = (dsl.select(DSL.max(PH_POSITION)).from(PHOTOS)
+            .where(PH_POST_ID.eq(postId)).fetchOne(DSL.max(PH_POSITION)) ?: -1) + 1
+        photos.forEachIndexed { index, photo ->
+            dsl.insertInto(PHOTOS)
+                .columns(PH_ID, PH_POST_ID, PH_IMAGE_ID, PH_CAPTION, PH_POSITION, PH_CREATED_AT)
+                .values(photo.id, postId, photo.imageId, photo.caption, startPosition + index, now)
+                .execute()
+        }
+        dsl.update(POSTS).set(P_UPDATED_AT, now).where(P_ID.eq(postId)).execute()
+    }
+
+    override fun removePostPhotos(postId: UUID, photoIds: List<UUID>): List<UUID> {
+        if (photoIds.isEmpty()) return emptyList()
+        val imageIds = dsl.select(PH_IMAGE_ID).from(PHOTOS)
+            .where(PH_POST_ID.eq(postId)).and(PH_ID.`in`(photoIds))
+            .fetch(PH_IMAGE_ID).filterNotNull()
+        dsl.deleteFrom(PHOTOS).where(PH_POST_ID.eq(postId)).and(PH_ID.`in`(photoIds)).execute()
+        dsl.update(POSTS).set(P_UPDATED_AT, OffsetDateTime.now()).where(P_ID.eq(postId)).execute()
+        return imageIds
+    }
+
+    override fun addReplyPhotos(replyId: UUID, photos: List<NewForumReplyPhoto>) {
+        if (photos.isEmpty()) return
+        val now = OffsetDateTime.now()
+        val startPosition = (dsl.select(DSL.max(RPH_POSITION)).from(REPLY_PHOTOS)
+            .where(RPH_REPLY_ID.eq(replyId)).fetchOne(DSL.max(RPH_POSITION)) ?: -1) + 1
+        photos.forEachIndexed { index, photo ->
+            dsl.insertInto(REPLY_PHOTOS)
+                .columns(RPH_ID, RPH_REPLY_ID, RPH_IMAGE_ID, RPH_CAPTION, RPH_POSITION, RPH_CREATED_AT)
+                .values(photo.id, replyId, photo.imageId, photo.caption, startPosition + index, now)
+                .execute()
+        }
+        dsl.update(REPLIES).set(RP_UPDATED_AT, now).where(RP_ID.eq(replyId)).execute()
+    }
+
+    override fun removeReplyPhotos(replyId: UUID, photoIds: List<UUID>): List<UUID> {
+        if (photoIds.isEmpty()) return emptyList()
+        val imageIds = dsl.select(RPH_IMAGE_ID).from(REPLY_PHOTOS)
+            .where(RPH_REPLY_ID.eq(replyId)).and(RPH_ID.`in`(photoIds))
+            .fetch(RPH_IMAGE_ID).filterNotNull()
+        dsl.deleteFrom(REPLY_PHOTOS).where(RPH_REPLY_ID.eq(replyId)).and(RPH_ID.`in`(photoIds)).execute()
+        dsl.update(REPLIES).set(RP_UPDATED_AT, OffsetDateTime.now()).where(RP_ID.eq(replyId)).execute()
+        return imageIds
+    }
+
+    override fun deletePost(id: UUID) {
+        dsl.update(POSTS).set(P_DELETED_AT, OffsetDateTime.now()).where(P_ID.eq(id)).execute()
+    }
+
+    override fun deleteReply(id: UUID) {
+        val postId = dsl.select(RP_POST_ID).from(REPLIES).where(RP_ID.eq(id)).fetchOne(RP_POST_ID)
+        dsl.update(REPLIES).set(RP_DELETED_AT, OffsetDateTime.now()).where(RP_ID.eq(id)).execute()
+        if (postId != null) {
+            dsl.update(POSTS).set(P_REPLY_COUNT, P_REPLY_COUNT.minus(1)).where(P_ID.eq(postId)).execute()
+        }
+    }
+
+    override fun hasReplyChildren(replyId: UUID): Boolean =
+        dsl.fetchExists(dsl.selectOne().from(REPLIES).where(RP_PARENT_ID.eq(replyId)).and(RP_DELETED_AT.isNull))
 
     override fun thankPost(postId: UUID, userId: UUID): ForumPost {
         val inserted = dsl.insertInto(POST_THANKS)

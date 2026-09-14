@@ -5,7 +5,7 @@ import com.jvmvstv_v.back.notification.model.NotificationType
 import java.util.UUID
 
 interface NotificationRepository {
-    fun insert(userId: UUID, type: NotificationType, title: String, body: String?): Notification
+    fun insert(userId: UUID, type: NotificationType, title: String, body: String?, subjectId: UUID?): Notification
     fun findForUser(userId: UUID, unreadOnly: Boolean): List<Notification>
     fun markRead(id: UUID, userId: UUID): Notification
     fun countUnread(userId: UUID): Int

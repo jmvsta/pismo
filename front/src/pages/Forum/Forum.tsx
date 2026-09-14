@@ -2,11 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { forumService } from '../../services/forum/index.ts'
 import type { ForumPost, ForumReply, ForumTopic } from '../../services/forum/index.ts'
-import { useWalletStore } from '../../store/walletStore.ts'
 import { useUserStore } from '../../store/userStore.ts'
 import { matchingService } from '../../services/matching/index.ts'
 import type { SuggestedProfile } from '../../services/matching/index.ts'
-import { formatMinorAmount } from '../../lib/money.ts'
 import ForumPostCard from './ForumPostCard.tsx'
 import ForumNewPostDialog from './ForumNewPostDialog.tsx'
 import ForumNewTopicDialog from './ForumNewTopicDialog.tsx'
@@ -29,7 +27,6 @@ function Forum() {
     const [isNewPostOpen, setIsNewPostOpen] = useState(false)
     const [isNewTopicOpen, setIsNewTopicOpen] = useState(false)
     const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
-    const wallet = useWalletStore((state) => state.wallet)
     const currentUser = useUserStore((state) => state.currentUser)
     const [suggestedProfiles, setSuggestedProfiles] = useState<SuggestedProfile[]>([])
     const selectedPost = posts.find((post) => post.id === selectedPostId) ?? null
@@ -105,6 +102,39 @@ function Forum() {
             prev.map((post) =>
                 post.id === postId
                     ? { ...post, replies: post.replies.map((reply) => (reply.id === updated.id ? updated : reply)) }
+                    : post,
+            ),
+        )
+    }
+
+    const handlePostUpdated = (updated: ForumPost) => {
+        setPosts((prev) => prev.map((post) => (post.id === updated.id ? updated : post)))
+    }
+
+    const handlePostDeleted = (postId: string) => {
+        setPosts((prev) => prev.filter((post) => post.id !== postId))
+        setSelectedPostId(null)
+    }
+
+    const handleReplyUpdated = (postId: string, updated: ForumReply) => {
+        setPosts((prev) =>
+            prev.map((post) =>
+                post.id === postId
+                    ? { ...post, replies: post.replies.map((reply) => (reply.id === updated.id ? updated : reply)) }
+                    : post,
+            ),
+        )
+    }
+
+    const handleReplyDeleted = (postId: string, replyId: string) => {
+        setPosts((prev) =>
+            prev.map((post) =>
+                post.id === postId
+                    ? {
+                          ...post,
+                          replies: post.replies.filter((reply) => reply.id !== replyId),
+                          replyCount: Math.max(0, post.replyCount - 1),
+                      }
                     : post,
             ),
         )
@@ -233,26 +263,27 @@ function Forum() {
                             </Link>
                         </div>
 
-                        <div className="forum-plus-box">
-                            <div className="forum-plus-title">DAR Plus</div>
-                            <div className="forum-plus-copy">
-                                Unlimited matches, letter tracking abroad, wallet top-up bonus. € 3 / month.
-                            </div>
-                            <button type="button" className="btn forum-plus-btn">
-                                Subscribe →
-                            </button>
-                        </div>
-
-                        <div className="forum-wallet-box">
-                            <h6>Wallet</h6>
-                            <div className="forum-wallet-amount">
-                                {wallet ? formatMinorAmount(wallet.balanceMinor, wallet.currency) : '—'}
-                            </div>
-                            <div className="text-muted forum-wallet-hint">covers ~3 international stamps</div>
-                            <Link to="/wallet" className="btn btn-secondary forum-wallet-btn">
-                                Top up →
-                            </Link>
-                        </div>
+                        <Link to="/profile?tab=letters" className="forum-mailbox-box">
+                            <svg
+                                className="forum-mailbox-icon"
+                                viewBox="0 0 24 24"
+                                width="36"
+                                height="36"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.6"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                            >
+                                <path d="M4 11a5 5 0 0 1 10 0v7H4z" />
+                                <rect x="14" y="9" width="4" height="4" />
+                                <line x1="9" y1="18" x2="9" y2="22" />
+                                <line x1="5" y1="22" x2="13" y2="22" />
+                            </svg>
+                            <div className="forum-mailbox-title">Your mailbox</div>
+                            <div className="forum-mailbox-copy">See letters you've sent and received →</div>
+                        </Link>
                     </aside>
                 )}
             </div>
@@ -280,8 +311,12 @@ function Forum() {
                     post={selectedPost}
                     onClose={() => setSelectedPostId(null)}
                     onPostThanked={handlePostThanked}
+                    onPostUpdated={handlePostUpdated}
+                    onPostDeleted={handlePostDeleted}
                     onReplyAdded={handleReplyAdded}
                     onReplyThanked={handleReplyThanked}
+                    onReplyUpdated={handleReplyUpdated}
+                    onReplyDeleted={handleReplyDeleted}
                 />
             )}
         </div>

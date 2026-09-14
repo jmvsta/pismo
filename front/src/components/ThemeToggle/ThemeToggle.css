@@ -1,0 +1,16 @@
+.theme-toggle {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  padding: 0;
+  cursor: pointer;
+  background: linear-gradient(90deg, #ffffff 50%, #16151a 50%);
+  border: 1px solid var(--color-divider);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.theme-toggle:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 25%, transparent);
+  transform: scale(1.06);
+}

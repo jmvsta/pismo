@@ -21,7 +21,14 @@ interface ForumRepository {
     fun createPost(authorId: UUID, input: CreateForumPostInput, photos: List<NewForumPostPhoto>): ForumPost
     fun createReply(authorId: UUID, input: CreateForumReplyInput, photos: List<NewForumReplyPhoto>): ForumReply
     fun updatePost(id: UUID, input: UpdateForumPostInput): ForumPost
-    fun updateReply(id: UUID, body: String): ForumReply
+    fun updateReply(id: UUID, body: String?): ForumReply
+    fun addPostPhotos(postId: UUID, photos: List<NewForumPostPhoto>)
+    fun removePostPhotos(postId: UUID, photoIds: List<UUID>): List<UUID>
+    fun addReplyPhotos(replyId: UUID, photos: List<NewForumReplyPhoto>)
+    fun removeReplyPhotos(replyId: UUID, photoIds: List<UUID>): List<UUID>
+    fun deletePost(id: UUID)
+    fun deleteReply(id: UUID)
+    fun hasReplyChildren(replyId: UUID): Boolean
     fun thankPost(postId: UUID, userId: UUID): ForumPost
     fun thankReply(replyId: UUID, userId: UUID): ForumReply
     fun setTopicActive(topicId: Int, active: Boolean): ForumTopic

@@ -8,6 +8,8 @@ import type {
   ForumPost,
   ForumReply,
   ForumTopic,
+  UpdateForumPostInput,
+  UpdateForumReplyInput,
 } from './types.ts'
 import type { ForumService } from './ForumService.ts'
 
@@ -142,6 +144,34 @@ const CREATE_FORUM_REPLY_MUTATION = `
   }
 `
 
+const UPDATE_FORUM_POST_MUTATION = `
+  mutation UpdateForumPost($id: ID!, $input: UpdateForumPostInput!) {
+    updateForumPost(id: $id, input: $input) {
+      ${POST_FIELDS}
+    }
+  }
+`
+
+const UPDATE_FORUM_REPLY_MUTATION = `
+  mutation UpdateForumReply($id: ID!, $input: UpdateForumReplyInput!) {
+    updateForumReply(id: $id, input: $input) {
+      ${REPLY_FIELDS}
+    }
+  }
+`
+
+const DELETE_FORUM_POST_MUTATION = `
+  mutation DeleteForumPost($id: ID!) {
+    deleteForumPost(id: $id)
+  }
+`
+
+const DELETE_FORUM_REPLY_MUTATION = `
+  mutation DeleteForumReply($id: ID!) {
+    deleteForumReply(id: $id)
+  }
+`
+
 const THANK_FORUM_POST_MUTATION = `
   mutation ThankForumPost($postId: ID!) {
     thankForumPost(postId: $postId) {
@@ -222,6 +252,30 @@ export class GraphqlForumService implements ForumService {
       { input: CreateForumReplyInput }
     >(CREATE_FORUM_REPLY_MUTATION, { input })
     return toForumReply(data.createForumReply)
+  }
+
+  async updateForumPost(id: string, input: UpdateForumPostInput): Promise<ForumPost> {
+    const data = await this.client.request<
+      { updateForumPost: ForumPostWire },
+      { id: string; input: UpdateForumPostInput }
+    >(UPDATE_FORUM_POST_MUTATION, { id, input })
+    return toForumPost(data.updateForumPost)
+  }
+
+  async updateForumReply(id: string, input: UpdateForumReplyInput): Promise<ForumReply> {
+    const data = await this.client.request<
+      { updateForumReply: ForumReplyWire },
+      { id: string; input: UpdateForumReplyInput }
+    >(UPDATE_FORUM_REPLY_MUTATION, { id, input })
+    return toForumReply(data.updateForumReply)
+  }
+
+  async deleteForumPost(id: string): Promise<void> {
+    await this.client.request<{ deleteForumPost: boolean }, { id: string }>(DELETE_FORUM_POST_MUTATION, { id })
+  }
+
+  async deleteForumReply(id: string): Promise<void> {
+    await this.client.request<{ deleteForumReply: boolean }, { id: string }>(DELETE_FORUM_REPLY_MUTATION, { id })
   }
 
   async thankForumPost(postId: string): Promise<ForumPost> {
