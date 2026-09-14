@@ -10,7 +10,7 @@ import AboutCanvas from './AboutCanvas.tsx'
 
 function About() {
   const currentUser = useUserStore((state) => state.currentUser)
-  const isAdmin = currentUser?.role === 'ADMIN'
+  const canModerate = currentUser?.role === 'ADMIN' || currentUser?.role === 'MODERATOR'
 
   const [page, setPage] = useState<AboutPage | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -59,7 +59,7 @@ function About() {
         >
           ← Back to feed
         </Link>
-        {isAdmin && (
+        {canModerate && (
           <button type="button" className="btn btn-secondary" onClick={() => setEditMode((v) => !v)}>
             {editMode ? 'Done editing' : 'Edit page'}
           </button>
