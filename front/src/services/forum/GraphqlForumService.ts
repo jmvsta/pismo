@@ -8,6 +8,8 @@ import type {
   ForumPost,
   ForumReply,
   ForumTopic,
+  UpdateForumPostInput,
+  UpdateForumReplyInput,
 } from './types.ts'
 import type { ForumService } from './ForumService.ts'
 
@@ -36,6 +38,7 @@ interface ForumReplyWire {
   author: UserSummary
   body: string
   thanksCount: number
+  thankedByMe: boolean
   photos: ForumReply['photos']
   createdAt: string
   updatedAt: string
@@ -47,6 +50,7 @@ const REPLY_FIELDS = `
   author { ${USER_SUMMARY_FIELDS} }
   body
   thanksCount
+  thankedByMe
   photos { ${PHOTO_FIELDS} }
   createdAt
   updatedAt
@@ -60,6 +64,7 @@ interface ForumPostWire {
   body: string
   replyCount: number
   thanksCount: number
+  thankedByMe: boolean
   pinned: boolean
   photos: ForumPost['photos']
   replies: ForumReplyWire[]
@@ -75,6 +80,7 @@ const POST_FIELDS = `
   body
   replyCount
   thanksCount
+  thankedByMe
   pinned
   photos { ${PHOTO_FIELDS} }
   replies { ${REPLY_FIELDS} }
@@ -89,6 +95,7 @@ function toForumReply(wire: ForumReplyWire): ForumReply {
     author: wire.author,
     body: wire.body,
     thanksCount: wire.thanksCount,
+    thankedByMe: wire.thankedByMe,
     photos: wire.photos,
     createdAt: wire.createdAt,
     updatedAt: wire.updatedAt,
@@ -139,6 +146,34 @@ const CREATE_FORUM_REPLY_MUTATION = `
     createForumReply(input: $input) {
       ${REPLY_FIELDS}
     }
+  }
+`
+
+const UPDATE_FORUM_POST_MUTATION = `
+  mutation UpdateForumPost($id: ID!, $input: UpdateForumPostInput!) {
+    updateForumPost(id: $id, input: $input) {
+      ${POST_FIELDS}
+    }
+  }
+`
+
+const UPDATE_FORUM_REPLY_MUTATION = `
+  mutation UpdateForumReply($id: ID!, $input: UpdateForumReplyInput!) {
+    updateForumReply(id: $id, input: $input) {
+      ${REPLY_FIELDS}
+    }
+  }
+`
+
+const DELETE_FORUM_POST_MUTATION = `
+  mutation DeleteForumPost($id: ID!) {
+    deleteForumPost(id: $id)
+  }
+`
+
+const DELETE_FORUM_REPLY_MUTATION = `
+  mutation DeleteForumReply($id: ID!) {
+    deleteForumReply(id: $id)
   }
 `
 
@@ -222,6 +257,30 @@ export class GraphqlForumService implements ForumService {
       { input: CreateForumReplyInput }
     >(CREATE_FORUM_REPLY_MUTATION, { input })
     return toForumReply(data.createForumReply)
+  }
+
+  async updateForumPost(id: string, input: UpdateForumPostInput): Promise<ForumPost> {
+    const data = await this.client.request<
+      { updateForumPost: ForumPostWire },
+      { id: string; input: UpdateForumPostInput }
+    >(UPDATE_FORUM_POST_MUTATION, { id, input })
+    return toForumPost(data.updateForumPost)
+  }
+
+  async updateForumReply(id: string, input: UpdateForumReplyInput): Promise<ForumReply> {
+    const data = await this.client.request<
+      { updateForumReply: ForumReplyWire },
+      { id: string; input: UpdateForumReplyInput }
+    >(UPDATE_FORUM_REPLY_MUTATION, { id, input })
+    return toForumReply(data.updateForumReply)
+  }
+
+  async deleteForumPost(id: string): Promise<void> {
+    await this.client.request<{ deleteForumPost: boolean }, { id: string }>(DELETE_FORUM_POST_MUTATION, { id })
+  }
+
+  async deleteForumReply(id: string): Promise<void> {
+    await this.client.request<{ deleteForumReply: boolean }, { id: string }>(DELETE_FORUM_REPLY_MUTATION, { id })
   }
 
   async thankForumPost(postId: string): Promise<ForumPost> {

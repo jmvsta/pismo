@@ -36,6 +36,39 @@ function ProfileForumActivity({ posts: initialPosts }: ProfileForumActivityProps
     )
   }
 
+  const handlePostUpdated = (updated: ForumPost) => {
+    setPosts((prev) => prev.map((post) => (post.id === updated.id ? updated : post)))
+  }
+
+  const handlePostDeleted = (postId: string) => {
+    setPosts((prev) => prev.filter((post) => post.id !== postId))
+    setSelectedPostId(null)
+  }
+
+  const handleReplyUpdated = (postId: string, updated: ForumReply) => {
+    setPosts((prev) =>
+      prev.map((post) =>
+        post.id === postId
+          ? { ...post, replies: post.replies.map((reply) => (reply.id === updated.id ? updated : reply)) }
+          : post,
+      ),
+    )
+  }
+
+  const handleReplyDeleted = (postId: string, replyId: string) => {
+    setPosts((prev) =>
+      prev.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              replies: post.replies.filter((reply) => reply.id !== replyId),
+              replyCount: Math.max(0, post.replyCount - 1),
+            }
+          : post,
+      ),
+    )
+  }
+
   if (posts.length === 0) {
     return <p className="text-muted profile-empty">You haven't posted in the forum yet.</p>
   }
@@ -56,8 +89,12 @@ function ProfileForumActivity({ posts: initialPosts }: ProfileForumActivityProps
           post={selectedPost}
           onClose={() => setSelectedPostId(null)}
           onPostThanked={handlePostThanked}
+          onPostUpdated={handlePostUpdated}
+          onPostDeleted={handlePostDeleted}
           onReplyAdded={handleReplyAdded}
           onReplyThanked={handleReplyThanked}
+          onReplyUpdated={handleReplyUpdated}
+          onReplyDeleted={handleReplyDeleted}
         />
       )}
     </div>

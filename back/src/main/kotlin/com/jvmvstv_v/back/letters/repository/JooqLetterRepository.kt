@@ -80,6 +80,7 @@ class JooqLetterRepository(
 
     override fun findReceivedByUser(userId: UUID): List<Letter> =
         dsl.select(LETTER_COLUMNS).from(LETTERS).where(L_RECIPIENT_ID.eq(userId))
+            .and(L_STATUS.ne(LetterStatus.DRAFT.name))
             .orderBy(L_CREATED_AT.desc())
             .fetch { toLetter(it, includeFeedback = true) }
 

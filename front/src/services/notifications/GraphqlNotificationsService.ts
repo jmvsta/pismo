@@ -7,6 +7,7 @@ const NOTIFICATION_FIELDS = `
   type
   title
   body
+  subjectId
   readAt
   createdAt
 `

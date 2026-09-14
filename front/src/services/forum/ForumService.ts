@@ -5,6 +5,8 @@ import type {
   ForumPost,
   ForumReply,
   ForumTopic,
+  UpdateForumPostInput,
+  UpdateForumReplyInput,
 } from './types.ts'
 
 export interface ForumService {
@@ -13,6 +15,10 @@ export interface ForumService {
   forumPost(id: string): Promise<ForumPost | null>
   createForumPost(input: CreateForumPostInput): Promise<ForumPost>
   createForumReply(input: CreateForumReplyInput): Promise<ForumReply>
+  updateForumPost(id: string, input: UpdateForumPostInput): Promise<ForumPost>
+  updateForumReply(id: string, input: UpdateForumReplyInput): Promise<ForumReply>
+  deleteForumPost(id: string): Promise<void>
+  deleteForumReply(id: string): Promise<void>
   thankForumPost(postId: string): Promise<ForumPost>
   thankForumReply(replyId: string): Promise<ForumReply>
   createForumTopic(input: CreateForumTopicInput): Promise<ForumTopic>

@@ -5,8 +5,9 @@
 .forum-body {
   display: flex;
   align-items: stretch;
-  max-width: 1180px;
+  max-width: 1600px;
   margin: 0 auto;
+  padding: 0 20px;
 }
 
 .forum-sidebar-left {
@@ -33,11 +34,20 @@
 .forum-topics span {
   padding: 6px 8px;
   cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.forum-topics span:hover {
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  border-color: var(--color-divider);
 }
 .forum-topics span.is-active {
   font-weight: 800;
   color: var(--color-accent);
   background: var(--color-accent-100);
+}
+.forum-topics span.is-active:hover {
+  border-color: var(--color-accent);
 }
 .forum-topics-frozen-label {
   margin: 10px 0 4px;
@@ -61,12 +71,14 @@
 }
 .forum-sort {
   display: flex;
-  gap: 14px;
+  width: 100%;
   font-size: 13px;
   padding-bottom: 14px;
   border-bottom: 2px solid var(--color-divider);
 }
 .forum-sort span {
+  flex: 1;
+  text-align: center;
   cursor: pointer;
 }
 .forum-sort span.is-active {
@@ -149,15 +161,46 @@
 }
 .forum-suggested-row {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+  align-items: flex-start;
+  gap: 10px;
   padding: 9px 0;
   border-bottom: 1px solid var(--color-divider);
   cursor: pointer;
   text-decoration: none;
   color: inherit;
   font-size: 13.5px;
+}
+.forum-suggested-avatar {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--color-neutral-200);
+}
+.forum-suggested-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.forum-suggested-info {
+  min-width: 0;
+  flex: 1;
+}
+.forum-suggested-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
   font-weight: 600;
+}
+.forum-suggested-bio {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 .forum-suggested-empty {
   padding: 9px 0;
@@ -173,47 +216,42 @@
   margin-top: 8px;
 }
 
-.forum-plus-box {
+.forum-mailbox-box {
+  display: block;
+  width: 100%;
   background: var(--color-accent);
   color: var(--color-bg);
+  border: none;
   padding: var(--space-4);
+  text-decoration: none;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
 }
-.forum-plus-title {
+.forum-mailbox-box:hover:not(:disabled) {
+  background: var(--color-accent-600);
+}
+.forum-mailbox-box:disabled {
+  cursor: default;
+}
+.forum-mailbox-poem {
+  white-space: pre-line;
+}
+.forum-mailbox-icon {
+  color: var(--color-bg);
+  margin-bottom: 10px;
+}
+.forum-mailbox-title {
   font-size: 20px;
   font-weight: 800;
   line-height: 1.15;
 }
-.forum-plus-copy {
+.forum-mailbox-copy {
   font-size: 12px;
   line-height: 1.6;
-  margin: 8px 0 14px;
+  margin: 8px 0 0;
   opacity: 0.92;
-}
-.forum-plus-btn {
-  background: var(--color-bg);
-  color: var(--color-text);
-  width: 100%;
-  justify-content: flex-start;
-}
-
-.forum-wallet-box {
-  border: 1px solid var(--color-divider);
-  padding: var(--space-4);
-}
-.forum-wallet-box h6 {
-  margin: 0 0 6px;
-}
-.forum-wallet-amount {
-  font-size: 24px;
-  font-weight: 800;
-}
-.forum-wallet-hint {
-  font-size: 11.5px;
-  margin: 4px 0 10px;
-}
-.forum-wallet-btn {
-  width: 100%;
-  justify-content: flex-start;
 }
 
 .forum-modal-backdrop {
@@ -260,14 +298,23 @@
 }
 
 .forum-thanks-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   border: none;
   background: none;
   font: inherit;
   cursor: pointer;
   padding: 0;
-  color: inherit;
+  color: var(--color-text);
 }
-.forum-thanks-btn:hover {
+.forum-thanks-btn:hover:not(:disabled) {
+  color: var(--color-accent);
+}
+.forum-thanks-btn:disabled {
+  cursor: default;
+}
+.forum-thanks-btn.is-pressed {
   color: var(--color-accent);
 }
 
@@ -299,6 +346,8 @@
   border-bottom: 1px solid var(--color-divider);
 }
 .forum-reply-meta {
+  display: flex;
+  align-items: center;
   font-size: 12px;
   font-weight: 600;
   margin-bottom: 4px;
@@ -340,6 +389,21 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.forum-item-actions {
+  display: inline-flex;
+  gap: 10px;
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.forum-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0;
 }
 
 @media (max-width: 900px) {

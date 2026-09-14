@@ -13,6 +13,8 @@ export type {
   CreateForumPostInput,
   CreateForumReplyInput,
   CreateForumTopicInput,
+  UpdateForumPostInput,
+  UpdateForumReplyInput,
 } from './types.ts'
 
 export const forumService = new GraphqlForumService(graphqlClient)

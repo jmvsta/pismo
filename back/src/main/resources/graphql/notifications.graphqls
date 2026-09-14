@@ -13,12 +13,14 @@ type Notification {
     type: NotificationType!
     title: String!
     body: String
+    subjectId: ID
     readAt: String
     createdAt: String!
 }
 
 enum NotificationType {
     PEN_PAL_REQUEST
+    PEN_PAL_ACCEPTED
     LETTER_SENT
     LETTER_DELIVERED
 }

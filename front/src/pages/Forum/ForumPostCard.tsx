@@ -50,7 +50,7 @@ function ForumPostCard({ post, onOpen, onThanked }: ForumPostCardProps) {
       </div>
       <div className="forum-post-footer text-muted">
         <span>{post.replyCount} replies</span>
-        <ThanksButton count={post.thanksCount} onThank={handleThank} />
+        <ThanksButton count={post.thanksCount} pressed={post.thankedByMe} onThank={handleThank} />
       </div>
     </article>
   )

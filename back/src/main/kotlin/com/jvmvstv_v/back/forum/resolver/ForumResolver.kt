@@ -7,6 +7,7 @@ import com.jvmvstv_v.back.forum.model.ForumPost
 import com.jvmvstv_v.back.forum.model.ForumReply
 import com.jvmvstv_v.back.forum.model.ForumTopic
 import com.jvmvstv_v.back.forum.model.UpdateForumPostInput
+import com.jvmvstv_v.back.forum.model.UpdateForumReplyInput
 import com.jvmvstv_v.back.forum.service.ForumService
 import org.springframework.graphql.data.method.annotation.Argument
 import org.springframework.graphql.data.method.annotation.MutationMapping
@@ -37,8 +38,20 @@ class ForumResolver(private val forumService: ForumService) {
         forumService.updatePost(id, input)
 
     @MutationMapping
-    fun updateForumReply(@Argument id: UUID, @Argument body: String): ForumReply =
-        forumService.updateReply(id, body)
+    fun updateForumReply(@Argument id: UUID, @Argument input: UpdateForumReplyInput): ForumReply =
+        forumService.updateReply(id, input)
+
+    @MutationMapping
+    fun deleteForumPost(@Argument id: UUID): Boolean {
+        forumService.deletePost(id)
+        return true
+    }
+
+    @MutationMapping
+    fun deleteForumReply(@Argument id: UUID): Boolean {
+        forumService.deleteReply(id)
+        return true
+    }
 
     @MutationMapping
     fun thankForumPost(@Argument postId: UUID): ForumPost = forumService.thankPost(postId)

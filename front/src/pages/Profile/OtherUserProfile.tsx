@@ -59,6 +59,19 @@ function OtherUserProfile({ userId }: OtherUserProfileProps) {
     )
   }
 
+  if (user.status === 'DELETED') {
+    return (
+      <div className="profile-page">
+        <div className="profile-card">
+          <Link to="/" className="profile-back">
+            ← Back to feed
+          </Link>
+          <p className="text-muted profile-empty">This account has been deleted.</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="profile-page">
       <div className="profile-card">

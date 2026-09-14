@@ -28,16 +28,20 @@ const AUTH_PAGES = [
 function App() {
   const location = useLocation()
   const loadCurrentUser = useUserStore((state) => state.loadCurrentUser)
+  const currentUser = useUserStore((state) => state.currentUser)
+  const userStatus = useUserStore((state) => state.status)
 
   useEffect(() => {
     loadCurrentUser()
   }, [loadCurrentUser])
 
+  const userStillLoading = userStatus === 'idle' || userStatus === 'loading'
+
   return (
     <>
       {!AUTH_PAGES.includes(location.pathname) && <AuthBar />}
       <Routes>
-        <Route path="/" element={<Forum />} />
+        <Route path="/" element={userStillLoading || currentUser ? <Forum /> : <About />} />
         <Route path="/about" element={<About />} />
         <Route path="/register" element={<Register />} />
         <Route path="/register/verify-email" element={<VerifyEmail />} />

@@ -27,9 +27,9 @@ type TabId = 'penpals' | 'letters' | 'forum' | 'questionnaire' | 'address' | 'ba
 const TABS: { id: TabId; label: string }[] = [
   { id: 'penpals', label: 'Pen pals' },
   { id: 'letters', label: 'Letters' },
-  { id: 'forum', label: 'Forum posts' },
+  { id: 'forum', label: 'Posts' },
   { id: 'questionnaire', label: 'Questionnaire' },
-  { id: 'address', label: 'My address' },
+  { id: 'address', label: 'Address' },
   { id: 'badges', label: 'Badges' },
 ]
 

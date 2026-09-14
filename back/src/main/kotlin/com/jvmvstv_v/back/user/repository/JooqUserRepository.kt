@@ -121,6 +121,7 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
             .where(AUTH_TOKEN.eq(token))
             .and(AUTH_TOKEN_EXPIRES_AT.gt(OffsetDateTime.now()))
             .and(DELETED_AT.isNull)
+            .and(STATUS.eq(UserStatus.ACTIVE.name))
             .fetchOne {
                 AuthenticatedPrincipal(
                     id = it[ID]!!,

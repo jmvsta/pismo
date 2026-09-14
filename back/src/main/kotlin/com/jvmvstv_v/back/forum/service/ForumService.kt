@@ -7,6 +7,7 @@ import com.jvmvstv_v.back.forum.model.ForumPost
 import com.jvmvstv_v.back.forum.model.ForumReply
 import com.jvmvstv_v.back.forum.model.ForumTopic
 import com.jvmvstv_v.back.forum.model.UpdateForumPostInput
+import com.jvmvstv_v.back.forum.model.UpdateForumReplyInput
 import java.util.UUID
 
 interface ForumService {
@@ -17,7 +18,9 @@ interface ForumService {
     fun createPost(input: CreateForumPostInput): ForumPost
     fun createReply(input: CreateForumReplyInput): ForumReply
     fun updatePost(id: UUID, input: UpdateForumPostInput): ForumPost
-    fun updateReply(id: UUID, body: String): ForumReply
+    fun updateReply(id: UUID, input: UpdateForumReplyInput): ForumReply
+    fun deletePost(id: UUID)
+    fun deleteReply(id: UUID)
     fun thankPost(postId: UUID): ForumPost
     fun thankReply(replyId: UUID): ForumReply
     fun setTopicActive(topicId: Int, active: Boolean): ForumTopic

@@ -18,6 +18,8 @@ object CurrentUser {
 
     val emailVerified: Boolean get() = principal()?.emailVerified ?: throw AuthException("You must be logged in")
 
+    val canModerate: Boolean get() = role == UserRole.ADMIN || role == UserRole.MODERATOR
+
     fun requireAdmin() {
         if (role != UserRole.ADMIN) throw AuthException("Admin access required")
     }

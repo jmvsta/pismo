@@ -20,6 +20,7 @@ data class ForumPost(
     val body: String,
     val replyCount: Int,
     val thanksCount: Int,
+    val thankedByMe: Boolean,
     val pinned: Boolean,
     val photos: List<ForumPostPhoto>,
     val replies: List<ForumReply>,
@@ -53,6 +54,7 @@ data class ForumReply(
     val author: User,
     val body: String,
     val thanksCount: Int,
+    val thankedByMe: Boolean,
     val photos: List<ForumReplyPhoto>,
     val createdAt: String,
     val updatedAt: String,
@@ -101,4 +103,12 @@ data class CreateForumTopicInput(
 data class UpdateForumPostInput(
     val title: String?,
     val body: String?,
+    val photos: List<NewForumPostPhotoInput>?,
+    val removePhotoIds: List<UUID>?,
+)
+
+data class UpdateForumReplyInput(
+    val body: String?,
+    val photos: List<NewForumReplyPhotoInput>?,
+    val removePhotoIds: List<UUID>?,
 )

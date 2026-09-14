@@ -3,7 +3,7 @@ import type { MatchProfile } from '../../services/matching/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
 import EnvelopeIcon from '../../components/icons/EnvelopeIcon.tsx'
 
-export type MatchCardVariant = 'new' | 'pending' | 'hidden' | 'matched'
+export type MatchCardVariant = 'new' | 'pending' | 'pending-outgoing' | 'hidden' | 'matched'
 
 interface MatchCardProps {
   profile: MatchProfile
@@ -138,6 +138,10 @@ function MatchCard({
           <button type="button" className="btn btn-secondary" onClick={onEndConnection}>
             End connection
           </button>
+        )}
+
+        {variant === 'pending-outgoing' && (
+          <span className="text-muted match-card-waiting">Waiting for a response…</span>
         )}
       </div>
       {requestState === 'error' && <p className="text-muted match-card-error">Could not send the request.</p>}

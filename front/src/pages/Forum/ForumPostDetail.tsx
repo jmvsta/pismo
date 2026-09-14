@@ -1,17 +1,23 @@
 import { useMemo, useState } from 'react'
 import { forumService } from '../../services/forum/index.ts'
 import type { ForumPost, ForumReply, NewForumReplyPhotoInput } from '../../services/forum/index.ts'
+import { useUserStore } from '../../store/userStore.ts'
 import { renderRichText } from '../../lib/richText.tsx'
 import ThanksButton from './ThanksButton.tsx'
 import ForumReplyComposer from './ForumReplyComposer.tsx'
 import ForumReplyThread from './ForumReplyThread.tsx'
+import ForumEditForm from './ForumEditForm.tsx'
 
 interface ForumPostDetailProps {
   post: ForumPost
   onClose: () => void
   onPostThanked: (post: ForumPost) => void
+  onPostUpdated: (post: ForumPost) => void
+  onPostDeleted: (postId: string) => void
   onReplyAdded: (postId: string, reply: ForumReply) => void
   onReplyThanked: (postId: string, reply: ForumReply) => void
+  onReplyUpdated: (postId: string, reply: ForumReply) => void
+  onReplyDeleted: (postId: string, replyId: string) => void
 }
 
 function groupRepliesByParent(replies: ForumReply[]) {
@@ -31,10 +37,25 @@ function groupRepliesByParent(replies: ForumReply[]) {
   return { topLevel, byParent }
 }
 
-function ForumPostDetail({ post, onClose, onPostThanked, onReplyAdded, onReplyThanked }: ForumPostDetailProps) {
+function ForumPostDetail({
+  post,
+  onClose,
+  onPostThanked,
+  onPostUpdated,
+  onPostDeleted,
+  onReplyAdded,
+  onReplyThanked,
+  onReplyUpdated,
+  onReplyDeleted,
+}: ForumPostDetailProps) {
   const [isComposingTopLevel, setIsComposingTopLevel] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const currentUser = useUserStore((state) => state.currentUser)
 
   const { topLevel, byParent } = useMemo(() => groupRepliesByParent(post.replies), [post.replies])
+
+  const canModerate = currentUser?.role === 'ADMIN' || currentUser?.role === 'MODERATOR'
+  const canEdit = !!currentUser && (currentUser.id === post.author.id || canModerate)
 
   const handlePostThank = async () => {
     const updated = await forumService.thankForumPost(post.id)
@@ -44,6 +65,28 @@ function ForumPostDetail({ post, onClose, onPostThanked, onReplyAdded, onReplyTh
   const handleTopLevelReply = async (body: string, photos: NewForumReplyPhotoInput[]) => {
     const created = await forumService.createForumReply({ postId: post.id, body, photos })
     onReplyAdded(post.id, created)
+  }
+
+  const handlePostSave = async (values: {
+    title?: string
+    body: string
+    newPhotos: { mimeType: string; imageBase64: string; caption?: string }[]
+    removePhotoIds: string[]
+  }) => {
+    const updated = await forumService.updateForumPost(post.id, {
+      title: values.title,
+      body: values.body,
+      photos: values.newPhotos,
+      removePhotoIds: values.removePhotoIds,
+    })
+    onPostUpdated(updated)
+    setIsEditing(false)
+  }
+
+  const handlePostDelete = async () => {
+    if (!window.confirm('Delete this post?')) return
+    await forumService.deleteForumPost(post.id)
+    onPostDeleted(post.id)
   }
 
   return (
@@ -59,9 +102,30 @@ function ForumPostDetail({ post, onClose, onPostThanked, onReplyAdded, onReplyTh
         <div className="forum-post-meta">
           <span className="tag tag-accent">{post.topic.title}</span>
           <span className="text-muted">{post.author.nickname}</span>
+          {canEdit && !isEditing && (
+            <span className="forum-item-actions">
+              <button type="button" className="forum-reply-link" onClick={() => setIsEditing(true)}>
+                Edit
+              </button>
+              <button type="button" className="forum-reply-link" onClick={handlePostDelete}>
+                Delete
+              </button>
+            </span>
+          )}
         </div>
-        <div className="forum-post-detail-body">{renderRichText(post.body)}</div>
-        <ThanksButton count={post.thanksCount} onThank={handlePostThank} />
+
+        {isEditing ? (
+          <ForumEditForm
+            initialTitle={post.title}
+            initialBody={post.body}
+            existingPhotos={post.photos}
+            onSave={handlePostSave}
+            onCancel={() => setIsEditing(false)}
+          />
+        ) : (
+          <div className="forum-post-detail-body">{renderRichText(post.body)}</div>
+        )}
+        <ThanksButton count={post.thanksCount} pressed={post.thankedByMe} onThank={handlePostThank} />
 
         <div className="forum-reply-thread">
           <div className="forum-reply-thread-header">
@@ -94,6 +158,8 @@ function ForumPostDetail({ post, onClose, onPostThanked, onReplyAdded, onReplyTh
               postId={post.id}
               onReplyPosted={(created) => onReplyAdded(post.id, created)}
               onThanked={(updated) => onReplyThanked(post.id, updated)}
+              onReplyUpdated={(updated) => onReplyUpdated(post.id, updated)}
+              onReplyDeleted={(replyId) => onReplyDeleted(post.id, replyId)}
             />
           ))}
         </div>

@@ -20,6 +20,7 @@ interface MatchingService {
     fun hiddenProfiles(limit: Int?, offset: Int?): List<SuggestedProfile>
     fun hideProfile(userId: UUID)
     fun pendingIncomingRequestCount(): Int
+    fun requestLetterFromModerators(): Boolean
 
     // Shared by user(id), questionnaire-by-user, and this service's own results -- every
     // path that can expose another user's profile before a match needs the same redaction.

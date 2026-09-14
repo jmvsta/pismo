@@ -15,13 +15,20 @@ interface ForumRepository {
     fun findTopics(): List<ForumTopic>
     fun findTopicById(id: Int): ForumTopic?
     fun createTopic(input: CreateForumTopicInput): ForumTopic
-    fun findPosts(topicId: Int?, limit: Int?, offset: Int?): List<ForumPost>
-    fun findPostById(id: UUID): ForumPost?
-    fun findReplyById(id: UUID): ForumReply?
+    fun findPosts(topicId: Int?, limit: Int?, offset: Int?, viewerId: UUID? = null): List<ForumPost>
+    fun findPostById(id: UUID, viewerId: UUID? = null): ForumPost?
+    fun findReplyById(id: UUID, viewerId: UUID? = null): ForumReply?
     fun createPost(authorId: UUID, input: CreateForumPostInput, photos: List<NewForumPostPhoto>): ForumPost
     fun createReply(authorId: UUID, input: CreateForumReplyInput, photos: List<NewForumReplyPhoto>): ForumReply
     fun updatePost(id: UUID, input: UpdateForumPostInput): ForumPost
-    fun updateReply(id: UUID, body: String): ForumReply
+    fun updateReply(id: UUID, body: String?): ForumReply
+    fun addPostPhotos(postId: UUID, photos: List<NewForumPostPhoto>)
+    fun removePostPhotos(postId: UUID, photoIds: List<UUID>): List<UUID>
+    fun addReplyPhotos(replyId: UUID, photos: List<NewForumReplyPhoto>)
+    fun removeReplyPhotos(replyId: UUID, photoIds: List<UUID>): List<UUID>
+    fun deletePost(id: UUID)
+    fun deleteReply(id: UUID)
+    fun hasReplyChildren(replyId: UUID): Boolean
     fun thankPost(postId: UUID, userId: UUID): ForumPost
     fun thankReply(replyId: UUID, userId: UUID): ForumReply
     fun setTopicActive(topicId: Int, active: Boolean): ForumTopic

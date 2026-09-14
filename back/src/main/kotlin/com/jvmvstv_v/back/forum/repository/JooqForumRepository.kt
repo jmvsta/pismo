@@ -89,7 +89,7 @@ class JooqForumRepository(
             .orderBy(T_POSITION)
             .fetch { toTopic(it) }
 
-    override fun findPosts(topicId: Int?, limit: Int?, offset: Int?): List<ForumPost> {
+    override fun findPosts(topicId: Int?, limit: Int?, offset: Int?, viewerId: UUID?): List<ForumPost> {
         val step = dsl.select(P_ID, P_TOPIC_ID, P_AUTHOR_ID, P_TITLE, P_BODY, P_REPLY_COUNT, P_THANKS_COUNT,
             P_PINNED, P_CREATED_AT, P_UPDATED_AT)
             .from(POSTS)
@@ -98,15 +98,15 @@ class JooqForumRepository(
         return filtered.orderBy(P_CREATED_AT.desc())
             .limit(limit ?: Int.MAX_VALUE)
             .offset(offset ?: 0)
-            .fetch { toPost(it) }
+            .fetch { toPost(it, viewerId) }
     }
 
-    override fun findPostById(id: UUID): ForumPost? =
+    override fun findPostById(id: UUID, viewerId: UUID?): ForumPost? =
         dsl.select(P_ID, P_TOPIC_ID, P_AUTHOR_ID, P_TITLE, P_BODY, P_REPLY_COUNT, P_THANKS_COUNT,
             P_PINNED, P_CREATED_AT, P_UPDATED_AT)
             .from(POSTS)
             .where(P_ID.eq(id)).and(P_DELETED_AT.isNull)
-            .fetchOne { toPost(it) }
+            .fetchOne { toPost(it, viewerId) }
 
     override fun createPost(authorId: UUID, input: CreateForumPostInput, photos: List<NewForumPostPhoto>): ForumPost {
         val id = UUID.randomUUID()
@@ -152,14 +152,75 @@ class JooqForumRepository(
         return findPostById(id) ?: error("Forum post $id not found")
     }
 
-    override fun updateReply(id: UUID, body: String): ForumReply {
-        dsl.update(REPLIES)
-            .set(RP_BODY, body)
-            .set(RP_UPDATED_AT, OffsetDateTime.now())
-            .where(RP_ID.eq(id))
-            .execute()
+    override fun updateReply(id: UUID, body: String?): ForumReply {
+        val step = dsl.update(REPLIES).set(RP_UPDATED_AT, OffsetDateTime.now())
+        body?.let { step.set(RP_BODY, it) }
+        step.where(RP_ID.eq(id)).execute()
         return findReplyById(id) ?: error("Forum reply $id not found")
     }
+
+    override fun addPostPhotos(postId: UUID, photos: List<NewForumPostPhoto>) {
+        if (photos.isEmpty()) return
+        val now = OffsetDateTime.now()
+        val startPosition = (dsl.select(DSL.max(PH_POSITION)).from(PHOTOS)
+            .where(PH_POST_ID.eq(postId)).fetchOne(DSL.max(PH_POSITION)) ?: -1) + 1
+        photos.forEachIndexed { index, photo ->
+            dsl.insertInto(PHOTOS)
+                .columns(PH_ID, PH_POST_ID, PH_IMAGE_ID, PH_CAPTION, PH_POSITION, PH_CREATED_AT)
+                .values(photo.id, postId, photo.imageId, photo.caption, startPosition + index, now)
+                .execute()
+        }
+        dsl.update(POSTS).set(P_UPDATED_AT, now).where(P_ID.eq(postId)).execute()
+    }
+
+    override fun removePostPhotos(postId: UUID, photoIds: List<UUID>): List<UUID> {
+        if (photoIds.isEmpty()) return emptyList()
+        val imageIds = dsl.select(PH_IMAGE_ID).from(PHOTOS)
+            .where(PH_POST_ID.eq(postId)).and(PH_ID.`in`(photoIds))
+            .fetch(PH_IMAGE_ID).filterNotNull()
+        dsl.deleteFrom(PHOTOS).where(PH_POST_ID.eq(postId)).and(PH_ID.`in`(photoIds)).execute()
+        dsl.update(POSTS).set(P_UPDATED_AT, OffsetDateTime.now()).where(P_ID.eq(postId)).execute()
+        return imageIds
+    }
+
+    override fun addReplyPhotos(replyId: UUID, photos: List<NewForumReplyPhoto>) {
+        if (photos.isEmpty()) return
+        val now = OffsetDateTime.now()
+        val startPosition = (dsl.select(DSL.max(RPH_POSITION)).from(REPLY_PHOTOS)
+            .where(RPH_REPLY_ID.eq(replyId)).fetchOne(DSL.max(RPH_POSITION)) ?: -1) + 1
+        photos.forEachIndexed { index, photo ->
+            dsl.insertInto(REPLY_PHOTOS)
+                .columns(RPH_ID, RPH_REPLY_ID, RPH_IMAGE_ID, RPH_CAPTION, RPH_POSITION, RPH_CREATED_AT)
+                .values(photo.id, replyId, photo.imageId, photo.caption, startPosition + index, now)
+                .execute()
+        }
+        dsl.update(REPLIES).set(RP_UPDATED_AT, now).where(RP_ID.eq(replyId)).execute()
+    }
+
+    override fun removeReplyPhotos(replyId: UUID, photoIds: List<UUID>): List<UUID> {
+        if (photoIds.isEmpty()) return emptyList()
+        val imageIds = dsl.select(RPH_IMAGE_ID).from(REPLY_PHOTOS)
+            .where(RPH_REPLY_ID.eq(replyId)).and(RPH_ID.`in`(photoIds))
+            .fetch(RPH_IMAGE_ID).filterNotNull()
+        dsl.deleteFrom(REPLY_PHOTOS).where(RPH_REPLY_ID.eq(replyId)).and(RPH_ID.`in`(photoIds)).execute()
+        dsl.update(REPLIES).set(RP_UPDATED_AT, OffsetDateTime.now()).where(RP_ID.eq(replyId)).execute()
+        return imageIds
+    }
+
+    override fun deletePost(id: UUID) {
+        dsl.update(POSTS).set(P_DELETED_AT, OffsetDateTime.now()).where(P_ID.eq(id)).execute()
+    }
+
+    override fun deleteReply(id: UUID) {
+        val postId = dsl.select(RP_POST_ID).from(REPLIES).where(RP_ID.eq(id)).fetchOne(RP_POST_ID)
+        dsl.update(REPLIES).set(RP_DELETED_AT, OffsetDateTime.now()).where(RP_ID.eq(id)).execute()
+        if (postId != null) {
+            dsl.update(POSTS).set(P_REPLY_COUNT, P_REPLY_COUNT.minus(1)).where(P_ID.eq(postId)).execute()
+        }
+    }
+
+    override fun hasReplyChildren(replyId: UUID): Boolean =
+        dsl.fetchExists(dsl.selectOne().from(REPLIES).where(RP_PARENT_ID.eq(replyId)).and(RP_DELETED_AT.isNull))
 
     override fun thankPost(postId: UUID, userId: UUID): ForumPost {
         val inserted = dsl.insertInto(POST_THANKS)
@@ -170,7 +231,7 @@ class JooqForumRepository(
         if (inserted > 0) {
             dsl.update(POSTS).set(P_THANKS_COUNT, P_THANKS_COUNT.plus(1)).where(P_ID.eq(postId)).execute()
         }
-        return findPostById(postId) ?: error("Forum post $postId not found")
+        return findPostById(postId, userId) ?: error("Forum post $postId not found")
     }
 
     override fun thankReply(replyId: UUID, userId: UUID): ForumReply {
@@ -182,7 +243,7 @@ class JooqForumRepository(
         if (inserted > 0) {
             dsl.update(REPLIES).set(RP_THANKS_COUNT, RP_THANKS_COUNT.plus(1)).where(RP_ID.eq(replyId)).execute()
         }
-        return findReplyById(replyId) ?: error("Forum reply $replyId not found")
+        return findReplyById(replyId, userId) ?: error("Forum reply $replyId not found")
     }
 
     override fun findTopicById(id: Int): ForumTopic? =
@@ -228,18 +289,18 @@ class JooqForumRepository(
                 )
             }
 
-    private fun findRepliesForPost(postId: UUID): List<ForumReply> =
+    private fun findRepliesForPost(postId: UUID, viewerId: UUID?): List<ForumReply> =
         dsl.select(RP_ID, RP_PARENT_ID, RP_AUTHOR_ID, RP_BODY, RP_THANKS_COUNT, RP_CREATED_AT, RP_UPDATED_AT)
             .from(REPLIES)
             .where(RP_POST_ID.eq(postId)).and(RP_DELETED_AT.isNull)
             .orderBy(RP_CREATED_AT)
-            .fetch { toReply(it) }
+            .fetch { toReply(it, viewerId) }
 
-    override fun findReplyById(id: UUID): ForumReply? =
+    override fun findReplyById(id: UUID, viewerId: UUID?): ForumReply? =
         dsl.select(RP_ID, RP_PARENT_ID, RP_AUTHOR_ID, RP_BODY, RP_THANKS_COUNT, RP_CREATED_AT, RP_UPDATED_AT)
             .from(REPLIES)
             .where(RP_ID.eq(id)).and(RP_DELETED_AT.isNull)
-            .fetchOne { toReply(it) }
+            .fetchOne { toReply(it, viewerId) }
 
     private fun toTopic(record: Record): ForumTopic = ForumTopic(
         id = record[T_ID]!!,
@@ -250,7 +311,7 @@ class JooqForumRepository(
         active = record[T_ACTIVE]!!,
     )
 
-    private fun toPost(record: Record): ForumPost {
+    private fun toPost(record: Record, viewerId: UUID?): ForumPost {
         val id = record[P_ID]!!
         return ForumPost(
             id = id,
@@ -260,9 +321,11 @@ class JooqForumRepository(
             body = record[P_BODY]!!,
             replyCount = record[P_REPLY_COUNT]!!,
             thanksCount = record[P_THANKS_COUNT]!!,
+            thankedByMe = viewerId != null &&
+                dsl.fetchExists(dsl.selectOne().from(POST_THANKS).where(PT_POST_ID.eq(id)).and(PT_USER_ID.eq(viewerId))),
             pinned = record[P_PINNED]!!,
             photos = findPhotosForPost(id),
-            replies = findRepliesForPost(id),
+            replies = findRepliesForPost(id, viewerId),
             createdAt = record[P_CREATED_AT]!!.toString(),
             updatedAt = record[P_UPDATED_AT]!!.toString(),
         )
@@ -283,14 +346,16 @@ class JooqForumRepository(
                 )
             }
 
-    private fun toReply(record: Record): ForumReply {
+    private fun toReply(record: Record, viewerId: UUID?): ForumReply {
         val id = record[RP_ID]!!
         return ForumReply(
             id = id,
-            parentReply = record[RP_PARENT_ID]?.let { findReplyById(it) },
+            parentReply = record[RP_PARENT_ID]?.let { findReplyById(it, viewerId) },
             author = userRepository.findById(record[RP_AUTHOR_ID]!!) ?: error("User not found"),
             body = record[RP_BODY]!!,
             thanksCount = record[RP_THANKS_COUNT]!!,
+            thankedByMe = viewerId != null &&
+                dsl.fetchExists(dsl.selectOne().from(REPLY_THANKS).where(RT_REPLY_ID.eq(id)).and(RT_USER_ID.eq(viewerId))),
             photos = findPhotosForReply(id),
             createdAt = record[RP_CREATED_AT]!!.toString(),
             updatedAt = record[RP_UPDATED_AT]!!.toString(),

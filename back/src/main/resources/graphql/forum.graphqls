@@ -8,7 +8,9 @@ extend type Mutation {
     createForumPost(input: CreateForumPostInput!): ForumPost!
     createForumReply(input: CreateForumReplyInput!): ForumReply!
     updateForumPost(id: ID!, input: UpdateForumPostInput!): ForumPost!
-    updateForumReply(id: ID!, body: String!): ForumReply!
+    updateForumReply(id: ID!, input: UpdateForumReplyInput!): ForumReply!
+    deleteForumPost(id: ID!): Boolean!
+    deleteForumReply(id: ID!): Boolean!
     thankForumPost(postId: ID!): ForumPost!
     thankForumReply(replyId: ID!): ForumReply!
     createForumTopic(input: CreateForumTopicInput!): ForumTopic!
@@ -33,6 +35,7 @@ type ForumPost {
     body: String!
     replyCount: Int!
     thanksCount: Int!
+    thankedByMe: Boolean!
     pinned: Boolean!
     photos: [ForumPostPhoto!]!
     replies: [ForumReply!]!
@@ -55,6 +58,7 @@ type ForumReply {
     author: User!
     body: String!
     thanksCount: Int!
+    thankedByMe: Boolean!
     photos: [ForumReplyPhoto!]!
     createdAt: String!
     updatedAt: String!
@@ -103,4 +107,12 @@ input CreateForumTopicInput {
 input UpdateForumPostInput {
     title: String
     body: String
+    photos: [NewForumPostPhotoInput!]
+    removePhotoIds: [ID!]
+}
+
+input UpdateForumReplyInput {
+    body: String
+    photos: [NewForumReplyPhotoInput!]
+    removePhotoIds: [ID!]
 }

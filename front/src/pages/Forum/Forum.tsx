@@ -2,11 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { forumService } from '../../services/forum/index.ts'
 import type { ForumPost, ForumReply, ForumTopic } from '../../services/forum/index.ts'
-import { useWalletStore } from '../../store/walletStore.ts'
 import { useUserStore } from '../../store/userStore.ts'
 import { matchingService } from '../../services/matching/index.ts'
 import type { SuggestedProfile } from '../../services/matching/index.ts'
-import { formatMinorAmount } from '../../lib/money.ts'
+import { imageUrl } from '../../services/imageUrl.ts'
 import ForumPostCard from './ForumPostCard.tsx'
 import ForumNewPostDialog from './ForumNewPostDialog.tsx'
 import ForumNewTopicDialog from './ForumNewTopicDialog.tsx'
@@ -29,10 +28,21 @@ function Forum() {
     const [isNewPostOpen, setIsNewPostOpen] = useState(false)
     const [isNewTopicOpen, setIsNewTopicOpen] = useState(false)
     const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
-    const wallet = useWalletStore((state) => state.wallet)
     const currentUser = useUserStore((state) => state.currentUser)
     const [suggestedProfiles, setSuggestedProfiles] = useState<SuggestedProfile[]>([])
+    const [letterRequestState, setLetterRequestState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
     const selectedPost = posts.find((post) => post.id === selectedPostId) ?? null
+
+    const handleRequestLetter = async () => {
+        if (letterRequestState === 'sending' || letterRequestState === 'sent') return
+        setLetterRequestState('sending')
+        try {
+            await matchingService.requestLetterFromModerators()
+            setLetterRequestState('sent')
+        } catch {
+            setLetterRequestState('error')
+        }
+    }
 
     useEffect(() => {
         if (!currentUser) return
@@ -110,6 +120,39 @@ function Forum() {
         )
     }
 
+    const handlePostUpdated = (updated: ForumPost) => {
+        setPosts((prev) => prev.map((post) => (post.id === updated.id ? updated : post)))
+    }
+
+    const handlePostDeleted = (postId: string) => {
+        setPosts((prev) => prev.filter((post) => post.id !== postId))
+        setSelectedPostId(null)
+    }
+
+    const handleReplyUpdated = (postId: string, updated: ForumReply) => {
+        setPosts((prev) =>
+            prev.map((post) =>
+                post.id === postId
+                    ? { ...post, replies: post.replies.map((reply) => (reply.id === updated.id ? updated : reply)) }
+                    : post,
+            ),
+        )
+    }
+
+    const handleReplyDeleted = (postId: string, replyId: string) => {
+        setPosts((prev) =>
+            prev.map((post) =>
+                post.id === postId
+                    ? {
+                          ...post,
+                          replies: post.replies.filter((reply) => reply.id !== replyId),
+                          replyCount: Math.max(0, post.replyCount - 1),
+                      }
+                    : post,
+            ),
+        )
+    }
+
     const activeTopics = useMemo(() => topics.filter((topic) => topic.active), [topics])
     const frozenTopics = useMemo(() => topics.filter((topic) => !topic.active), [topics])
 
@@ -127,13 +170,15 @@ function Forum() {
         <div className="forum-page">
             <div className="forum-body">
                 <aside className="forum-sidebar-left">
-                    <button
-                        type="button"
-                        className="btn btn-primary btn-block forum-new-post"
-                        onClick={() => setIsNewPostOpen(true)}
-                    >
-                        + New post
-                    </button>
+                    {currentUser && (
+                        <button
+                            type="button"
+                            className="btn btn-primary btn-block forum-new-post"
+                            onClick={() => setIsNewPostOpen(true)}
+                        >
+                            + New post
+                        </button>
+                    )}
                     <div className="forum-topics">
                         <h6>Topics</h6>
                         <span
@@ -161,13 +206,15 @@ function Forum() {
                 {topic.title}
               </span>
                         ))}
-                        <button
-                            type="button"
-                            className="btn btn-ghost forum-new-topic-btn"
-                            onClick={() => setIsNewTopicOpen(true)}
-                        >
-                            + New topic
-                        </button>
+                        {currentUser && (
+                            <button
+                                type="button"
+                                className="btn btn-ghost forum-new-topic-btn"
+                                onClick={() => setIsNewTopicOpen(true)}
+                            >
+                                + New topic
+                            </button>
+                        )}
                     </div>
                 </aside>
 
@@ -219,40 +266,79 @@ function Forum() {
                                 {suggestedProfiles.length === 0 && (
                                     <p className="text-muted forum-suggested-empty">No matches yet.</p>
                                 )}
-                                {suggestedProfiles.map((suggestion) => (
-                                    <Link to={`/profile/${suggestion.user.id}`} key={suggestion.user.id} className="forum-suggested-row">
-                                        <span>{suggestion.user.nickname}</span>
-                                        {suggestion.score !== null && (
-                                            <span className="forum-suggested-pct">{Math.round(suggestion.score)}%</span>
-                                        )}
-                                    </Link>
-                                ))}
+                                {suggestedProfiles.map((suggestion) => {
+                                    const avatarUrl = imageUrl(suggestion.user.avatarImageId)
+                                    return (
+                                        <Link to={`/profile/${suggestion.user.id}`} key={suggestion.user.id} className="forum-suggested-row">
+                                            <div className={`forum-suggested-avatar${avatarUrl ? '' : ' photo-placeholder'}`}>
+                                                {avatarUrl && <img src={avatarUrl} alt={suggestion.user.nickname} />}
+                                            </div>
+                                            <div className="forum-suggested-info">
+                                                <div className="forum-suggested-heading">
+                                                    <span>{suggestion.user.nickname}</span>
+                                                    {suggestion.score !== null && (
+                                                        <span className="forum-suggested-pct">{Math.round(suggestion.score)}%</span>
+                                                    )}
+                                                </div>
+                                                {suggestion.user.bio && (
+                                                    <p className="text-muted forum-suggested-bio">{suggestion.user.bio}</p>
+                                                )}
+                                            </div>
+                                        </Link>
+                                    )
+                                })}
                             </div>
                             <Link to="/matches" className="btn btn-ghost forum-see-all">
                                 See all recommended →
                             </Link>
                         </div>
 
-                        <div className="forum-plus-box">
-                            <div className="forum-plus-title">DAR Plus</div>
-                            <div className="forum-plus-copy">
-                                Unlimited matches, letter tracking abroad, wallet top-up bonus. € 3 / month.
-                            </div>
-                            <button type="button" className="btn forum-plus-btn">
-                                Subscribe →
-                            </button>
-                        </div>
-
-                        <div className="forum-wallet-box">
-                            <h6>Wallet</h6>
-                            <div className="forum-wallet-amount">
-                                {wallet ? formatMinorAmount(wallet.balanceMinor, wallet.currency) : '—'}
-                            </div>
-                            <div className="text-muted forum-wallet-hint">covers ~3 international stamps</div>
-                            <Link to="/wallet" className="btn btn-secondary forum-wallet-btn">
-                                Top up →
-                            </Link>
-                        </div>
+                        <button
+                            type="button"
+                            className="forum-mailbox-box"
+                            onClick={handleRequestLetter}
+                            disabled={letterRequestState === 'sending' || letterRequestState === 'sent'}
+                        >
+                            <svg
+                                className="forum-mailbox-icon"
+                                viewBox="0 0 24 24"
+                                width="36"
+                                height="36"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.6"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                            >
+                                <path d="M4 11a5 5 0 0 1 10 0v7H4z" />
+                                <rect x="14" y="9" width="4" height="4" />
+                                <line x1="9" y1="18" x2="9" y2="22" />
+                                <line x1="5" y1="22" x2="13" y2="22" />
+                            </svg>
+                            <div className="forum-mailbox-title">Send me a letter</div>
+                            {letterRequestState === 'sent' ? (
+                                <div className="forum-mailbox-copy">
+                                    Sent! A moderator will pick this up and write to you soon.
+                                </div>
+                            ) : letterRequestState === 'error' ? (
+                                <div className="forum-mailbox-copy">Something went wrong — try again.</div>
+                            ) : (
+                                <div className="forum-mailbox-copy forum-mailbox-poem">
+                                    {[
+                                        'I wish to share with you a letter.',
+                                        'Handwritten, with a carefully',
+                                        'chosen paper and a stamp, taken to',
+                                        'the post office, mailed the old style.',
+                                        'Dozen mailed already, plenty',
+                                        'received in return.',
+                                        'If this idea makes You smile,',
+                                        'come and share with us!',
+                                        'May I send you a letter?',
+                                    ].join('\n')}
+                                </div>
+                            )}
+                        </button>
                     </aside>
                 )}
             </div>
@@ -280,8 +366,12 @@ function Forum() {
                     post={selectedPost}
                     onClose={() => setSelectedPostId(null)}
                     onPostThanked={handlePostThanked}
+                    onPostUpdated={handlePostUpdated}
+                    onPostDeleted={handlePostDeleted}
                     onReplyAdded={handleReplyAdded}
                     onReplyThanked={handleReplyThanked}
+                    onReplyUpdated={handleReplyUpdated}
+                    onReplyDeleted={handleReplyDeleted}
                 />
             )}
         </div>

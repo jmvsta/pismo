@@ -49,15 +49,27 @@ function AdminUsersPanel() {
     }
   }
 
-  const handleToggleStatus = async (user: User) => {
+  const applyStatus = async (userId: string, status: UserStatus) => {
     setError(null)
-    const nextStatus: UserStatus = user.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED'
     try {
-      const updated = await userService.setUserStatus(user.id, nextStatus)
+      const updated = await userService.setUserStatus(userId, status)
       setUsers((current) => current.map((u) => (u.id === updated.id ? updated : u)))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update the status.')
     }
+  }
+
+  const handleToggleStatus = (user: User) => {
+    applyStatus(user.id, user.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED')
+  }
+
+  const handleDelete = (user: User) => {
+    if (!window.confirm(`Permanently delete ${user.nickname}'s account? This can be reversed with "Restore".`)) return
+    applyStatus(user.id, 'DELETED')
+  }
+
+  const handleRestore = (user: User) => {
+    applyStatus(user.id, 'ACTIVE')
   }
 
   if (status === 'idle' || status === 'loading') {
@@ -109,19 +121,34 @@ function AdminUsersPanel() {
                     )}
                   </td>
                   <td>
-                    <span className={user.status === 'SUSPENDED' ? 'tag tag-neutral' : 'tag tag-accent'}>
+                    <span className={user.status === 'ACTIVE' ? 'tag tag-accent' : 'tag tag-neutral'}>
                       {user.status}
                     </span>
                   </td>
                   <td>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      disabled={isSelf}
-                      onClick={() => handleToggleStatus(user)}
-                    >
-                      {user.status === 'SUSPENDED' ? 'Unban' : 'Ban'}
-                    </button>
+                    {user.status === 'DELETED' ? (
+                      isAdmin && (
+                        <button type="button" className="btn btn-secondary" disabled={isSelf} onClick={() => handleRestore(user)}>
+                          Restore
+                        </button>
+                      )
+                    ) : (
+                      <span className="flex gap-2">
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          disabled={isSelf}
+                          onClick={() => handleToggleStatus(user)}
+                        >
+                          {user.status === 'SUSPENDED' ? 'Unban' : 'Ban'}
+                        </button>
+                        {isAdmin && (
+                          <button type="button" className="btn btn-secondary" disabled={isSelf} onClick={() => handleDelete(user)}>
+                            Delete
+                          </button>
+                        )}
+                      </span>
+                    )}
                   </td>
                 </tr>
               )
