@@ -84,17 +84,20 @@
 
 @media (max-width: 900px) {
   .auth-bar {
-    grid-template-columns: 1fr;
-    justify-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    row-gap: 0.5rem;
+    column-gap: 0.85rem;
     text-align: center;
   }
   .auth-bar-brand {
     order: -1;
+    font-size: 15px;
   }
   .auth-bar-nav,
   .auth-bar-actions {
-    justify-self: center;
-    flex-wrap: wrap;
-    justify-content: center;
+    display: contents;
   }
 }

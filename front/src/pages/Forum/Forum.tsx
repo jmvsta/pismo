@@ -28,6 +28,7 @@ function Forum() {
     const [isNewPostOpen, setIsNewPostOpen] = useState(false)
     const [isNewTopicOpen, setIsNewTopicOpen] = useState(false)
     const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
+    const [isTopicsOpen, setIsTopicsOpen] = useState(false)
     const currentUser = useUserStore((state) => state.currentUser)
     const [suggestedProfiles, setSuggestedProfiles] = useState<SuggestedProfile[]>([])
     const [letterRequestState, setLetterRequestState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
@@ -180,41 +181,45 @@ function Forum() {
                         </button>
                     )}
                     <div className="forum-topics">
-                        <h6>Topics</h6>
-                        <span
-                            className={activeTopic === 'all' ? 'is-active' : undefined}
-                            onClick={() => setActiveTopic('all')}
-                        >
+                        <h6 className="forum-topics-toggle" onClick={() => setIsTopicsOpen((prev) => !prev)}>
+                            Topics
+                        </h6>
+                        <div className={`forum-topics-list${isTopicsOpen ? ' is-open' : ''}`}>
+                            <span
+                                className={activeTopic === 'all' ? 'is-active' : undefined}
+                                onClick={() => setActiveTopic('all')}
+                            >
               All posts
             </span>
-                        {activeTopics.map((topic) => (
-                            <span
-                                key={topic.id}
-                                className={activeTopic === topic.id ? 'is-active' : undefined}
-                                onClick={() => setActiveTopic(topic.id)}
-                            >
+                            {activeTopics.map((topic) => (
+                                <span
+                                    key={topic.id}
+                                    className={activeTopic === topic.id ? 'is-active' : undefined}
+                                    onClick={() => setActiveTopic(topic.id)}
+                                >
                 {topic.title}
               </span>
-                        ))}
-                        {frozenTopics.length > 0 && <h6 className="forum-topics-frozen-label">Frozen</h6>}
-                        {frozenTopics.map((topic) => (
-                            <span
-                                key={topic.id}
-                                className={activeTopic === topic.id ? 'is-active is-frozen' : 'is-frozen'}
-                                onClick={() => setActiveTopic(topic.id)}
-                            >
+                            ))}
+                            {frozenTopics.length > 0 && <h6 className="forum-topics-frozen-label">Frozen</h6>}
+                            {frozenTopics.map((topic) => (
+                                <span
+                                    key={topic.id}
+                                    className={activeTopic === topic.id ? 'is-active is-frozen' : 'is-frozen'}
+                                    onClick={() => setActiveTopic(topic.id)}
+                                >
                 {topic.title}
               </span>
-                        ))}
-                        {currentUser && (
-                            <button
-                                type="button"
-                                className="btn btn-ghost forum-new-topic-btn"
-                                onClick={() => setIsNewTopicOpen(true)}
-                            >
-                                + New topic
-                            </button>
-                        )}
+                            ))}
+                            {currentUser && (
+                                <button
+                                    type="button"
+                                    className="btn btn-ghost forum-new-topic-btn"
+                                    onClick={() => setIsNewTopicOpen(true)}
+                                >
+                                    + New topic
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </aside>
 

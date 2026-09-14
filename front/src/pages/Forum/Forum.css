@@ -13,7 +13,6 @@
 .forum-sidebar-left {
   width: 210px;
   flex: 0 0 auto;
-  border-right: 2px solid var(--color-divider);
   padding: 24px 20px;
   display: flex;
   flex-direction: column;
@@ -23,13 +22,15 @@
   margin: 0;
 }
 .forum-topics {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
   font-size: 13.5px;
 }
 .forum-topics h6 {
   margin: 0 0 8px;
+}
+.forum-topics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 .forum-topics span {
   padding: 6px 8px;
@@ -50,7 +51,7 @@
   border-color: var(--color-accent);
 }
 .forum-topics-frozen-label {
-  margin: 10px 0 4px;
+  margin: 18px 0 4px;
   color: var(--color-neutral-500);
 }
 .forum-topics span.is-frozen {
@@ -74,7 +75,6 @@
   width: 100%;
   font-size: 13px;
   padding-bottom: 14px;
-  border-bottom: 2px solid var(--color-divider);
 }
 .forum-sort span {
   flex: 1;
@@ -92,7 +92,6 @@
 
 .forum-post {
   padding: 20px 0;
-  border-bottom: 1px solid var(--color-divider);
   cursor: pointer;
 }
 .forum-post-meta {
@@ -145,7 +144,6 @@
 .forum-sidebar-right {
   width: 260px;
   flex: 0 0 auto;
-  border-left: 2px solid var(--color-divider);
   padding: 24px 22px;
   display: flex;
   flex-direction: column;
@@ -163,12 +161,17 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 9px 0;
-  border-bottom: 1px solid var(--color-divider);
+  padding: 6px 8px;
+  border: 1px solid transparent;
   cursor: pointer;
   text-decoration: none;
   color: inherit;
   font-size: 13.5px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.forum-suggested-row:hover {
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  border-color: var(--color-divider);
 }
 .forum-suggested-avatar {
   width: 36px;
@@ -417,5 +420,21 @@
     width: 100%;
     border: none;
     border-bottom: 2px solid var(--color-divider);
+  }
+  .forum-topics-toggle {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .forum-topics-toggle::after {
+    content: '▾';
+    font-size: 11px;
+  }
+  .forum-topics-list {
+    display: none;
+  }
+  .forum-topics-list.is-open {
+    display: flex;
   }
 }
