@@ -15,9 +15,9 @@ interface ForumRepository {
     fun findTopics(): List<ForumTopic>
     fun findTopicById(id: Int): ForumTopic?
     fun createTopic(input: CreateForumTopicInput): ForumTopic
-    fun findPosts(topicId: Int?, limit: Int?, offset: Int?): List<ForumPost>
-    fun findPostById(id: UUID): ForumPost?
-    fun findReplyById(id: UUID): ForumReply?
+    fun findPosts(topicId: Int?, limit: Int?, offset: Int?, viewerId: UUID? = null): List<ForumPost>
+    fun findPostById(id: UUID, viewerId: UUID? = null): ForumPost?
+    fun findReplyById(id: UUID, viewerId: UUID? = null): ForumReply?
     fun createPost(authorId: UUID, input: CreateForumPostInput, photos: List<NewForumPostPhoto>): ForumPost
     fun createReply(authorId: UUID, input: CreateForumReplyInput, photos: List<NewForumReplyPhoto>): ForumReply
     fun updatePost(id: UUID, input: UpdateForumPostInput): ForumPost

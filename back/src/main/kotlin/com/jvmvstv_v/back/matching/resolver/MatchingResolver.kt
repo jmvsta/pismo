@@ -57,4 +57,7 @@ class MatchingResolver(private val matchingService: MatchingService) {
         matchingService.hideProfile(userId)
         return true
     }
+
+    @MutationMapping
+    fun requestLetterFromModerators(): Boolean = matchingService.requestLetterFromModerators()
 }

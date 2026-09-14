@@ -5,6 +5,7 @@ import type { ForumPost, ForumReply, ForumTopic } from '../../services/forum/ind
 import { useUserStore } from '../../store/userStore.ts'
 import { matchingService } from '../../services/matching/index.ts'
 import type { SuggestedProfile } from '../../services/matching/index.ts'
+import { imageUrl } from '../../services/imageUrl.ts'
 import ForumPostCard from './ForumPostCard.tsx'
 import ForumNewPostDialog from './ForumNewPostDialog.tsx'
 import ForumNewTopicDialog from './ForumNewTopicDialog.tsx'
@@ -29,7 +30,19 @@ function Forum() {
     const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
     const currentUser = useUserStore((state) => state.currentUser)
     const [suggestedProfiles, setSuggestedProfiles] = useState<SuggestedProfile[]>([])
+    const [letterRequestState, setLetterRequestState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
     const selectedPost = posts.find((post) => post.id === selectedPostId) ?? null
+
+    const handleRequestLetter = async () => {
+        if (letterRequestState === 'sending' || letterRequestState === 'sent') return
+        setLetterRequestState('sending')
+        try {
+            await matchingService.requestLetterFromModerators()
+            setLetterRequestState('sent')
+        } catch {
+            setLetterRequestState('error')
+        }
+    }
 
     useEffect(() => {
         if (!currentUser) return
@@ -157,13 +170,15 @@ function Forum() {
         <div className="forum-page">
             <div className="forum-body">
                 <aside className="forum-sidebar-left">
-                    <button
-                        type="button"
-                        className="btn btn-primary btn-block forum-new-post"
-                        onClick={() => setIsNewPostOpen(true)}
-                    >
-                        + New post
-                    </button>
+                    {currentUser && (
+                        <button
+                            type="button"
+                            className="btn btn-primary btn-block forum-new-post"
+                            onClick={() => setIsNewPostOpen(true)}
+                        >
+                            + New post
+                        </button>
+                    )}
                     <div className="forum-topics">
                         <h6>Topics</h6>
                         <span
@@ -191,13 +206,15 @@ function Forum() {
                 {topic.title}
               </span>
                         ))}
-                        <button
-                            type="button"
-                            className="btn btn-ghost forum-new-topic-btn"
-                            onClick={() => setIsNewTopicOpen(true)}
-                        >
-                            + New topic
-                        </button>
+                        {currentUser && (
+                            <button
+                                type="button"
+                                className="btn btn-ghost forum-new-topic-btn"
+                                onClick={() => setIsNewTopicOpen(true)}
+                            >
+                                + New topic
+                            </button>
+                        )}
                     </div>
                 </aside>
 
@@ -249,21 +266,39 @@ function Forum() {
                                 {suggestedProfiles.length === 0 && (
                                     <p className="text-muted forum-suggested-empty">No matches yet.</p>
                                 )}
-                                {suggestedProfiles.map((suggestion) => (
-                                    <Link to={`/profile/${suggestion.user.id}`} key={suggestion.user.id} className="forum-suggested-row">
-                                        <span>{suggestion.user.nickname}</span>
-                                        {suggestion.score !== null && (
-                                            <span className="forum-suggested-pct">{Math.round(suggestion.score)}%</span>
-                                        )}
-                                    </Link>
-                                ))}
+                                {suggestedProfiles.map((suggestion) => {
+                                    const avatarUrl = imageUrl(suggestion.user.avatarImageId)
+                                    return (
+                                        <Link to={`/profile/${suggestion.user.id}`} key={suggestion.user.id} className="forum-suggested-row">
+                                            <div className={`forum-suggested-avatar${avatarUrl ? '' : ' photo-placeholder'}`}>
+                                                {avatarUrl && <img src={avatarUrl} alt={suggestion.user.nickname} />}
+                                            </div>
+                                            <div className="forum-suggested-info">
+                                                <div className="forum-suggested-heading">
+                                                    <span>{suggestion.user.nickname}</span>
+                                                    {suggestion.score !== null && (
+                                                        <span className="forum-suggested-pct">{Math.round(suggestion.score)}%</span>
+                                                    )}
+                                                </div>
+                                                {suggestion.user.bio && (
+                                                    <p className="text-muted forum-suggested-bio">{suggestion.user.bio}</p>
+                                                )}
+                                            </div>
+                                        </Link>
+                                    )
+                                })}
                             </div>
                             <Link to="/matches" className="btn btn-ghost forum-see-all">
                                 See all recommended →
                             </Link>
                         </div>
 
-                        <Link to="/profile?tab=letters" className="forum-mailbox-box">
+                        <button
+                            type="button"
+                            className="forum-mailbox-box"
+                            onClick={handleRequestLetter}
+                            disabled={letterRequestState === 'sending' || letterRequestState === 'sent'}
+                        >
                             <svg
                                 className="forum-mailbox-icon"
                                 viewBox="0 0 24 24"
@@ -281,9 +316,29 @@ function Forum() {
                                 <line x1="9" y1="18" x2="9" y2="22" />
                                 <line x1="5" y1="22" x2="13" y2="22" />
                             </svg>
-                            <div className="forum-mailbox-title">Your mailbox</div>
-                            <div className="forum-mailbox-copy">See letters you've sent and received →</div>
-                        </Link>
+                            <div className="forum-mailbox-title">Send me a letter</div>
+                            {letterRequestState === 'sent' ? (
+                                <div className="forum-mailbox-copy">
+                                    Sent! A moderator will pick this up and write to you soon.
+                                </div>
+                            ) : letterRequestState === 'error' ? (
+                                <div className="forum-mailbox-copy">Something went wrong — try again.</div>
+                            ) : (
+                                <div className="forum-mailbox-copy forum-mailbox-poem">
+                                    {[
+                                        'I wish to share with you a letter.',
+                                        'Handwritten, with a carefully',
+                                        'chosen paper and a stamp, taken to',
+                                        'the post office, mailed the old style.',
+                                        'Dozen mailed already, plenty',
+                                        'received in return.',
+                                        'If this idea makes You smile,',
+                                        'come and share with us!',
+                                        'May I send you a letter?',
+                                    ].join('\n')}
+                                </div>
+                            )}
+                        </button>
                     </aside>
                 )}
             </div>

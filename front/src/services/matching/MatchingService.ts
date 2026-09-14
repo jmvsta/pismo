@@ -12,4 +12,5 @@ export interface MatchingService {
   cancelPenPalRequest(id: string): Promise<PenPalRequest>
   endConnection(id: string): Promise<PenPalConnection>
   hideProfile(userId: string): Promise<void>
+  requestLetterFromModerators(): Promise<boolean>
 }

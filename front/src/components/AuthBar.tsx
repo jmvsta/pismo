@@ -2,9 +2,7 @@ import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useUserStore } from '../store/userStore.ts'
 import { useNotificationStore } from '../store/notificationStore.ts'
-import { useWalletStore } from '../store/walletStore.ts'
 import { imageUrl } from '../services/imageUrl.ts'
-import { formatMinorAmount } from '../lib/money.ts'
 import NotificationBell from './NotificationBell/NotificationBell.tsx'
 import ThemeToggle from './ThemeToggle/ThemeToggle.tsx'
 import './AuthBar.css'
@@ -14,19 +12,12 @@ function AuthBar() {
   const logout = useUserStore((state) => state.logout)
   const connectNotifications = useNotificationStore((state) => state.connect)
   const disconnectNotifications = useNotificationStore((state) => state.disconnect)
-  const wallet = useWalletStore((state) => state.wallet)
-  const loadWallet = useWalletStore((state) => state.loadWallet)
 
   useEffect(() => {
     if (!currentUser) return
     connectNotifications()
     return () => disconnectNotifications()
   }, [currentUser, connectNotifications, disconnectNotifications])
-
-  useEffect(() => {
-    if (!currentUser) return
-    loadWallet()
-  }, [currentUser, loadWallet])
 
   const handleLogout = async () => {
     await logout()
@@ -54,9 +45,6 @@ function AuthBar() {
       <div className="auth-bar-actions">
         {currentUser ? (
           <>
-            <span className="auth-bar-wallet-pill">
-              Wallet · {wallet ? formatMinorAmount(wallet.balanceMinor, wallet.currency) : '—'}
-            </span>
             <NotificationBell />
             <ThemeToggle />
             {canModerate && (

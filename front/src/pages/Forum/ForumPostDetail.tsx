@@ -125,7 +125,7 @@ function ForumPostDetail({
         ) : (
           <div className="forum-post-detail-body">{renderRichText(post.body)}</div>
         )}
-        <ThanksButton count={post.thanksCount} onThank={handlePostThank} />
+        <ThanksButton count={post.thanksCount} pressed={post.thankedByMe} onThank={handlePostThank} />
 
         <div className="forum-reply-thread">
           <div className="forum-reply-thread-header">

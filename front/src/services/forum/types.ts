@@ -44,6 +44,7 @@ export interface ForumReply {
   author: UserSummary
   body: string
   thanksCount: number
+  thankedByMe: boolean
   photos: ForumReplyPhoto[]
   createdAt: string
   updatedAt: string
@@ -57,6 +58,7 @@ export interface ForumPost {
   body: string
   replyCount: number
   thanksCount: number
+  thankedByMe: boolean
   pinned: boolean
   photos: ForumPostPhoto[]
   replies: ForumReply[]

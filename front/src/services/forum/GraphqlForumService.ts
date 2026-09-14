@@ -38,6 +38,7 @@ interface ForumReplyWire {
   author: UserSummary
   body: string
   thanksCount: number
+  thankedByMe: boolean
   photos: ForumReply['photos']
   createdAt: string
   updatedAt: string
@@ -49,6 +50,7 @@ const REPLY_FIELDS = `
   author { ${USER_SUMMARY_FIELDS} }
   body
   thanksCount
+  thankedByMe
   photos { ${PHOTO_FIELDS} }
   createdAt
   updatedAt
@@ -62,6 +64,7 @@ interface ForumPostWire {
   body: string
   replyCount: number
   thanksCount: number
+  thankedByMe: boolean
   pinned: boolean
   photos: ForumPost['photos']
   replies: ForumReplyWire[]
@@ -77,6 +80,7 @@ const POST_FIELDS = `
   body
   replyCount
   thanksCount
+  thankedByMe
   pinned
   photos { ${PHOTO_FIELDS} }
   replies { ${REPLY_FIELDS} }
@@ -91,6 +95,7 @@ function toForumReply(wire: ForumReplyWire): ForumReply {
     author: wire.author,
     body: wire.body,
     thanksCount: wire.thanksCount,
+    thankedByMe: wire.thankedByMe,
     photos: wire.photos,
     createdAt: wire.createdAt,
     updatedAt: wire.updatedAt,

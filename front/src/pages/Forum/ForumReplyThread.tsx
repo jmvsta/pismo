@@ -100,7 +100,7 @@ function ForumReplyThread({
         </>
       )}
       <div className="forum-reply-actions text-muted">
-        <ThanksButton count={reply.thanksCount} onThank={handleThank} />
+        <ThanksButton count={reply.thanksCount} pressed={reply.thankedByMe} onThank={handleThank} />
         <button type="button" className="forum-reply-link" onClick={() => setIsReplying((prev) => !prev)}>
           Reply
         </button>

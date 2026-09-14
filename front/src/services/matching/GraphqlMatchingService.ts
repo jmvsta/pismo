@@ -82,6 +82,12 @@ const HIDE_PROFILE_MUTATION = `
   }
 `
 
+const REQUEST_LETTER_FROM_MODERATORS_MUTATION = `
+  mutation RequestLetterFromModerators {
+    requestLetterFromModerators
+  }
+`
+
 const PEN_PAL_REQUESTS_QUERY = `
   query PenPalRequests($status: PenPalRequestStatus) {
     penPalRequests(status: $status) {
@@ -215,5 +221,12 @@ export class GraphqlMatchingService implements MatchingService {
       { id },
     )
     return data.endConnection
+  }
+
+  async requestLetterFromModerators(): Promise<boolean> {
+    const data = await this.client.request<{ requestLetterFromModerators: boolean }>(
+      REQUEST_LETTER_FROM_MODERATORS_MUTATION,
+    )
+    return data.requestLetterFromModerators
   }
 }

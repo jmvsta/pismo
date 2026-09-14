@@ -22,7 +22,7 @@ function PendingMatchesTab({ onViewQuestionnaire }: PendingMatchesTabProps) {
       .penPalRequests('PENDING')
       .then((result) => {
         if (cancelled) return
-        setRequests(result.filter((request) => request.addressee.id === currentUserId))
+        setRequests(result)
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load pending requests.')
@@ -58,21 +58,38 @@ function PendingMatchesTab({ onViewQuestionnaire }: PendingMatchesTabProps) {
     return <p className="text-muted matches-empty">No one has reached out yet.</p>
   }
 
+  const incoming = requests.filter((request) => request.addressee.id === currentUserId)
+  const outgoing = requests.filter((request) => request.requester.id === currentUserId)
+  const sortedRequests = [...incoming, ...outgoing]
+
   return (
     <div className="matches-grid">
-      {requests.map((request) => (
-        <MatchCard
-          key={request.id}
-          variant="pending"
-          profile={request.requester}
-          sharedInterests={[]}
-          score={null}
-          pendingActionDisabled={respondingIds.has(request.id)}
-          onAccept={() => handleRespond(request.id, true)}
-          onDecline={() => handleRespond(request.id, false)}
-          onViewQuestionnaire={() => onViewQuestionnaire(request.requester.id, request.requester.nickname)}
-        />
-      ))}
+      {sortedRequests.map((request) => {
+        const isIncoming = request.addressee.id === currentUserId
+        const otherProfile = isIncoming ? request.requester : request.addressee
+        return isIncoming ? (
+          <MatchCard
+            key={request.id}
+            variant="pending"
+            profile={otherProfile}
+            sharedInterests={[]}
+            score={null}
+            pendingActionDisabled={respondingIds.has(request.id)}
+            onAccept={() => handleRespond(request.id, true)}
+            onDecline={() => handleRespond(request.id, false)}
+            onViewQuestionnaire={() => onViewQuestionnaire(otherProfile.id, otherProfile.nickname)}
+          />
+        ) : (
+          <MatchCard
+            key={request.id}
+            variant="pending-outgoing"
+            profile={otherProfile}
+            sharedInterests={[]}
+            score={null}
+            onViewQuestionnaire={() => onViewQuestionnaire(otherProfile.id, otherProfile.nickname)}
+          />
+        )
+      })}
     </div>
   )
 }

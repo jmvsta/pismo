@@ -53,14 +53,20 @@ function NotificationBell() {
     const closeIfOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) setIsOpen(false)
     }
+    // Scrolling inside the panel's own notification list (its overflow-y:auto div)
+    // should just scroll it; only a scroll outside the panel -- the page/site itself -- closes it.
+    const closeIfOutsideScroll = (e: Event) => {
+      if (containerRef.current && containerRef.current.contains(e.target as Node)) return
+      setIsOpen(false)
+    }
     const close = () => setIsOpen(false)
 
     document.addEventListener('mousedown', closeIfOutside)
-    window.addEventListener('scroll', close, { capture: true })
+    window.addEventListener('scroll', closeIfOutsideScroll, { capture: true })
     window.addEventListener('resize', close)
     return () => {
       document.removeEventListener('mousedown', closeIfOutside)
-      window.removeEventListener('scroll', close, { capture: true })
+      window.removeEventListener('scroll', closeIfOutsideScroll, { capture: true })
       window.removeEventListener('resize', close)
     }
   }, [isOpen])

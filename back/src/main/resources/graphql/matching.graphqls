@@ -13,6 +13,7 @@ extend type Mutation {
     cancelPenPalRequest(id: ID!): PenPalRequest!
     endConnection(id: ID!): PenPalConnection!
     hideProfile(userId: ID!): Boolean!
+    requestLetterFromModerators: Boolean!
 }
 
 """One row per unordered pair of users; no synthetic id, the pair itself is the key."""

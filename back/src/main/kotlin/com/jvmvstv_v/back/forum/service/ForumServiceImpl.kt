@@ -26,9 +26,9 @@ class ForumServiceImpl(
     override fun topics(): List<ForumTopic> = forumRepository.findTopics()
 
     override fun posts(topicId: Int?, limit: Int?, offset: Int?): List<ForumPost> =
-        forumRepository.findPosts(topicId, limit, offset)
+        forumRepository.findPosts(topicId, limit, offset, CurrentUser.idOrNull)
 
-    override fun post(id: UUID): ForumPost? = forumRepository.findPostById(id)
+    override fun post(id: UUID): ForumPost? = forumRepository.findPostById(id, CurrentUser.idOrNull)
 
     override fun createPost(input: CreateForumPostInput): ForumPost {
         val topic = forumRepository.findTopicById(input.topicId) ?: throw AuthException("Topic not found")
