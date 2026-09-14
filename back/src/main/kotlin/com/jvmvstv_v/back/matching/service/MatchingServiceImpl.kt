@@ -24,22 +24,11 @@ class MatchingServiceImpl(
     private val notificationService: NotificationService,
     private val userRepository: UserRepository,
 ) : MatchingService {
-    override fun myMatches(limit: Int?): List<UserMatch> {
-        val viewerId = CurrentUser.id
-        return matchingRepository.findMatchesForUser(viewerId, limit).map {
-            it.copy(userA = redactUnlessMatched(it.userA, viewerId), userB = redactUnlessMatched(it.userB, viewerId))
-        }
-    }
+    override fun myMatches(limit: Int?): List<UserMatch> =
+        matchingRepository.findMatchesForUser(CurrentUser.id, limit)
 
-    override fun penPalRequests(status: PenPalRequestStatus?): List<PenPalRequest> {
-        val viewerId = CurrentUser.id
-        return matchingRepository.findRequestsForUser(viewerId, status).map {
-            it.copy(
-                requester = redactUnlessMatched(it.requester, viewerId),
-                addressee = redactUnlessMatched(it.addressee, viewerId),
-            )
-        }
-    }
+    override fun penPalRequests(status: PenPalRequestStatus?): List<PenPalRequest> =
+        matchingRepository.findRequestsForUser(CurrentUser.id, status)
 
     override fun myConnections(): List<PenPalConnection> =
         matchingRepository.findConnectionsForUser(CurrentUser.id)
@@ -107,24 +96,20 @@ class MatchingServiceImpl(
         return matchingRepository.endConnection(id)
     }
 
-    override fun suggestedProfiles(search: String?, limit: Int?, offset: Int?): List<SuggestedProfile> {
-        val viewerId = CurrentUser.id
-        return matchingRepository.findSuggestedProfiles(
-            viewerId,
+    override fun suggestedProfiles(search: String?, limit: Int?, offset: Int?): List<SuggestedProfile> =
+        matchingRepository.findSuggestedProfiles(
+            CurrentUser.id,
             search,
             limit ?: DEFAULT_SUGGESTED_PROFILES_LIMIT,
             offset ?: 0,
-        ).map { it.copy(user = redactUnlessMatched(it.user, viewerId)) }
-    }
+        )
 
-    override fun hiddenProfiles(limit: Int?, offset: Int?): List<SuggestedProfile> {
-        val viewerId = CurrentUser.id
-        return matchingRepository.findHiddenProfiles(
-            viewerId,
+    override fun hiddenProfiles(limit: Int?, offset: Int?): List<SuggestedProfile> =
+        matchingRepository.findHiddenProfiles(
+            CurrentUser.id,
             limit ?: DEFAULT_SUGGESTED_PROFILES_LIMIT,
             offset ?: 0,
-        ).map { it.copy(user = redactUnlessMatched(it.user, viewerId)) }
-    }
+        )
 
     override fun hideProfile(userId: UUID) = matchingRepository.hideProfile(CurrentUser.id, userId)
 

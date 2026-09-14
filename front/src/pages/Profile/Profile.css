@@ -148,16 +148,20 @@
 .profile-tabs {
   display: flex;
   width: 100%;
-  border-bottom: 2px solid var(--color-divider);
   margin-bottom: 18px;
   font-size: 14px;
 }
 .profile-tabs span {
   flex: 1;
   text-align: left;
-  padding-bottom: 10px;
+  padding: 10px 12px;
   cursor: pointer;
-  margin-bottom: -2px;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+.profile-tabs span:hover {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
 }
 .profile-tabs span.is-active {
   font-weight: 800;

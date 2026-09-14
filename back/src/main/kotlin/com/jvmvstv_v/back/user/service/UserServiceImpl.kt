@@ -78,6 +78,7 @@ class UserServiceImpl(
             throw AuthException("Invalid email or password")
         }
         val user = userRepository.findById(credentials.id) ?: error("User ${credentials.id} not found")
+        requireActiveStatus(user)
         return user.copy(authToken = issueToken(user.id))
     }
 
@@ -112,10 +113,19 @@ class UserServiceImpl(
             }
         }
         val user = userRepository.findById(userId) ?: error("User $userId not found")
+        requireActiveStatus(user)
         return user.copy(authToken = issueToken(user.id))
     }
 
     override fun logout() = userRepository.clearAuthToken(CurrentUser.id)
+
+    private fun requireActiveStatus(user: User) {
+        when (user.status) {
+            UserStatus.DELETED -> throw AuthException("This account has been deleted")
+            UserStatus.SUSPENDED -> throw AuthException("This account has been suspended")
+            UserStatus.ACTIVE -> Unit
+        }
+    }
 
     override fun confirmEmail(code: String): User {
         val userId = CurrentUser.id
