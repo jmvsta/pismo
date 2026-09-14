@@ -7,6 +7,7 @@ import { renderRichText } from '../../lib/richText.tsx'
 import ThanksButton from './ThanksButton.tsx'
 import ForumReplyComposer from './ForumReplyComposer.tsx'
 import ForumEditForm from './ForumEditForm.tsx'
+import PhotoLightbox from '../../components/PhotoLightbox/PhotoLightbox.tsx'
 
 interface ForumReplyThreadProps {
   reply: ForumReply
@@ -29,6 +30,7 @@ function ForumReplyThread({
 }: ForumReplyThreadProps) {
   const [isReplying, setIsReplying] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [lightboxPhoto, setLightboxPhoto] = useState<{ src: string; alt: string } | null>(null)
   const currentUser = useUserStore((state) => state.currentUser)
   const children = childrenByParentId.get(reply.id) ?? []
 
@@ -92,9 +94,19 @@ function ForumReplyThread({
           <div className="forum-reply-body">{renderRichText(reply.body)}</div>
           {reply.photos.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {reply.photos.map((photo) => (
-                <img key={photo.id} src={imageUrl(photo.imageId) ?? ''} alt={photo.caption ?? ''} className="h-20 w-20 object-cover" />
-              ))}
+              {reply.photos.map((photo) => {
+                const src = imageUrl(photo.imageId) ?? ''
+                const alt = photo.caption ?? ''
+                return (
+                  <img
+                    key={photo.id}
+                    src={src}
+                    alt={alt}
+                    className="h-20 w-20 cursor-pointer object-cover"
+                    onClick={() => setLightboxPhoto({ src, alt })}
+                  />
+                )
+              })}
             </div>
           )}
         </>
@@ -121,6 +133,9 @@ function ForumReplyThread({
             />
           ))}
         </div>
+      )}
+      {lightboxPhoto && (
+        <PhotoLightbox src={lightboxPhoto.src} alt={lightboxPhoto.alt} onClose={() => setLightboxPhoto(null)} />
       )}
     </div>
   )

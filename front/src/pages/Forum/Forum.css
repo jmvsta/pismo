@@ -290,6 +290,8 @@
   max-width: 640px;
   max-height: 85vh;
   overflow-y: auto;
+  align-self: flex-start;
+  margin-top: 76px;
 }
 
 .forum-post-detail-body {

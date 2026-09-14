@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react'
 import { forumService } from '../../services/forum/index.ts'
 import type { ForumPost, ForumReply, NewForumReplyPhotoInput } from '../../services/forum/index.ts'
+import { imageUrl } from '../../services/imageUrl.ts'
 import { useUserStore } from '../../store/userStore.ts'
 import { renderRichText } from '../../lib/richText.tsx'
 import ThanksButton from './ThanksButton.tsx'
 import ForumReplyComposer from './ForumReplyComposer.tsx'
 import ForumReplyThread from './ForumReplyThread.tsx'
 import ForumEditForm from './ForumEditForm.tsx'
+import PhotoLightbox from '../../components/PhotoLightbox/PhotoLightbox.tsx'
 
 interface ForumPostDetailProps {
   post: ForumPost
@@ -50,6 +52,7 @@ function ForumPostDetail({
 }: ForumPostDetailProps) {
   const [isComposingTopLevel, setIsComposingTopLevel] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [lightboxPhoto, setLightboxPhoto] = useState<{ src: string; alt: string } | null>(null)
   const currentUser = useUserStore((state) => state.currentUser)
 
   const { topLevel, byParent } = useMemo(() => groupRepliesByParent(post.replies), [post.replies])
@@ -123,7 +126,26 @@ function ForumPostDetail({
             onCancel={() => setIsEditing(false)}
           />
         ) : (
-          <div className="forum-post-detail-body">{renderRichText(post.body)}</div>
+          <>
+            <div className="forum-post-detail-body">{renderRichText(post.body)}</div>
+            {post.photos.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {post.photos.map((photo) => {
+                  const src = imageUrl(photo.imageId) ?? ''
+                  const alt = photo.caption ?? ''
+                  return (
+                    <img
+                      key={photo.id}
+                      src={src}
+                      alt={alt}
+                      className="h-40 w-40 cursor-pointer object-cover"
+                      onClick={() => setLightboxPhoto({ src, alt })}
+                    />
+                  )
+                })}
+              </div>
+            )}
+          </>
         )}
         <ThanksButton count={post.thanksCount} pressed={post.thankedByMe} onThank={handlePostThank} />
 
@@ -164,6 +186,9 @@ function ForumPostDetail({
           ))}
         </div>
       </div>
+      {lightboxPhoto && (
+        <PhotoLightbox src={lightboxPhoto.src} alt={lightboxPhoto.alt} onClose={() => setLightboxPhoto(null)} />
+      )}
     </div>
   )
 }
