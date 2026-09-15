@@ -116,6 +116,12 @@
   flex: 1;
   margin: 0;
 }
+.forum-post-excerpt > * {
+  margin: 0 0 8px;
+}
+.forum-post-excerpt > *:last-child {
+  margin-bottom: 0;
+}
 .forum-post-photo {
   width: 180px;
   height: 100px;

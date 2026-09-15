@@ -1,6 +1,7 @@
 import { forumService } from '../../services/forum/index.ts'
 import type { ForumPost } from '../../services/forum/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
+import { renderRichText } from '../../lib/richText.tsx'
 import ThanksButton from './ThanksButton.tsx'
 import ReplyIcon from './ReplyIcon.tsx'
 
@@ -42,7 +43,7 @@ function ForumPostCard({ post, onOpen, onThanked }: ForumPostCardProps) {
       </div>
       <div className="forum-post-title">{post.title}</div>
       <div className="forum-post-content">
-        <p className="text-muted forum-post-excerpt">{post.body}</p>
+        <div className="text-muted forum-post-excerpt">{renderRichText(post.body)}</div>
         {coverPhoto && (
           <div className={`forum-post-photo${coverPhotoUrl ? '' : ' photo-placeholder'}`}>
             {coverPhotoUrl ? <img src={coverPhotoUrl} alt={coverPhoto.caption ?? ''} /> : <span>letter photo</span>}

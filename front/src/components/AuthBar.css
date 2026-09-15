@@ -101,3 +101,33 @@
     display: contents;
   }
 }
+
+@media (max-width: 480px) {
+  .auth-bar {
+    justify-content: center;
+    padding: 0.5rem 0.6rem;
+    column-gap: 0.4rem;
+  }
+  .auth-bar-brand {
+    font-size: 11px;
+    letter-spacing: 0;
+    flex: 0 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .auth-bar-nav {
+    gap: 0.5rem;
+    font-size: 12px;
+  }
+  .auth-bar-actions {
+    gap: 0.4rem;
+  }
+  .auth-bar .btn {
+    padding: 4px 7px;
+    font-size: 11px;
+  }
+  .auth-bar-wallet-pill {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+}

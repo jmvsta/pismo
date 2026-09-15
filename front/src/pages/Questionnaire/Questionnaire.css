@@ -163,6 +163,7 @@
   }
   .questionnaire-sections button.is-current {
     background: var(--color-accent);
+    color: transparent;
   }
   .questionnaire-progress {
     padding-right: 0;

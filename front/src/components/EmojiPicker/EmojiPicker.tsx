@@ -1,7 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
-const BASIC_SMILES = ['😀', '😂', '😉', '😍', '😢', '😮', '😅', '😎', '🙁', '👍', '❤️', '🎉']
+const BASIC_SMILES = [
+  '😀', '😂', '🤣', '😉', '😍', '🥰',
+  '😘', '😢', '😭', '😮', '😅', '😎',
+  '🤔', '😴', '🙁', '😡', '🥳', '😱',
+  '👍', '👎', '👏', '🙏', '🔥', '✨',
+  '❤️', '💔', '🎉', '😇', '😜', '🤗',
+]
 
 interface EmojiPickerProps {
   onSelect: (emoji: string) => void
