@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { MatchProfile } from '../../services/matching/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
@@ -19,6 +20,7 @@ interface MatchCardProps {
   onDecline?: () => void
   onEndConnection?: () => void
   onViewQuestionnaire?: () => void
+  extraActions?: ReactNode
 }
 
 function countryFlag(countryCode: string | null): string | null {
@@ -41,6 +43,7 @@ function MatchCard({
   onDecline,
   onEndConnection,
   onViewQuestionnaire,
+  extraActions,
 }: MatchCardProps) {
   const flag = countryFlag(profile.countryCode)
   const avatarUrl = imageUrl(profile.avatarImageId)
@@ -58,13 +61,9 @@ function MatchCard({
 
       <div className="match-card-body">
         <div className="match-card-heading">
-          {variant === 'matched' ? (
-            <Link to={`/profile/${profile.id}`} className="match-card-name">
-              {profile.nickname}
-            </Link>
-          ) : (
-            <span className="match-card-name">{profile.nickname}</span>
-          )}
+          <Link to={`/profile/${profile.id}`} className="match-card-name">
+            {profile.nickname}
+          </Link>
           {score !== null && <span className="tag tag-outline match-card-score">{Math.round(score)}%</span>}
         </div>
 
@@ -135,9 +134,12 @@ function MatchCard({
         )}
 
         {variant === 'matched' && (
-          <button type="button" className="btn btn-secondary" onClick={onEndConnection}>
-            End connection
-          </button>
+          <>
+            {extraActions}
+            <button type="button" className="btn btn-secondary" onClick={onEndConnection}>
+              End connection
+            </button>
+          </>
         )}
 
         {variant === 'pending-outgoing' && (

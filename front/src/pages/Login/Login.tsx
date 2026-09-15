@@ -54,14 +54,14 @@ function Login() {
 
           <div className="register-stack">
             <div className="field">
-              <label htmlFor="email">Email</label>
+              <label htmlFor="email">Email or username</label>
               <input
                 id="email"
-                type="email"
+                type="text"
                 className="input"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="marta@example.com"
+                placeholder="marta@example.com or marta"
               />
             </div>
             <div className="field">

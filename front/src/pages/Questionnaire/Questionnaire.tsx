@@ -83,6 +83,8 @@ function Questionnaire() {
                 type="button"
                 className={index === sectionIndex ? 'is-current' : undefined}
                 onClick={() => setSectionIndex(index)}
+                aria-label={section.title}
+                title={section.title}
               >
                 {section.title}
               </button>
@@ -99,13 +101,14 @@ function Questionnaire() {
         </aside>
 
         <div className="questionnaire-body">
-          <div>
+          <div className="questionnaire-body-intro">
             <h6>Questionnaire</h6>
             <h3>Tell us who you are</h3>
             <p className="text-muted questionnaire-intro">
               Your answers drive matching — the more honest, the better your pen pals.
             </p>
           </div>
+          <h3 className="questionnaire-mobile-section-title">{currentSection.title}</h3>
 
           {questionsInSection.map((question) => (
             <QuestionnaireQuestion

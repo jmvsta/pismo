@@ -5,7 +5,6 @@ import com.jvmvstv_v.back.matching.model.PenPalRequest
 import com.jvmvstv_v.back.matching.model.PenPalRequestStatus
 import com.jvmvstv_v.back.matching.model.SuggestedProfile
 import com.jvmvstv_v.back.matching.model.UserMatch
-import com.jvmvstv_v.back.user.model.User
 import java.util.UUID
 
 interface MatchingService {
@@ -21,8 +20,4 @@ interface MatchingService {
     fun hideProfile(userId: UUID)
     fun pendingIncomingRequestCount(): Int
     fun requestLetterFromModerators(): Boolean
-
-    // Shared by user(id), questionnaire-by-user, and this service's own results -- every
-    // path that can expose another user's profile before a match needs the same redaction.
-    fun redactUnlessMatched(user: User): User
 }

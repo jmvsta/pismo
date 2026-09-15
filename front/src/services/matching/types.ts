@@ -1,6 +1,7 @@
 import type { UserSummary } from '../user/types.ts'
 
 export type PenPalRequestStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED'
+export type PenPalRequestSource = 'STANDARD' | 'MODERATOR_LETTER_REQUEST'
 
 export interface MatchProfile extends UserSummary {
   countryCode: string | null
@@ -28,6 +29,7 @@ export interface PenPalRequest {
   addressee: MatchProfile
   status: PenPalRequestStatus
   message: string | null
+  source: PenPalRequestSource
   createdAt: string
   respondedAt: string | null
 }

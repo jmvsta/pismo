@@ -4,19 +4,23 @@ import AdminUsersPanel from './AdminUsersPanel.tsx'
 import AdminTopicsPanel from './AdminTopicsPanel.tsx'
 import AdminQuestionnairePanel from './AdminQuestionnairePanel.tsx'
 import { useUserStore } from '../../store/userStore.ts'
+import { useLanguageStore } from '../../store/languageStore.ts'
+import { uiText } from '../../i18n/uiText.ts'
+import type { UiTextKey } from '../../i18n/uiText.ts'
 import './Admin.css'
 
 type AdminTabId = 'users' | 'questionnaire' | 'topics'
 
-const TABS: { id: AdminTabId; label: string }[] = [
-  { id: 'users', label: 'Users' },
-  { id: 'questionnaire', label: 'Questionnaire' },
-  { id: 'topics', label: 'Topics' },
+const TABS: { id: AdminTabId; key: UiTextKey }[] = [
+  { id: 'users', key: 'adminTabUsers' },
+  { id: 'questionnaire', key: 'adminTabQuestionnaire' },
+  { id: 'topics', key: 'adminTabTopics' },
 ]
 
 function Admin() {
   const currentUser = useUserStore((state) => state.currentUser)
   const status = useUserStore((state) => state.status)
+  const language = useLanguageStore((state) => state.language)
   const [activeTab, setActiveTab] = useState<AdminTabId>('users')
 
   const canModerate = currentUser?.role === 'ADMIN' || currentUser?.role === 'MODERATOR'
@@ -30,12 +34,12 @@ function Admin() {
     <div className="admin-page">
       <div className="admin-card">
         <Link to="/" className="admin-back">
-          ← Back to feed
+          {uiText('backToFeed', language)}
         </Link>
 
         <div className="admin-header">
-          <h6>Admin</h6>
-          <h2>Moderation</h2>
+          <h6>{uiText('adminEyebrow', language)}</h6>
+          <h2>{uiText('adminModeration', language)}</h2>
           <p className="text-muted text-sm">
             Looking to edit the About page? Use the <Link to="/about">Edit page</Link> button there instead.
           </p>
@@ -48,7 +52,7 @@ function Admin() {
               className={activeTab === tab.id ? 'is-active' : undefined}
               onClick={() => setActiveTab(tab.id)}
             >
-              {tab.label}
+              {uiText(tab.key, language)}
             </span>
           ))}
         </div>

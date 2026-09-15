@@ -7,6 +7,9 @@ import { renderRichText } from '../../lib/richText.tsx'
 import ThanksButton from './ThanksButton.tsx'
 import ForumReplyComposer from './ForumReplyComposer.tsx'
 import ForumEditForm from './ForumEditForm.tsx'
+import ForumItemActions from './ForumItemActions.tsx'
+import ReplyIcon from './ReplyIcon.tsx'
+import PhotoLightbox from '../../components/PhotoLightbox/PhotoLightbox.tsx'
 
 interface ForumReplyThreadProps {
   reply: ForumReply
@@ -29,6 +32,7 @@ function ForumReplyThread({
 }: ForumReplyThreadProps) {
   const [isReplying, setIsReplying] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [lightboxPhoto, setLightboxPhoto] = useState<{ src: string; alt: string } | null>(null)
   const currentUser = useUserStore((state) => state.currentUser)
   const children = childrenByParentId.get(reply.id) ?? []
 
@@ -67,19 +71,7 @@ function ForumReplyThread({
 
   return (
     <div className="forum-reply">
-      <div className="forum-reply-meta text-muted">
-        {reply.author.nickname}
-        {canEdit && !isEditing && (
-          <span className="forum-item-actions">
-            <button type="button" className="forum-reply-link" onClick={() => setIsEditing(true)}>
-              Edit
-            </button>
-            <button type="button" className="forum-reply-link" onClick={handleReplyDelete}>
-              Delete
-            </button>
-          </span>
-        )}
-      </div>
+      <div className="forum-reply-meta text-muted">{reply.author.nickname}</div>
       {isEditing ? (
         <ForumEditForm
           initialBody={reply.body}
@@ -91,19 +83,37 @@ function ForumReplyThread({
         <>
           <div className="forum-reply-body">{renderRichText(reply.body)}</div>
           {reply.photos.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {reply.photos.map((photo) => (
-                <img key={photo.id} src={imageUrl(photo.imageId) ?? ''} alt={photo.caption ?? ''} className="h-20 w-20 object-cover" />
-              ))}
+            <div className="forum-reply-photos flex flex-wrap gap-2">
+              {reply.photos.map((photo) => {
+                const src = imageUrl(photo.imageId) ?? ''
+                const alt = photo.caption ?? ''
+                return (
+                  <img
+                    key={photo.id}
+                    src={src}
+                    alt={alt}
+                    className="h-20 w-20 cursor-pointer object-cover"
+                    onClick={() => setLightboxPhoto({ src, alt })}
+                  />
+                )
+              })}
             </div>
           )}
         </>
       )}
       <div className="forum-reply-actions text-muted">
         <ThanksButton count={reply.thanksCount} pressed={reply.thankedByMe} onThank={handleThank} />
-        <button type="button" className="forum-reply-link" onClick={() => setIsReplying((prev) => !prev)}>
-          Reply
+        <button
+          type="button"
+          className="forum-reply-link"
+          onClick={() => setIsReplying((prev) => !prev)}
+          aria-label="Reply"
+        >
+          <ReplyIcon />
         </button>
+        {canEdit && !isEditing && (
+          <ForumItemActions onEdit={() => setIsEditing(true)} onDelete={handleReplyDelete} />
+        )}
       </div>
       {isReplying && <ForumReplyComposer onSubmit={handleSubmitReply} onCancel={() => setIsReplying(false)} />}
       {children.length > 0 && (
@@ -121,6 +131,9 @@ function ForumReplyThread({
             />
           ))}
         </div>
+      )}
+      {lightboxPhoto && (
+        <PhotoLightbox src={lightboxPhoto.src} alt={lightboxPhoto.alt} onClose={() => setLightboxPhoto(null)} />
       )}
     </div>
   )

@@ -15,6 +15,7 @@ export const PEN_PAL_REQUEST_FIELDS = `
   addressee { ${MATCH_PROFILE_FIELDS} }
   status
   message
+  source
   createdAt
   respondedAt
 `

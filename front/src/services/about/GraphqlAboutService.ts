@@ -1,18 +1,24 @@
 import type { GraphqlClient } from '../graphqlClient.ts'
-import type { AboutPage, AboutPageBlockAlign } from './types.ts'
+import type { AboutPage, AboutPageBlockAlign, AboutPageLanguage } from './types.ts'
 import type { AboutService } from './AboutService.ts'
 
 const ABOUT_PAGE_FIELDS = `
-  body
+  bodyEn
+  bodyRu
+  bodySrb
   updatedAt
   canvases {
     id
     height
+    backgroundImageId
     blocks {
       id
       type
-      text
+      textEn
+      textRu
+      textSrb
       imageId
+      linkUrl
       x
       y
       width
@@ -31,8 +37,8 @@ const ABOUT_PAGE_QUERY = `
 `
 
 const UPDATE_ABOUT_PAGE_BODY_MUTATION = `
-  mutation UpdateAboutPageBody($body: String!) {
-    updateAboutPageBody(body: $body) {
+  mutation UpdateAboutPageBody($body: String!, $language: AboutPageLanguage!) {
+    updateAboutPageBody(body: $body, language: $language) {
       ${ABOUT_PAGE_FIELDS}
     }
   }
@@ -49,6 +55,22 @@ const ADD_ABOUT_PAGE_CANVAS_MUTATION = `
 const UPDATE_ABOUT_PAGE_CANVAS_HEIGHT_MUTATION = `
   mutation UpdateAboutPageCanvasHeight($id: ID!, $height: Float!) {
     updateAboutPageCanvasHeight(id: $id, height: $height) {
+      ${ABOUT_PAGE_FIELDS}
+    }
+  }
+`
+
+const UPDATE_ABOUT_PAGE_CANVAS_BACKGROUND_MUTATION = `
+  mutation UpdateAboutPageCanvasBackground($id: ID!, $mimeType: String!, $imageBase64: String!) {
+    updateAboutPageCanvasBackground(id: $id, mimeType: $mimeType, imageBase64: $imageBase64) {
+      ${ABOUT_PAGE_FIELDS}
+    }
+  }
+`
+
+const REMOVE_ABOUT_PAGE_CANVAS_BACKGROUND_MUTATION = `
+  mutation RemoveAboutPageCanvasBackground($id: ID!) {
+    removeAboutPageCanvasBackground(id: $id) {
       ${ABOUT_PAGE_FIELDS}
     }
   }
@@ -101,6 +123,30 @@ const ADD_ABOUT_PAGE_PHOTO_BLOCK_MUTATION = `
   }
 `
 
+const ADD_ABOUT_PAGE_BUTTON_BLOCK_MUTATION = `
+  mutation AddAboutPageButtonBlock(
+    $canvasId: ID!
+    $text: String!
+    $linkUrl: String!
+    $x: Float!
+    $y: Float!
+    $width: Float!
+    $height: Float!
+  ) {
+    addAboutPageButtonBlock(
+      canvasId: $canvasId
+      text: $text
+      linkUrl: $linkUrl
+      x: $x
+      y: $y
+      width: $width
+      height: $height
+    ) {
+      ${ABOUT_PAGE_FIELDS}
+    }
+  }
+`
+
 const UPDATE_ABOUT_PAGE_BLOCK_LAYOUT_MUTATION = `
   mutation UpdateAboutPageBlockLayout($id: ID!, $x: Float!, $y: Float!, $width: Float!, $height: Float!) {
     updateAboutPageBlockLayout(id: $id, x: $x, y: $y, width: $width, height: $height) {
@@ -118,8 +164,16 @@ const UPDATE_ABOUT_PAGE_BLOCK_ALIGN_MUTATION = `
 `
 
 const UPDATE_ABOUT_PAGE_BLOCK_TEXT_MUTATION = `
-  mutation UpdateAboutPageBlockText($id: ID!, $text: String!) {
-    updateAboutPageBlockText(id: $id, text: $text) {
+  mutation UpdateAboutPageBlockText($id: ID!, $text: String!, $language: AboutPageLanguage!) {
+    updateAboutPageBlockText(id: $id, text: $text, language: $language) {
+      ${ABOUT_PAGE_FIELDS}
+    }
+  }
+`
+
+const UPDATE_ABOUT_PAGE_BLOCK_LINK_MUTATION = `
+  mutation UpdateAboutPageBlockLink($id: ID!, $linkUrl: String!) {
+    updateAboutPageBlockLink(id: $id, linkUrl: $linkUrl) {
       ${ABOUT_PAGE_FIELDS}
     }
   }
@@ -145,11 +199,11 @@ export class GraphqlAboutService implements AboutService {
     return data.aboutPage
   }
 
-  async updateBody(body: string): Promise<AboutPage> {
-    const data = await this.client.request<{ updateAboutPageBody: AboutPage }, { body: string }>(
-      UPDATE_ABOUT_PAGE_BODY_MUTATION,
-      { body },
-    )
+  async updateBody(body: string, language: AboutPageLanguage): Promise<AboutPage> {
+    const data = await this.client.request<
+      { updateAboutPageBody: AboutPage },
+      { body: string; language: AboutPageLanguage }
+    >(UPDATE_ABOUT_PAGE_BODY_MUTATION, { body, language })
     return data.updateAboutPageBody
   }
 
@@ -164,6 +218,22 @@ export class GraphqlAboutService implements AboutService {
       { id: string; height: number }
     >(UPDATE_ABOUT_PAGE_CANVAS_HEIGHT_MUTATION, { id, height })
     return data.updateAboutPageCanvasHeight
+  }
+
+  async updateCanvasBackground(id: string, mimeType: string, imageBase64: string): Promise<AboutPage> {
+    const data = await this.client.request<
+      { updateAboutPageCanvasBackground: AboutPage },
+      { id: string; mimeType: string; imageBase64: string }
+    >(UPDATE_ABOUT_PAGE_CANVAS_BACKGROUND_MUTATION, { id, mimeType, imageBase64 })
+    return data.updateAboutPageCanvasBackground
+  }
+
+  async removeCanvasBackground(id: string): Promise<AboutPage> {
+    const data = await this.client.request<{ removeAboutPageCanvasBackground: AboutPage }, { id: string }>(
+      REMOVE_ABOUT_PAGE_CANVAS_BACKGROUND_MUTATION,
+      { id },
+    )
+    return data.removeAboutPageCanvasBackground
   }
 
   async removeCanvas(id: string): Promise<AboutPage> {
@@ -213,6 +283,30 @@ export class GraphqlAboutService implements AboutService {
     return data.addAboutPagePhotoBlock
   }
 
+  async addButtonBlock(
+    canvasId: string,
+    text: string,
+    linkUrl: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ): Promise<AboutPage> {
+    const data = await this.client.request<
+      { addAboutPageButtonBlock: AboutPage },
+      {
+        canvasId: string
+        text: string
+        linkUrl: string
+        x: number
+        y: number
+        width: number
+        height: number
+      }
+    >(ADD_ABOUT_PAGE_BUTTON_BLOCK_MUTATION, { canvasId, text, linkUrl, x, y, width, height })
+    return data.addAboutPageButtonBlock
+  }
+
   async updateBlockLayout(id: string, x: number, y: number, width: number, height: number): Promise<AboutPage> {
     const data = await this.client.request<
       { updateAboutPageBlockLayout: AboutPage },
@@ -229,12 +323,20 @@ export class GraphqlAboutService implements AboutService {
     return data.updateAboutPageBlockAlign
   }
 
-  async updateBlockText(id: string, text: string): Promise<AboutPage> {
+  async updateBlockText(id: string, text: string, language: AboutPageLanguage): Promise<AboutPage> {
     const data = await this.client.request<
       { updateAboutPageBlockText: AboutPage },
-      { id: string; text: string }
-    >(UPDATE_ABOUT_PAGE_BLOCK_TEXT_MUTATION, { id, text })
+      { id: string; text: string; language: AboutPageLanguage }
+    >(UPDATE_ABOUT_PAGE_BLOCK_TEXT_MUTATION, { id, text, language })
     return data.updateAboutPageBlockText
+  }
+
+  async updateBlockLink(id: string, linkUrl: string): Promise<AboutPage> {
+    const data = await this.client.request<
+      { updateAboutPageBlockLink: AboutPage },
+      { id: string; linkUrl: string }
+    >(UPDATE_ABOUT_PAGE_BLOCK_LINK_MUTATION, { id, linkUrl })
+    return data.updateAboutPageBlockLink
   }
 
   async removeBlock(id: string): Promise<AboutPage> {

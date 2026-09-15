@@ -10,6 +10,8 @@ import type { ConnectionAddressConsent, UserAddress } from '../../services/addre
 import { imageUrl } from '../../services/imageUrl.ts'
 import SendLetterDialog from './SendLetterDialog.tsx'
 import ConfirmDeliveryDialog from './ConfirmDeliveryDialog.tsx'
+import { useLanguageStore } from '../../store/languageStore.ts'
+import { uiText, uiTextWithName } from '../../i18n/uiText.ts'
 
 const OPEN_STATUSES = new Set(['DRAFT', 'SENT', 'IN_TRANSIT'])
 
@@ -46,10 +48,12 @@ async function loadRow(connection: PenPalConnection, currentUserId: string): Pro
 
 interface ProfilePenPalsProps {
   onGoToAddressTab: () => void
+  onLetterChanged?: () => void
 }
 
-function ProfilePenPals({ onGoToAddressTab }: ProfilePenPalsProps) {
+function ProfilePenPals({ onGoToAddressTab, onLetterChanged }: ProfilePenPalsProps) {
   const currentUserId = useUserStore((state) => state.currentUser?.id)
+  const language = useLanguageStore((state) => state.language)
   const [rows, setRows] = useState<ConnectionRow[]>([])
   const [myAddress, setMyAddress] = useState<UserAddress | null>(null)
   const [loading, setLoading] = useState(true)
@@ -97,6 +101,7 @@ function ProfilePenPals({ onGoToAddressTab }: ProfilePenPalsProps) {
           : row,
       ),
     )
+    onLetterChanged?.()
   }
 
   const handleToggleShare = async (row: ConnectionRow) => {
@@ -129,23 +134,27 @@ function ProfilePenPals({ onGoToAddressTab }: ProfilePenPalsProps) {
       {rows.map((row) => {
         const other = row.connection.userA.id === currentUserId ? row.connection.userB : row.connection.userA
         const avatarUrl = imageUrl(other.avatarImageId)
-        const requesterId = row.connection.request?.requester.id
-        const hasEverSentFirstLetter = row.letters.some(
-          (letter) => letter.sender.id === requesterId && letter.status !== 'DRAFT',
-        )
+        const hasEverSentFirstLetter = row.letters.some((letter) => letter.status !== 'DRAFT')
         const otherAddressVisible =
           hasEverSentFirstLetter && row.otherConsent?.status === 'GRANTED' && Boolean(row.otherConsent.address)
 
         const openLetter = row.letters.find((letter) => OPEN_STATUSES.has(letter.status)) ?? null
         const deliveredLetters = row.letters.filter((letter) => letter.status === 'DELIVERED')
         const lastDelivered = deliveredLetters[0] ?? null
+        const isModeratorLetterRequest = row.connection.request?.source === 'MODERATOR_LETTER_REQUEST'
+        const moderatorId = row.connection.request?.addressee.id
         const eligibleSenderId = lastDelivered
           ? otherUserId(row.connection, lastDelivered.sender.id)
-          : (requesterId ?? currentUserId)
+          : isModeratorLetterRequest && moderatorId
+            ? moderatorId
+            : currentUserId
         const isMyTurnToSend = !openLetter && eligibleSenderId === currentUserId
 
         return (
-          <div key={row.connection.id} className="border border-[var(--color-divider)] p-3">
+          <div
+            key={row.connection.id}
+            className="p-3 transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-accent)_6%,transparent)]"
+          >
             <div className="flex items-center gap-3">
               <div className={`profile-avatar${avatarUrl ? '' : ' photo-placeholder'}`} style={{ width: 48, height: 48 }}>
                 {avatarUrl ? <img src={avatarUrl} alt={other.nickname} /> : <span>avatar</span>}
@@ -166,14 +175,14 @@ function ProfilePenPals({ onGoToAddressTab }: ProfilePenPalsProps) {
                   disabled={!myAddress}
                   onChange={() => handleToggleShare(row)}
                 />
-                Share my address with this pen pal
+                {uiText('letterAddressSharePrompt', language)}
               </label>
               {!myAddress && (
                 <span className="text-muted text-sm">
                   <button type="button" className="btn btn-ghost" onClick={onGoToAddressTab}>
-                    Add your address
+                    {uiText('letterAddAddress', language)}
                   </button>{' '}
-                  first.
+                  {uiText('letterAddAddressSuffix', language)}
                 </span>
               )}
 
@@ -185,11 +194,11 @@ function ProfilePenPals({ onGoToAddressTab }: ProfilePenPalsProps) {
                       className="btn btn-ghost"
                       onClick={() => setLetterDialogFor({ connection: row.connection, existing: openLetter })}
                     >
-                      Resume sending your letter
+                      {uiText('letterResumeSending', language)}
                     </button>
                   ) : (
                     <>
-                      Sent — waiting for {other.nickname} to confirm delivery. Your code:{' '}
+                      {uiTextWithName('letterSentWaiting', language, other.nickname)}{' '}
                       <strong>{openLetter.trackingCode}</strong>
                     </>
                   )}
@@ -197,7 +206,9 @@ function ProfilePenPals({ onGoToAddressTab }: ProfilePenPalsProps) {
               )}
 
               {openLetter && openLetter.recipient.id === currentUserId && openLetter.status === 'DRAFT' && (
-                <span className="text-muted text-sm">Waiting for {other.nickname} to finish and send their letter.</span>
+                <span className="text-muted text-sm">
+                  {uiTextWithName('letterWaitingToFinish', language, other.nickname)}
+                </span>
               )}
               {openLetter && openLetter.recipient.id === currentUserId && openLetter.status !== 'DRAFT' && (
                 <button
@@ -205,7 +216,7 @@ function ProfilePenPals({ onGoToAddressTab }: ProfilePenPalsProps) {
                   className="btn btn-primary self-start"
                   onClick={() => setConfirmDialogFor({ connectionId: row.connection.id, letter: openLetter })}
                 >
-                  Confirm delivery
+                  {uiText('letterConfirmDelivery', language)}
                 </button>
               )}
 
@@ -215,21 +226,24 @@ function ProfilePenPals({ onGoToAddressTab }: ProfilePenPalsProps) {
                   className="btn btn-primary self-start"
                   onClick={() => setLetterDialogFor({ connection: row.connection, existing: null })}
                 >
-                  {deliveredLetters.length === 0 ? 'Send first letter' : 'Reply'}
+                  {deliveredLetters.length === 0 ? uiText('letterSendFirst', language) : uiText('letterReply', language)}
                 </button>
               )}
               {!openLetter && !isMyTurnToSend && (
-                <span className="text-muted text-sm">Waiting for {other.nickname} to write.</span>
+                <span className="text-muted text-sm">{uiTextWithName('letterWaitingToWrite', language, other.nickname)}</span>
               )}
 
               {otherAddressVisible && row.otherConsent?.address && (
                 <div className="text-sm">
-                  <span className="font-semibold">{other.nickname}'s address: </span>
+                  <span className="font-semibold">
+                    {other.nickname}
+                    {uiText('letterAddressLabel', language)}{' '}
+                  </span>
                   {formatAddress(row.otherConsent.address)}
                 </div>
               )}
               {hasEverSentFirstLetter && !otherAddressVisible && (
-                <span className="text-muted text-sm">Waiting for {other.nickname} to share their address.</span>
+                <span className="text-muted text-sm">{uiTextWithName('letterWaitingForAddress', language, other.nickname)}</span>
               )}
             </div>
           </div>

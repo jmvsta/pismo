@@ -7,9 +7,8 @@
 
 .profile-card {
   width: 100%;
-  max-width: 960px;
+  max-width: 1200px;
   background: var(--color-bg);
-  border: 1px solid var(--color-divider);
 }
 
 .profile-back {
@@ -23,7 +22,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 28px;
-  border-bottom: 2px solid var(--color-divider);
 }
 
 .profile-avatar {
@@ -33,9 +31,19 @@
   position: relative;
 }
 .profile-avatar img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+.profile-avatar-hero {
+  width: 340px;
+  max-width: 42%;
+  min-height: 260px;
+  height: auto;
+}
+.profile-avatar-hero img {
+  height: auto;
 }
 .profile-avatar-editable {
   cursor: pointer;
@@ -83,6 +91,39 @@
 .profile-name-row span {
   font-size: 13px;
 }
+.profile-nickname-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.profile-nickname-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--color-neutral-500);
+}
+.profile-nickname-edit-btn:hover {
+  color: var(--color-accent);
+}
+.profile-nickname-editor {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.profile-nickname-editor .input {
+  width: auto;
+  min-width: 160px;
+}
+.profile-nickname-error {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--color-accent);
+}
 .profile-bio {
   font-size: 14px;
   line-height: 1.55;
@@ -127,15 +168,11 @@
 
 .profile-stats {
   display: flex;
-  border-bottom: 2px solid var(--color-divider);
 }
 .profile-stat {
   flex: 1;
   padding: 16px 40px;
-  border-right: 1px solid var(--color-divider);
-}
-.profile-stat-last {
-  border-right: none;
+  text-align: center;
 }
 .profile-stat-value {
   font-size: 26px;
@@ -176,6 +213,25 @@
   padding: var(--space-4) 0;
 }
 
+.profile-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 40px 20px;
+}
+.profile-action-error {
+  margin: 0;
+  padding: 0 40px 20px;
+}
+
+@media (max-width: 640px) {
+  .profile-actions,
+  .profile-action-error {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
+}
+
 .profile-forum-activity {
   display: flex;
   flex-direction: column;
@@ -205,11 +261,9 @@
     padding-left: var(--space-4);
     padding-right: var(--space-4);
   }
-  .profile-stats {
-    flex-wrap: wrap;
-  }
-  .profile-stat {
-    flex: 1 1 50%;
-    border-right: none;
+  .profile-avatar-hero {
+    width: 45vw;
+    max-width: 60%;
+    min-height: 160px;
   }
 }

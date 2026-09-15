@@ -2,6 +2,7 @@ package com.jvmvstv_v.back.matching.repository
 
 import com.jvmvstv_v.back.matching.model.PenPalConnection
 import com.jvmvstv_v.back.matching.model.PenPalRequest
+import com.jvmvstv_v.back.matching.model.PenPalRequestSource
 import com.jvmvstv_v.back.matching.model.PenPalRequestStatus
 import com.jvmvstv_v.back.matching.model.SuggestedProfile
 import com.jvmvstv_v.back.matching.model.UserMatch
@@ -13,7 +14,12 @@ interface MatchingRepository {
     fun findConnectionsForUser(userId: UUID): List<PenPalConnection>
     fun findConnectionById(id: UUID): PenPalConnection?
     fun findRequestById(id: UUID): PenPalRequest?
-    fun createRequest(requesterId: UUID, addresseeId: UUID, message: String?): PenPalRequest
+    fun createRequest(
+        requesterId: UUID,
+        addresseeId: UUID,
+        message: String?,
+        source: PenPalRequestSource = PenPalRequestSource.STANDARD,
+    ): PenPalRequest
     fun respondToRequest(id: UUID, accept: Boolean): PenPalRequest
     fun cancelRequest(id: UUID): PenPalRequest
     fun endConnection(id: UUID): PenPalConnection

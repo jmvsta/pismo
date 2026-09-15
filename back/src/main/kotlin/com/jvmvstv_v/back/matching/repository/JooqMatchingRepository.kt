@@ -3,6 +3,7 @@ package com.jvmvstv_v.back.matching.repository
 import com.jvmvstv_v.back.common.CurrentUser
 import com.jvmvstv_v.back.matching.model.PenPalConnection
 import com.jvmvstv_v.back.matching.model.PenPalRequest
+import com.jvmvstv_v.back.matching.model.PenPalRequestSource
 import com.jvmvstv_v.back.matching.model.PenPalRequestStatus
 import com.jvmvstv_v.back.matching.model.SuggestedProfile
 import com.jvmvstv_v.back.matching.model.UserMatch
@@ -34,6 +35,7 @@ class JooqMatchingRepository(
     private val R_ADDRESSEE_ID = DSL.field("addressee_id", SQLDataType.UUID)
     private val R_STATUS = DSL.field("status", SQLDataType.VARCHAR)
     private val R_MESSAGE = DSL.field("message", SQLDataType.VARCHAR)
+    private val R_SOURCE = DSL.field("source", SQLDataType.VARCHAR)
     private val R_CREATED_AT = DSL.field("created_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
     private val R_RESPONDED_AT = DSL.field("responded_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
 
@@ -67,7 +69,7 @@ class JooqMatchingRepository(
     }
 
     override fun findRequestsForUser(userId: UUID, status: PenPalRequestStatus?): List<PenPalRequest> {
-        val step = dsl.select(R_ID, R_REQUESTER_ID, R_ADDRESSEE_ID, R_STATUS, R_MESSAGE, R_CREATED_AT, R_RESPONDED_AT)
+        val step = dsl.select(R_ID, R_REQUESTER_ID, R_ADDRESSEE_ID, R_STATUS, R_MESSAGE, R_SOURCE, R_CREATED_AT, R_RESPONDED_AT)
             .from(REQUESTS)
             .where(R_REQUESTER_ID.eq(userId).or(R_ADDRESSEE_ID.eq(userId)))
         val query = if (status != null) step.and(R_STATUS.eq(status.name)) else step
@@ -87,11 +89,16 @@ class JooqMatchingRepository(
             .where(C_ID.eq(id))
             .fetchOne { toPenPalConnection(it) }
 
-    override fun createRequest(requesterId: UUID, addresseeId: UUID, message: String?): PenPalRequest {
+    override fun createRequest(
+        requesterId: UUID,
+        addresseeId: UUID,
+        message: String?,
+        source: PenPalRequestSource,
+    ): PenPalRequest {
         val id = UUID.randomUUID()
         dsl.insertInto(REQUESTS)
-            .columns(R_ID, R_REQUESTER_ID, R_ADDRESSEE_ID, R_STATUS, R_MESSAGE, R_CREATED_AT)
-            .values(id, requesterId, addresseeId, PenPalRequestStatus.PENDING.name, message, OffsetDateTime.now())
+            .columns(R_ID, R_REQUESTER_ID, R_ADDRESSEE_ID, R_STATUS, R_MESSAGE, R_SOURCE, R_CREATED_AT)
+            .values(id, requesterId, addresseeId, PenPalRequestStatus.PENDING.name, message, source.name, OffsetDateTime.now())
             .execute()
         return findRequestById(id) ?: error("Pen pal request $id not found")
     }
@@ -241,7 +248,7 @@ class JooqMatchingRepository(
         )
 
     override fun findRequestById(id: UUID): PenPalRequest? =
-        dsl.select(R_ID, R_REQUESTER_ID, R_ADDRESSEE_ID, R_STATUS, R_MESSAGE, R_CREATED_AT, R_RESPONDED_AT)
+        dsl.select(R_ID, R_REQUESTER_ID, R_ADDRESSEE_ID, R_STATUS, R_MESSAGE, R_SOURCE, R_CREATED_AT, R_RESPONDED_AT)
             .from(REQUESTS)
             .where(R_ID.eq(id))
             .fetchOne { toPenPalRequest(it) }
@@ -260,6 +267,7 @@ class JooqMatchingRepository(
         addressee = userRepository.findById(record[R_ADDRESSEE_ID]!!) ?: error("User not found"),
         status = PenPalRequestStatus.valueOf(record[R_STATUS]!!),
         message = record[R_MESSAGE],
+        source = PenPalRequestSource.valueOf(record[R_SOURCE]!!),
         createdAt = record[R_CREATED_AT]!!.toString(),
         respondedAt = record[R_RESPONDED_AT]?.toString(),
     )

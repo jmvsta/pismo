@@ -4,12 +4,14 @@ import type { UserBadge } from '../../services/badges/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
 import BadgeChips from './BadgeChips.tsx'
 import ProfileBioEditor from './ProfileBioEditor.tsx'
+import ProfileNicknameEditor from './ProfileNicknameEditor.tsx'
 
 interface ProfileHeaderProps {
   user: User
   badges: UserBadge[]
   onAvatarChange?: (mimeType: string, imageBase64: string) => Promise<void>
   onBioChange?: (bio: string) => Promise<void>
+  onNicknameChange?: (nickname: string) => Promise<void>
 }
 
 function formatMemberSince(iso: string): string {
@@ -29,7 +31,7 @@ function readAsBase64(file: File): Promise<string> {
   })
 }
 
-function ProfileHeader({ user, badges, onAvatarChange, onBioChange }: ProfileHeaderProps) {
+function ProfileHeader({ user, badges, onAvatarChange, onBioChange, onNicknameChange }: ProfileHeaderProps) {
   const location = formatLocation(user)
   const avatarUrl = imageUrl(user.avatarImageId)
   const [uploading, setUploading] = useState(false)
@@ -54,7 +56,7 @@ function ProfileHeader({ user, badges, onAvatarChange, onBioChange }: ProfileHea
   return (
     <div className="profile-header">
       <div
-        className={`profile-avatar${avatarUrl ? '' : ' photo-placeholder'}${onAvatarChange ? ' profile-avatar-editable' : ''}`}
+        className={`profile-avatar profile-avatar-hero${avatarUrl ? '' : ' photo-placeholder'}${onAvatarChange ? ' profile-avatar-editable' : ''}`}
       >
         {avatarUrl ? <img src={avatarUrl} alt={user.nickname} /> : <span>avatar</span>}
         {onAvatarChange && (
@@ -71,7 +73,11 @@ function ProfileHeader({ user, badges, onAvatarChange, onBioChange }: ProfileHea
       </div>
       <div className="profile-identity">
         <div className="profile-name-row">
-          <h2>{user.nickname}</h2>
+          {onNicknameChange ? (
+            <ProfileNicknameEditor initialNickname={user.nickname} onSave={onNicknameChange} />
+          ) : (
+            <h2>{user.nickname}</h2>
+          )}
           <span className="text-muted">
             {location && `${location} · `}
             member since {formatMemberSince(user.createdAt)}

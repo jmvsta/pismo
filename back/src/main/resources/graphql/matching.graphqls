@@ -39,6 +39,7 @@ type PenPalRequest {
     addressee: User!
     status: PenPalRequestStatus!
     message: String
+    source: PenPalRequestSource!
     createdAt: String!
     respondedAt: String
 }
@@ -48,6 +49,11 @@ enum PenPalRequestStatus {
     ACCEPTED
     DECLINED
     CANCELLED
+}
+
+enum PenPalRequestSource {
+    STANDARD
+    MODERATOR_LETTER_REQUEST
 }
 
 type PenPalConnection {

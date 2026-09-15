@@ -4,13 +4,13 @@ import com.jvmvstv_v.back.common.AuthException
 import com.jvmvstv_v.back.common.CurrentUser
 import com.jvmvstv_v.back.matching.model.PenPalConnection
 import com.jvmvstv_v.back.matching.model.PenPalRequest
+import com.jvmvstv_v.back.matching.model.PenPalRequestSource
 import com.jvmvstv_v.back.matching.model.PenPalRequestStatus
 import com.jvmvstv_v.back.matching.model.SuggestedProfile
 import com.jvmvstv_v.back.matching.model.UserMatch
 import com.jvmvstv_v.back.matching.repository.MatchingRepository
 import com.jvmvstv_v.back.notification.model.NotificationType
 import com.jvmvstv_v.back.notification.service.NotificationService
-import com.jvmvstv_v.back.user.model.User
 import com.jvmvstv_v.back.user.model.UserRole
 import com.jvmvstv_v.back.user.repository.UserRepository
 import org.springframework.stereotype.Service
@@ -39,9 +39,14 @@ class MatchingServiceImpl(
         if (matchingRepository.isConnected(requesterId, addresseeId)) {
             throw AuthException("You're already pen pals with this person")
         }
-        val hasPending = matchingRepository.findRequestsForUser(requesterId, PenPalRequestStatus.PENDING)
-            .any { it.requester.id == requesterId && it.addressee.id == addresseeId }
-        if (hasPending) throw AuthException("You already have a pending request to this person")
+        val pendingWithThem = matchingRepository.findRequestsForUser(requesterId, PenPalRequestStatus.PENDING)
+        if (pendingWithThem.any { it.requester.id == requesterId && it.addressee.id == addresseeId }) {
+            throw AuthException("You already have a pending request to this person")
+        }
+        val incomingFromThem = pendingWithThem.find { it.requester.id == addresseeId && it.addressee.id == requesterId }
+        if (incomingFromThem != null) {
+            return respondToPenPalRequest(incomingFromThem.id, true)
+        }
         val request = matchingRepository.createRequest(requesterId, addresseeId, message)
         notificationService.notify(
             addresseeId,
@@ -131,6 +136,7 @@ class MatchingServiceImpl(
                     requesterId,
                     moderator.id,
                     "Send me a letter — I'd love a handwritten letter from a moderator.",
+                    PenPalRequestSource.MODERATOR_LETTER_REQUEST,
                 )
             matchingRepository.respondToRequest(request.id, true)
             notificationService.notify(
@@ -143,13 +149,4 @@ class MatchingServiceImpl(
         }
         return true
     }
-
-    override fun redactUnlessMatched(user: User): User = redactUnlessMatched(user, CurrentUser.idOrNull)
-
-    private fun redactUnlessMatched(user: User, viewerId: UUID?): User =
-        if (viewerId != null && (user.id == viewerId || matchingRepository.isConnected(viewerId, user.id))) {
-            user
-        } else {
-            user.copy(avatarImageId = null)
-        }
 }

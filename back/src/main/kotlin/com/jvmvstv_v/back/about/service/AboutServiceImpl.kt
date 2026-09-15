@@ -2,6 +2,7 @@ package com.jvmvstv_v.back.about.service
 
 import com.jvmvstv_v.back.about.model.AboutPage
 import com.jvmvstv_v.back.about.model.AboutPageBlockAlign
+import com.jvmvstv_v.back.about.model.AboutPageLanguage
 import com.jvmvstv_v.back.about.repository.AboutRepository
 import com.jvmvstv_v.back.common.AuthException
 import com.jvmvstv_v.back.common.CurrentUser
@@ -20,9 +21,9 @@ class AboutServiceImpl(
 ) : AboutService {
     override fun aboutPage(): AboutPage = aboutRepository.find()
 
-    override fun updateBody(body: String): AboutPage {
+    override fun updateBody(body: String, language: AboutPageLanguage): AboutPage {
         CurrentUser.requireModerator()
-        return aboutRepository.updateBody(body, CurrentUser.id)
+        return aboutRepository.updateBody(body, language, CurrentUser.id)
     }
 
     override fun addCanvas(): AboutPage {
@@ -36,6 +37,19 @@ class AboutServiceImpl(
             throw AuthException("Canvas height must be between $MIN_CANVAS_HEIGHT and $MAX_CANVAS_HEIGHT")
         }
         return aboutRepository.updateCanvasHeight(id, height)
+    }
+
+    override fun updateCanvasBackground(id: UUID, mimeType: String, imageBase64: String): AboutPage {
+        CurrentUser.requireModerator()
+        val image = imageService.store(ImageOwnerType.ABOUT_PAGE_PHOTO, id, mimeType, imageBase64)
+        aboutRepository.setCanvasBackground(id, image.id)?.let { imageService.delete(it) }
+        return aboutRepository.find()
+    }
+
+    override fun removeCanvasBackground(id: UUID): AboutPage {
+        CurrentUser.requireModerator()
+        aboutRepository.setCanvasBackground(id, null)?.let { imageService.delete(it) }
+        return aboutRepository.find()
     }
 
     override fun removeCanvas(id: UUID): AboutPage {
@@ -66,6 +80,21 @@ class AboutServiceImpl(
         return aboutRepository.addPhotoBlock(blockId, canvasId, image.id, x, y, width, height)
     }
 
+    override fun addButtonBlock(
+        canvasId: UUID,
+        text: String,
+        linkUrl: String,
+        x: Double,
+        y: Double,
+        width: Double,
+        height: Double,
+    ): AboutPage {
+        CurrentUser.requireModerator()
+        requireValidLayout(x, y, width, height)
+        requireNonBlankLink(linkUrl)
+        return aboutRepository.addButtonBlock(UUID.randomUUID(), canvasId, text, linkUrl, x, y, width, height)
+    }
+
     override fun updateBlockLayout(id: UUID, x: Double, y: Double, width: Double, height: Double): AboutPage {
         CurrentUser.requireModerator()
         requireValidLayout(x, y, width, height)
@@ -77,15 +106,25 @@ class AboutServiceImpl(
         return aboutRepository.updateBlockAlign(id, align)
     }
 
-    override fun updateBlockText(id: UUID, text: String): AboutPage {
+    override fun updateBlockText(id: UUID, text: String, language: AboutPageLanguage): AboutPage {
         CurrentUser.requireModerator()
-        return aboutRepository.updateBlockText(id, text)
+        return aboutRepository.updateBlockText(id, text, language)
+    }
+
+    override fun updateBlockLink(id: UUID, linkUrl: String): AboutPage {
+        CurrentUser.requireModerator()
+        requireNonBlankLink(linkUrl)
+        return aboutRepository.updateBlockLink(id, linkUrl)
     }
 
     override fun removeBlock(id: UUID): AboutPage {
         CurrentUser.requireModerator()
         aboutRepository.removeBlock(id)?.let { imageService.delete(it) }
         return aboutRepository.find()
+    }
+
+    private fun requireNonBlankLink(linkUrl: String) {
+        if (linkUrl.isBlank()) throw AuthException("Button link can't be empty")
     }
 
     private fun requireValidLayout(x: Double, y: Double, width: Double, height: Double) {

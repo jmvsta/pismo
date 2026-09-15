@@ -77,6 +77,10 @@
   margin: 0;
 }
 
+.questionnaire-mobile-section-title {
+  display: none;
+}
+
 .questionnaire-question {
   display: flex;
   flex-direction: column;
@@ -131,4 +135,45 @@
 .questionnaire-more {
   font-size: 12px;
   margin-left: auto;
+}
+
+@media (max-width: 900px) {
+  .questionnaire-card {
+    flex-direction: column;
+  }
+  .questionnaire-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 2px solid var(--color-divider);
+    padding: var(--space-4) 20px;
+  }
+  .questionnaire-sections {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .questionnaire-sections button {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--color-accent-100);
+    color: transparent;
+    text-align: center;
+  }
+  .questionnaire-sections button.is-current {
+    background: var(--color-accent);
+    color: transparent;
+  }
+  .questionnaire-progress {
+    padding-right: 0;
+  }
+  .questionnaire-body-intro {
+    display: none;
+  }
+  .questionnaire-mobile-section-title {
+    display: block;
+    color: var(--color-accent);
+    margin: 0;
+  }
 }
