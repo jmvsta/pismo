@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { lettersService } from '../../services/letters/index.ts'
 import type { Letter } from '../../services/letters/index.ts'
 import type { UserAddress } from '../../services/address/index.ts'
+import { useLanguageStore } from '../../store/languageStore.ts'
+import { uiText } from '../../i18n/uiText.ts'
 
 interface SendLetterDialogProps {
   connectionId: string
@@ -30,6 +32,7 @@ function SendLetterDialog({
   onDraftCreated,
   onSent,
 }: SendLetterDialogProps) {
+  const language = useLanguageStore((state) => state.language)
   const [letter, setLetter] = useState<Letter | null>(existingLetter)
   const [loading, setLoading] = useState(existingLetter === null)
   const [confirming, setConfirming] = useState(false)
@@ -85,36 +88,37 @@ function SendLetterDialog({
     <div className="forum-modal-backdrop" onClick={onClose}>
       <div className="forum-modal" onClick={(e) => e.stopPropagation()}>
         <div className="forum-modal-header">
-          <h5>Send a letter to {recipientNickname}</h5>
+          <h5>
+            {uiText('sendLetterTitle', language)} {recipientNickname}
+          </h5>
           <button type="button" className="btn btn-icon" onClick={onClose} aria-label="Close">
             ×
           </button>
         </div>
 
-        {loading && <p className="text-muted">Preparing your letter…</p>}
+        {loading && <p className="text-muted">{uiText('sendLetterPreparing', language)}</p>}
 
         {!loading && letter && (
           <div className="flex flex-col gap-3">
             <p className="text-muted text-sm">
-              Write this code inside the letter — {recipientNickname} will enter it once it arrives to confirm
-              delivery.
+              {uiText('sendLetterCodeHintPrefix', language)} {recipientNickname}{' '}
+              {uiText('sendLetterCodeHint', language)}
             </p>
 
             <div className="flex items-center gap-3 border border-[var(--color-divider)] p-3">
               <span className="text-2xl font-bold tracking-widest">{letter.trackingCode}</span>
               <button type="button" className="btn btn-ghost" onClick={handleCopyCode}>
-                {copied ? 'Copied' : 'Copy code'}
+                {copied ? uiText('sendLetterCopied', language) : uiText('sendLetterCopyCode', language)}
               </button>
             </div>
 
             <div className="text-sm">
-              <span className="font-semibold">Send to: </span>
+              <span className="font-semibold">{uiText('sendLetterSendTo', language)} </span>
               {recipientAddress ? (
                 formatAddress(recipientAddress)
               ) : (
                 <span className="text-muted">
-                  {recipientNickname} hasn't shared their address for this connection yet — ask them to enable
-                  address sharing first.
+                  {recipientNickname} {uiText('sendLetterNoAddress', language)}
                 </span>
               )}
             </div>
@@ -123,10 +127,10 @@ function SendLetterDialog({
 
             <div className="forum-modal-actions">
               <button type="button" className="btn btn-secondary" onClick={onClose}>
-                Cancel
+                {uiText('cancel', language)}
               </button>
               <button type="button" className="btn btn-primary" onClick={handleConfirmSent} disabled={confirming}>
-                {confirming ? 'Saving…' : "I've written and sent it →"}
+                {confirming ? uiText('saving', language) : uiText('sendLetterConfirmSent', language)}
               </button>
             </div>
           </div>

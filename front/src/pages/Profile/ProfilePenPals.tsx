@@ -10,6 +10,8 @@ import type { ConnectionAddressConsent, UserAddress } from '../../services/addre
 import { imageUrl } from '../../services/imageUrl.ts'
 import SendLetterDialog from './SendLetterDialog.tsx'
 import ConfirmDeliveryDialog from './ConfirmDeliveryDialog.tsx'
+import { useLanguageStore } from '../../store/languageStore.ts'
+import { uiText, uiTextWithName } from '../../i18n/uiText.ts'
 
 const OPEN_STATUSES = new Set(['DRAFT', 'SENT', 'IN_TRANSIT'])
 
@@ -51,6 +53,7 @@ interface ProfilePenPalsProps {
 
 function ProfilePenPals({ onGoToAddressTab, onLetterChanged }: ProfilePenPalsProps) {
   const currentUserId = useUserStore((state) => state.currentUser?.id)
+  const language = useLanguageStore((state) => state.language)
   const [rows, setRows] = useState<ConnectionRow[]>([])
   const [myAddress, setMyAddress] = useState<UserAddress | null>(null)
   const [loading, setLoading] = useState(true)
@@ -172,14 +175,14 @@ function ProfilePenPals({ onGoToAddressTab, onLetterChanged }: ProfilePenPalsPro
                   disabled={!myAddress}
                   onChange={() => handleToggleShare(row)}
                 />
-                Share my address with this pen pal
+                {uiText('letterAddressSharePrompt', language)}
               </label>
               {!myAddress && (
                 <span className="text-muted text-sm">
                   <button type="button" className="btn btn-ghost" onClick={onGoToAddressTab}>
-                    Add your address
+                    {uiText('letterAddAddress', language)}
                   </button>{' '}
-                  first.
+                  {uiText('letterAddAddressSuffix', language)}
                 </span>
               )}
 
@@ -191,11 +194,11 @@ function ProfilePenPals({ onGoToAddressTab, onLetterChanged }: ProfilePenPalsPro
                       className="btn btn-ghost"
                       onClick={() => setLetterDialogFor({ connection: row.connection, existing: openLetter })}
                     >
-                      Resume sending your letter
+                      {uiText('letterResumeSending', language)}
                     </button>
                   ) : (
                     <>
-                      Sent — waiting for {other.nickname} to confirm delivery. Your code:{' '}
+                      {uiTextWithName('letterSentWaiting', language, other.nickname)}{' '}
                       <strong>{openLetter.trackingCode}</strong>
                     </>
                   )}
@@ -203,7 +206,9 @@ function ProfilePenPals({ onGoToAddressTab, onLetterChanged }: ProfilePenPalsPro
               )}
 
               {openLetter && openLetter.recipient.id === currentUserId && openLetter.status === 'DRAFT' && (
-                <span className="text-muted text-sm">Waiting for {other.nickname} to finish and send their letter.</span>
+                <span className="text-muted text-sm">
+                  {uiTextWithName('letterWaitingToFinish', language, other.nickname)}
+                </span>
               )}
               {openLetter && openLetter.recipient.id === currentUserId && openLetter.status !== 'DRAFT' && (
                 <button
@@ -211,7 +216,7 @@ function ProfilePenPals({ onGoToAddressTab, onLetterChanged }: ProfilePenPalsPro
                   className="btn btn-primary self-start"
                   onClick={() => setConfirmDialogFor({ connectionId: row.connection.id, letter: openLetter })}
                 >
-                  Confirm delivery
+                  {uiText('letterConfirmDelivery', language)}
                 </button>
               )}
 
@@ -221,21 +226,24 @@ function ProfilePenPals({ onGoToAddressTab, onLetterChanged }: ProfilePenPalsPro
                   className="btn btn-primary self-start"
                   onClick={() => setLetterDialogFor({ connection: row.connection, existing: null })}
                 >
-                  {deliveredLetters.length === 0 ? 'Send first letter' : 'Reply'}
+                  {deliveredLetters.length === 0 ? uiText('letterSendFirst', language) : uiText('letterReply', language)}
                 </button>
               )}
               {!openLetter && !isMyTurnToSend && (
-                <span className="text-muted text-sm">Waiting for {other.nickname} to write.</span>
+                <span className="text-muted text-sm">{uiTextWithName('letterWaitingToWrite', language, other.nickname)}</span>
               )}
 
               {otherAddressVisible && row.otherConsent?.address && (
                 <div className="text-sm">
-                  <span className="font-semibold">{other.nickname}'s address: </span>
+                  <span className="font-semibold">
+                    {other.nickname}
+                    {uiText('letterAddressLabel', language)}{' '}
+                  </span>
                   {formatAddress(row.otherConsent.address)}
                 </div>
               )}
               {hasEverSentFirstLetter && !otherAddressVisible && (
-                <span className="text-muted text-sm">Waiting for {other.nickname} to share their address.</span>
+                <span className="text-muted text-sm">{uiTextWithName('letterWaitingForAddress', language, other.nickname)}</span>
               )}
             </div>
           </div>

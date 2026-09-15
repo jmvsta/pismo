@@ -61,13 +61,9 @@ function MatchCard({
 
       <div className="match-card-body">
         <div className="match-card-heading">
-          {variant === 'matched' ? (
-            <Link to={`/profile/${profile.id}`} className="match-card-name">
-              {profile.nickname}
-            </Link>
-          ) : (
-            <span className="match-card-name">{profile.nickname}</span>
-          )}
+          <Link to={`/profile/${profile.id}`} className="match-card-name">
+            {profile.nickname}
+          </Link>
           {score !== null && <span className="tag tag-outline match-card-score">{Math.round(score)}%</span>}
         </div>
 

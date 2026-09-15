@@ -6,6 +6,8 @@ import { addressService } from '../../services/address/index.ts'
 import type { ConnectionAddressConsent } from '../../services/address/index.ts'
 import SendLetterDialog from '../../pages/Profile/SendLetterDialog.tsx'
 import ConfirmDeliveryDialog from '../../pages/Profile/ConfirmDeliveryDialog.tsx'
+import { useLanguageStore } from '../../store/languageStore.ts'
+import { uiText, uiTextWithName } from '../../i18n/uiText.ts'
 
 const OPEN_STATUSES = new Set(['DRAFT', 'SENT', 'IN_TRANSIT'])
 
@@ -21,6 +23,7 @@ function otherUserIdFor(connection: PenPalConnection, senderId: string): string 
 }
 
 function PenPalLetterAction({ connection, currentUserId, otherId, otherNickname }: PenPalLetterActionProps) {
+  const language = useLanguageStore((state) => state.language)
   const [letters, setLetters] = useState<Letter[]>([])
   const [otherConsent, setOtherConsent] = useState<ConnectionAddressConsent | null>(null)
   const [loading, setLoading] = useState(true)
@@ -84,22 +87,24 @@ function PenPalLetterAction({ connection, currentUserId, otherId, otherNickname 
               setLetterDialogOpen(true)
             }}
           >
-            Resume sending
+            {uiText('letterResumeSending', language)}
           </button>
         ) : (
           <span className="text-muted match-card-waiting">
-            Sent — waiting for {otherNickname} to confirm delivery. Code: <strong>{openLetter.trackingCode}</strong>
+            {uiTextWithName('letterSentWaiting', language, otherNickname)} <strong>{openLetter.trackingCode}</strong>
           </span>
         )
       )}
 
       {openLetter && openLetter.recipient.id === currentUserId && openLetter.status === 'DRAFT' && (
-        <span className="text-muted match-card-waiting">Waiting for {otherNickname} to finish and send their letter.</span>
+        <span className="text-muted match-card-waiting">
+          {uiTextWithName('letterWaitingToFinish', language, otherNickname)}
+        </span>
       )}
 
       {openLetter && openLetter.recipient.id === currentUserId && openLetter.status !== 'DRAFT' && (
         <button type="button" className="btn btn-primary" onClick={() => setConfirmingLetter(openLetter)}>
-          Confirm delivery
+          {uiText('letterConfirmDelivery', language)}
         </button>
       )}
 
@@ -112,12 +117,12 @@ function PenPalLetterAction({ connection, currentUserId, otherId, otherNickname 
             setLetterDialogOpen(true)
           }}
         >
-          {deliveredLetters.length === 0 ? 'Send first letter' : 'Reply'}
+          {deliveredLetters.length === 0 ? uiText('letterSendFirst', language) : uiText('letterReply', language)}
         </button>
       )}
 
       {!openLetter && !isMyTurnToSend && (
-        <span className="text-muted match-card-waiting">Waiting for {otherNickname} to write.</span>
+        <span className="text-muted match-card-waiting">{uiTextWithName('letterWaitingToWrite', language, otherNickname)}</span>
       )}
 
       {letterDialogOpen && (

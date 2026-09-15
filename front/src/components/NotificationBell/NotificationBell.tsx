@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useNotificationStore } from '../../store/notificationStore.ts'
+import { useLanguageStore } from '../../store/languageStore.ts'
+import { uiText } from '../../i18n/uiText.ts'
 import type { Notification } from '../../services/notifications/index.ts'
 import './NotificationBell.css'
 
@@ -43,6 +45,7 @@ function notificationHref(notification: Notification): string {
 
 function NotificationBell() {
   const { notifications, unreadCount, markRead } = useNotificationStore()
+  const language = useLanguageStore((state) => state.language)
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
@@ -83,15 +86,17 @@ function NotificationBell() {
         type="button"
         className="btn btn-ghost relative"
         onClick={() => setIsOpen((prev) => !prev)}
-        aria-label="Notifications"
+        aria-label={uiText('notifBell', language)}
       >
         🔔
         {unreadCount > 0 && <span className="notification-bell-badge">{unreadCount}</span>}
       </button>
       {isOpen && (
         <div className="notification-panel">
-          <div className="notification-panel-header">Notifications</div>
-          {notifications.length === 0 && <p className="text-muted notification-panel-empty">No notifications yet.</p>}
+          <div className="notification-panel-header">{uiText('notifBell', language)}</div>
+          {notifications.length === 0 && (
+            <p className="text-muted notification-panel-empty">{uiText('notifEmpty', language)}</p>
+          )}
           <div className="notification-panel-list">
             {notifications.map((notification) => (
               <button
