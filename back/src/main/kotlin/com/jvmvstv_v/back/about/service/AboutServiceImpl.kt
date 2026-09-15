@@ -22,17 +22,17 @@ class AboutServiceImpl(
     override fun aboutPage(): AboutPage = aboutRepository.find()
 
     override fun updateBody(body: String, language: AboutPageLanguage): AboutPage {
-        CurrentUser.requireAdmin()
+        CurrentUser.requireModerator()
         return aboutRepository.updateBody(body, language, CurrentUser.id)
     }
 
     override fun addCanvas(): AboutPage {
-        CurrentUser.requireAdmin()
+        CurrentUser.requireModerator()
         return aboutRepository.addCanvas(UUID.randomUUID())
     }
 
     override fun updateCanvasHeight(id: UUID, height: Double): AboutPage {
-        CurrentUser.requireAdmin()
+        CurrentUser.requireModerator()
         if (height !in MIN_CANVAS_HEIGHT..MAX_CANVAS_HEIGHT) {
             throw AuthException("Canvas height must be between $MIN_CANVAS_HEIGHT and $MAX_CANVAS_HEIGHT")
         }
@@ -40,26 +40,26 @@ class AboutServiceImpl(
     }
 
     override fun updateCanvasBackground(id: UUID, mimeType: String, imageBase64: String): AboutPage {
-        CurrentUser.requireAdmin()
+        CurrentUser.requireModerator()
         val image = imageService.store(ImageOwnerType.ABOUT_PAGE_PHOTO, id, mimeType, imageBase64)
         aboutRepository.setCanvasBackground(id, image.id)?.let { imageService.delete(it) }
         return aboutRepository.find()
     }
 
     override fun removeCanvasBackground(id: UUID): AboutPage {
-        CurrentUser.requireAdmin()
+        CurrentUser.requireModerator()
         aboutRepository.setCanvasBackground(id, null)?.let { imageService.delete(it) }
         return aboutRepository.find()
     }
 
     override fun removeCanvas(id: UUID): AboutPage {
-        CurrentUser.requireAdmin()
+        CurrentUser.requireModerator()
         aboutRepository.removeCanvas(id).forEach { imageService.delete(it) }
         return aboutRepository.find()
     }
 
     override fun addTextBlock(canvasId: UUID, text: String, x: Double, y: Double, width: Double, height: Double): AboutPage {
-        CurrentUser.requireAdmin()
+        CurrentUser.requireModerator()
         requireValidLayout(x, y, width, height)
         return aboutRepository.addTextBlock(UUID.randomUUID(), canvasId, text, x, y, width, height)
     }
@@ -73,7 +73,7 @@ class AboutServiceImpl(
         width: Double,
         height: Double,
     ): AboutPage {
-        CurrentUser.requireAdmin()
+        CurrentUser.requireModerator()
         requireValidLayout(x, y, width, height)
         val blockId = UUID.randomUUID()
         val image = imageService.store(ImageOwnerType.ABOUT_PAGE_PHOTO, blockId, mimeType, imageBase64)
@@ -89,36 +89,36 @@ class AboutServiceImpl(
         width: Double,
         height: Double,
     ): AboutPage {
-        CurrentUser.requireAdmin()
+        CurrentUser.requireModerator()
         requireValidLayout(x, y, width, height)
         requireNonBlankLink(linkUrl)
         return aboutRepository.addButtonBlock(UUID.randomUUID(), canvasId, text, linkUrl, x, y, width, height)
     }
 
     override fun updateBlockLayout(id: UUID, x: Double, y: Double, width: Double, height: Double): AboutPage {
-        CurrentUser.requireAdmin()
+        CurrentUser.requireModerator()
         requireValidLayout(x, y, width, height)
         return aboutRepository.updateBlockLayout(id, x, y, width, height)
     }
 
     override fun updateBlockAlign(id: UUID, align: AboutPageBlockAlign): AboutPage {
-        CurrentUser.requireAdmin()
+        CurrentUser.requireModerator()
         return aboutRepository.updateBlockAlign(id, align)
     }
 
     override fun updateBlockText(id: UUID, text: String, language: AboutPageLanguage): AboutPage {
-        CurrentUser.requireAdmin()
+        CurrentUser.requireModerator()
         return aboutRepository.updateBlockText(id, text, language)
     }
 
     override fun updateBlockLink(id: UUID, linkUrl: String): AboutPage {
-        CurrentUser.requireAdmin()
+        CurrentUser.requireModerator()
         requireNonBlankLink(linkUrl)
         return aboutRepository.updateBlockLink(id, linkUrl)
     }
 
     override fun removeBlock(id: UUID): AboutPage {
-        CurrentUser.requireAdmin()
+        CurrentUser.requireModerator()
         aboutRepository.removeBlock(id)?.let { imageService.delete(it) }
         return aboutRepository.find()
     }

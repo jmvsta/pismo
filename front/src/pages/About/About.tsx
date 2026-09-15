@@ -20,7 +20,7 @@ function rawBodyFor(page: AboutPage, language: AboutPageLanguage): string {
 
 function About() {
   const currentUser = useUserStore((state) => state.currentUser)
-  const isAdmin = currentUser?.role === 'ADMIN'
+  const canModerate = currentUser?.role === 'ADMIN' || currentUser?.role === 'MODERATOR'
 
   const language = useLanguageStore((state) => state.language)
   const pageRef = useRef<AboutPage | null>(null)
@@ -79,7 +79,7 @@ function About() {
         >
           {uiText('backToFeed', language)}
         </Link>
-        {isAdmin && (
+        {canModerate && (
           <button
             type="button"
             className="btn btn-secondary text-base px-4 py-2"
