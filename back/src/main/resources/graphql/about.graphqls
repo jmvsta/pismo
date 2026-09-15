@@ -6,6 +6,8 @@ extend type Mutation {
     updateAboutPageBody(body: String!): AboutPage!
     addAboutPageCanvas: AboutPage!
     updateAboutPageCanvasHeight(id: ID!, height: Float!): AboutPage!
+    updateAboutPageCanvasBackground(id: ID!, mimeType: String!, imageBase64: String!): AboutPage!
+    removeAboutPageCanvasBackground(id: ID!): AboutPage!
     removeAboutPageCanvas(id: ID!): AboutPage!
     addAboutPageTextBlock(
         canvasId: ID!
@@ -24,9 +26,19 @@ extend type Mutation {
         width: Float!
         height: Float!
     ): AboutPage!
+    addAboutPageButtonBlock(
+        canvasId: ID!
+        text: String!
+        linkUrl: String!
+        x: Float!
+        y: Float!
+        width: Float!
+        height: Float!
+    ): AboutPage!
     updateAboutPageBlockLayout(id: ID!, x: Float!, y: Float!, width: Float!, height: Float!): AboutPage!
     updateAboutPageBlockAlign(id: ID!, align: AboutPageBlockAlign!): AboutPage!
     updateAboutPageBlockText(id: ID!, text: String!): AboutPage!
+    updateAboutPageBlockLink(id: ID!, linkUrl: String!): AboutPage!
     removeAboutPageBlock(id: ID!): AboutPage!
 }
 
@@ -46,12 +58,14 @@ text/photo items placed on it."""
 type AboutPageCanvas {
     id: ID!
     height: Float!
+    backgroundImageId: ID
     blocks: [AboutPageBlock!]!
 }
 
 enum AboutPageBlockType {
     TEXT
     PHOTO
+    BUTTON
 }
 
 enum AboutPageBlockAlign {
@@ -67,6 +81,7 @@ type AboutPageBlock {
     type: AboutPageBlockType!
     text: String
     imageId: ID
+    linkUrl: String
     x: Float!
     y: Float!
     width: Float!

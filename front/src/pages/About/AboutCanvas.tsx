@@ -32,6 +32,7 @@ function textAlignFor(align: AboutPageBlockAlign): 'left' | 'center' | 'right' {
 
 const DEFAULT_TEXT_LAYOUT = { x: 30, y: 5, width: 40, height: 15 }
 const DEFAULT_PHOTO_LAYOUT = { x: 35, y: 25, width: 30, height: 30 }
+const DEFAULT_BUTTON_LAYOUT = { x: 35, y: 42, width: 30, height: 10 }
 const MIN_SIZE = 6
 const MIN_CANVAS_HEIGHT = 10
 const MAX_CANVAS_HEIGHT = 300
@@ -41,6 +42,7 @@ type LiveLayout = { id: string; x: number; y: number; width: number; height: num
 
 interface AboutCanvasProps {
   height: number
+  backgroundImageId: string | null
   blocks: AboutPageBlock[]
   editable: boolean
   onAddText: (text: string, x: number, y: number, width: number, height: number) => Promise<void>
@@ -52,37 +54,57 @@ interface AboutCanvasProps {
     width: number,
     height: number,
   ) => Promise<void>
+  onAddButton: (
+    text: string,
+    linkUrl: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ) => Promise<void>
   onUpdateLayout: (id: string, x: number, y: number, width: number, height: number) => Promise<void>
   onUpdateAlign: (id: string, align: AboutPageBlockAlign) => Promise<void>
   onUpdateText: (id: string, text: string) => Promise<void>
+  onUpdateLink: (id: string, linkUrl: string) => Promise<void>
   onRemove: (id: string) => Promise<void>
   onUpdateHeight: (height: number) => Promise<void>
+  onUpdateBackground: (mimeType: string, imageBase64: string) => Promise<void>
+  onRemoveBackground: () => Promise<void>
   onRemoveCanvas: () => Promise<void>
 }
 
 function AboutCanvas({
   height,
+  backgroundImageId,
   blocks,
   editable,
   onAddText,
   onAddPhoto,
+  onAddButton,
   onUpdateLayout,
   onUpdateAlign,
   onUpdateText,
+  onUpdateLink,
   onRemove,
   onUpdateHeight,
+  onUpdateBackground,
+  onRemoveBackground,
   onRemoveCanvas,
 }: AboutCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const backgroundFileInputRef = useRef<HTMLInputElement>(null)
   const editTextareaRef = useRef<HTMLTextAreaElement>(null)
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draftText, setDraftText] = useState('')
+  const [editingLinkId, setEditingLinkId] = useState<string | null>(null)
+  const [draftLink, setDraftLink] = useState('')
   const [liveLayout, setLiveLayout] = useState<LiveLayout | null>(null)
   const [liveHeight, setLiveHeight] = useState<number | null>(null)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [uploadingBackground, setUploadingBackground] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const editFormatting = useRichTextFormatting(editTextareaRef, draftText, setDraftText)
 
@@ -209,12 +231,45 @@ function AboutCanvas({
     setDraftText(draftText.slice(0, cursor) + emoji + draftText.slice(cursor))
   }
 
+  const startEditingLink = (block: AboutPageBlock) => {
+    setSelectedId(block.id)
+    setEditingLinkId(block.id)
+    setDraftLink(block.linkUrl ?? '')
+  }
+
+  const saveEditingLink = async (block: AboutPageBlock) => {
+    const url = draftLink.trim()
+    setEditingLinkId(null)
+    if (!url || url === block.linkUrl) return
+    try {
+      await onUpdateLink(block.id, url)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save this link.')
+    }
+  }
+
   const handleAddText = async () => {
     setError(null)
     try {
       await onAddText('New text', DEFAULT_TEXT_LAYOUT.x, DEFAULT_TEXT_LAYOUT.y, DEFAULT_TEXT_LAYOUT.width, DEFAULT_TEXT_LAYOUT.height)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not add a text block.')
+    }
+  }
+
+  const handleAddButton = async () => {
+    setError(null)
+    try {
+      await onAddButton(
+        'Click me',
+        'https://',
+        DEFAULT_BUTTON_LAYOUT.x,
+        DEFAULT_BUTTON_LAYOUT.y,
+        DEFAULT_BUTTON_LAYOUT.width,
+        DEFAULT_BUTTON_LAYOUT.height,
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not add a button.')
     }
   }
 
@@ -240,6 +295,33 @@ function AboutCanvas({
       setError(err instanceof Error ? err.message : 'Could not upload this photo.')
     } finally {
       setUploadingPhoto(false)
+    }
+  }
+
+  const handlePickBackground = () => backgroundFileInputRef.current?.click()
+
+  const handleBackgroundChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setUploadingBackground(true)
+    setError(null)
+    try {
+      const imageBase64 = await readAsBase64(file)
+      await onUpdateBackground(file.type, imageBase64)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not set the background image.')
+    } finally {
+      setUploadingBackground(false)
+    }
+  }
+
+  const handleRemoveBackground = async () => {
+    setError(null)
+    try {
+      await onRemoveBackground()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not remove the background image.')
     }
   }
 
@@ -271,6 +353,29 @@ function AboutCanvas({
             onChange={handlePhotoChosen}
             hidden
           />
+          <button type="button" className="btn btn-secondary" onClick={handleAddButton}>
+            + Add button
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={handlePickBackground}
+            disabled={uploadingBackground}
+          >
+            {uploadingBackground ? 'Uploading…' : backgroundImageId ? 'Change background' : '+ Set background'}
+          </button>
+          {backgroundImageId && (
+            <button type="button" className="btn btn-secondary" onClick={handleRemoveBackground}>
+              Remove background
+            </button>
+          )}
+          <input
+            ref={backgroundFileInputRef}
+            type="file"
+            accept="image/png, image/jpeg, image/webp, image/gif"
+            onChange={handleBackgroundChosen}
+            hidden
+          />
           <button
             type="button"
             className="btn btn-secondary ml-auto text-[var(--color-accent)]"
@@ -288,7 +393,13 @@ function AboutCanvas({
             ? 'about-canvas relative w-full border border-dashed border-[var(--color-divider)]'
             : 'about-canvas relative w-full'
         }
-        style={{ aspectRatio: `100 / ${liveHeight ?? height}`, containerType: 'inline-size' }}
+        style={{
+          aspectRatio: `100 / ${liveHeight ?? height}`,
+          containerType: 'inline-size',
+          backgroundImage: backgroundImageId ? `url(${imageUrl(backgroundImageId)})` : undefined,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
         onPointerDown={() => editable && setSelectedId(null)}
       >
         {blocks.map((block) => {
@@ -359,6 +470,19 @@ function AboutCanvas({
                       )}
                     </div>
                   </div>
+                ) : block.type === 'BUTTON' ? (
+                  <a
+                    href={block.linkUrl ?? undefined}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="about-canvas-button-block flex h-full w-full items-center justify-center overflow-hidden text-center no-underline"
+                    onClick={(e) => {
+                      if (editable) e.preventDefault()
+                    }}
+                    onDoubleClick={() => editable && startEditingText(block)}
+                  >
+                    {block.text}
+                  </a>
                 ) : (
                   <div
                     className="about-canvas-block-text h-full w-full overflow-hidden text-sm leading-relaxed [&_*]:m-0"
@@ -370,14 +494,29 @@ function AboutCanvas({
                 )}
               </div>
 
-              {isSelected && !isEditingText && (
+              {editingLinkId === block.id && (
+                <div
+                  className="absolute z-[101]"
+                  style={{ top: -34, left: 0 }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <RichTextLinkPrompt
+                    url={draftLink}
+                    onUrlChange={setDraftLink}
+                    onConfirm={() => saveEditingLink(block)}
+                    onCancel={() => setEditingLinkId(null)}
+                  />
+                </div>
+              )}
+
+              {isSelected && !isEditingText && editingLinkId !== block.id && (
                 <>
                   <div
                     className="absolute flex gap-1 bg-[var(--color-bg)] p-1 shadow-sm"
                     style={{ top: -34, left: 0 }}
                     onPointerDown={(e) => e.stopPropagation()}
                   >
-                    {block.type === 'TEXT' && (
+                    {(block.type === 'TEXT' || block.type === 'BUTTON') && (
                       <button
                         type="button"
                         className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
@@ -386,27 +525,40 @@ function AboutCanvas({
                         Edit
                       </button>
                     )}
-                    <button
-                      type="button"
-                      className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
-                      onClick={() => onUpdateAlign(block.id, 'LEFT')}
-                    >
-                      ⟵
-                    </button>
-                    <button
-                      type="button"
-                      className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
-                      onClick={() => onUpdateAlign(block.id, 'CENTER')}
-                    >
-                      ⟷
-                    </button>
-                    <button
-                      type="button"
-                      className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
-                      onClick={() => onUpdateAlign(block.id, 'RIGHT')}
-                    >
-                      ⟶
-                    </button>
+                    {block.type === 'BUTTON' && (
+                      <button
+                        type="button"
+                        className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
+                        onClick={() => startEditingLink(block)}
+                      >
+                        Link
+                      </button>
+                    )}
+                    {block.type !== 'BUTTON' && (
+                      <>
+                        <button
+                          type="button"
+                          className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
+                          onClick={() => onUpdateAlign(block.id, 'LEFT')}
+                        >
+                          ⟵
+                        </button>
+                        <button
+                          type="button"
+                          className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
+                          onClick={() => onUpdateAlign(block.id, 'CENTER')}
+                        >
+                          ⟷
+                        </button>
+                        <button
+                          type="button"
+                          className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
+                          onClick={() => onUpdateAlign(block.id, 'RIGHT')}
+                        >
+                          ⟶
+                        </button>
+                      </>
+                    )}
                     <button
                       type="button"
                       className="border border-[var(--color-divider)] px-2 py-1 text-[11px] text-[var(--color-accent)]"

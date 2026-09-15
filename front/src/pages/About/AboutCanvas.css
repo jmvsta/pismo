@@ -30,3 +30,16 @@
 .about-canvas-block-text p {
   font-size: clamp(7px, 1.8cqw, 14px);
 }
+
+.about-canvas-button-block {
+  background: var(--color-accent);
+  color: var(--color-bg);
+  font-size: clamp(7px, 1.8cqw, 15px);
+  font-weight: 700;
+  padding: clamp(1px, 1cqw, 8px);
+  overflow: hidden;
+  transition: background-color 0.15s ease;
+}
+.about-canvas-button-block:hover {
+  background: var(--color-accent-600);
+}

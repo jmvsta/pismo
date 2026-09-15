@@ -2,7 +2,7 @@ package com.jvmvstv_v.back.about.model
 
 import java.util.UUID
 
-enum class AboutPageBlockType { TEXT, PHOTO }
+enum class AboutPageBlockType { TEXT, PHOTO, BUTTON }
 enum class AboutPageBlockAlign { LEFT, CENTER, RIGHT }
 
 data class AboutPageBlock(
@@ -10,6 +10,7 @@ data class AboutPageBlock(
     val type: AboutPageBlockType,
     val text: String?,
     val imageId: UUID?,
+    val linkUrl: String?,
     val x: Double,
     val y: Double,
     val width: Double,
@@ -20,6 +21,7 @@ data class AboutPageBlock(
 data class AboutPageCanvas(
     val id: UUID,
     val height: Double,
+    val backgroundImageId: UUID?,
     val blocks: List<AboutPageBlock>,
 )
 

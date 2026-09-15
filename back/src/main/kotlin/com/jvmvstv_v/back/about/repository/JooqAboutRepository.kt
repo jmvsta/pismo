@@ -25,6 +25,7 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
     private val CANVASES = DSL.table("about_page_canvases")
     private val C_ID = DSL.field("id", SQLDataType.UUID)
     private val C_HEIGHT = DSL.field("height", SQLDataType.DOUBLE)
+    private val C_BACKGROUND_IMAGE_ID = DSL.field("background_image_id", SQLDataType.UUID)
     private val C_POSITION = DSL.field("position", SQLDataType.INTEGER)
     private val C_UPDATED_AT = DSL.field("updated_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
 
@@ -34,6 +35,7 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
     private val B_TYPE = DSL.field("block_type", SQLDataType.VARCHAR)
     private val B_TEXT = DSL.field("text", SQLDataType.VARCHAR)
     private val B_IMAGE_ID = DSL.field("image_id", SQLDataType.UUID)
+    private val B_LINK_URL = DSL.field("link_url", SQLDataType.VARCHAR)
     private val B_X = DSL.field("x", SQLDataType.DOUBLE)
     private val B_Y = DSL.field("y", SQLDataType.DOUBLE)
     private val B_WIDTH = DSL.field("width", SQLDataType.DOUBLE)
@@ -80,13 +82,24 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
         return find()
     }
 
+    override fun setCanvasBackground(id: UUID, imageId: UUID?): UUID? {
+        val previousImageId = dsl.select(C_BACKGROUND_IMAGE_ID).from(CANVASES).where(C_ID.eq(id)).fetchOne(C_BACKGROUND_IMAGE_ID)
+        dsl.update(CANVASES)
+            .set(C_BACKGROUND_IMAGE_ID, imageId)
+            .set(C_UPDATED_AT, OffsetDateTime.now())
+            .where(C_ID.eq(id))
+            .execute()
+        return previousImageId
+    }
+
     override fun removeCanvas(id: UUID): List<UUID> {
-        val imageIds = dsl.select(B_IMAGE_ID).from(BLOCKS)
+        val blockImageIds = dsl.select(B_IMAGE_ID).from(BLOCKS)
             .where(B_CANVAS_ID.eq(id)).and(B_IMAGE_ID.isNotNull)
             .fetch(B_IMAGE_ID)
             .filterNotNull()
+        val backgroundImageId = dsl.select(C_BACKGROUND_IMAGE_ID).from(CANVASES).where(C_ID.eq(id)).fetchOne(C_BACKGROUND_IMAGE_ID)
         dsl.deleteFrom(CANVASES).where(C_ID.eq(id)).execute()
-        return imageIds
+        return blockImageIds + listOfNotNull(backgroundImageId)
     }
 
     override fun addTextBlock(
@@ -98,7 +111,7 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
         width: Double,
         height: Double,
     ): AboutPage {
-        insertBlock(id, canvasId, AboutPageBlockType.TEXT, text, null, x, y, width, height)
+        insertBlock(id, canvasId, AboutPageBlockType.TEXT, text, null, null, x, y, width, height)
         return find()
     }
 
@@ -111,7 +124,21 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
         width: Double,
         height: Double,
     ): AboutPage {
-        insertBlock(id, canvasId, AboutPageBlockType.PHOTO, null, imageId, x, y, width, height)
+        insertBlock(id, canvasId, AboutPageBlockType.PHOTO, null, imageId, null, x, y, width, height)
+        return find()
+    }
+
+    override fun addButtonBlock(
+        id: UUID,
+        canvasId: UUID,
+        text: String,
+        linkUrl: String,
+        x: Double,
+        y: Double,
+        width: Double,
+        height: Double,
+    ): AboutPage {
+        insertBlock(id, canvasId, AboutPageBlockType.BUTTON, text, null, linkUrl, x, y, width, height)
         return find()
     }
 
@@ -145,6 +172,15 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
         return find()
     }
 
+    override fun updateBlockLink(id: UUID, linkUrl: String): AboutPage {
+        dsl.update(BLOCKS)
+            .set(B_LINK_URL, linkUrl)
+            .set(B_UPDATED_AT, OffsetDateTime.now())
+            .where(B_ID.eq(id))
+            .execute()
+        return find()
+    }
+
     override fun removeBlock(id: UUID): UUID? {
         val imageId = dsl.select(B_IMAGE_ID).from(BLOCKS).where(B_ID.eq(id)).fetchOne(B_IMAGE_ID)
         dsl.deleteFrom(BLOCKS).where(B_ID.eq(id)).execute()
@@ -157,6 +193,7 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
         type: AboutPageBlockType,
         text: String?,
         imageId: UUID?,
+        linkUrl: String?,
         x: Double,
         y: Double,
         width: Double,
@@ -165,14 +202,14 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
         val nextZIndex = (dsl.select(DSL.max(B_Z_INDEX)).from(BLOCKS).where(B_CANVAS_ID.eq(canvasId))
             .fetchOne(0, Int::class.java) ?: -1) + 1
         dsl.insertInto(BLOCKS)
-            .columns(B_ID, B_CANVAS_ID, B_TYPE, B_TEXT, B_IMAGE_ID, B_X, B_Y, B_WIDTH, B_HEIGHT, B_ALIGN, B_Z_INDEX)
-            .values(id, canvasId, type.name, text, imageId, x, y, width, height, AboutPageBlockAlign.LEFT.name, nextZIndex)
+            .columns(B_ID, B_CANVAS_ID, B_TYPE, B_TEXT, B_IMAGE_ID, B_LINK_URL, B_X, B_Y, B_WIDTH, B_HEIGHT, B_ALIGN, B_Z_INDEX)
+            .values(id, canvasId, type.name, text, imageId, linkUrl, x, y, width, height, AboutPageBlockAlign.LEFT.name, nextZIndex)
             .execute()
     }
 
     private fun findCanvases(): List<AboutPageCanvas> {
         val blocksByCanvas = dsl
-            .select(B_ID, B_CANVAS_ID, B_TYPE, B_TEXT, B_IMAGE_ID, B_X, B_Y, B_WIDTH, B_HEIGHT, B_ALIGN, B_Z_INDEX)
+            .select(B_ID, B_CANVAS_ID, B_TYPE, B_TEXT, B_IMAGE_ID, B_LINK_URL, B_X, B_Y, B_WIDTH, B_HEIGHT, B_ALIGN, B_Z_INDEX)
             .from(BLOCKS)
             .orderBy(B_Z_INDEX)
             .fetch {
@@ -181,6 +218,7 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
                     type = AboutPageBlockType.valueOf(it[B_TYPE]!!),
                     text = it[B_TEXT],
                     imageId = it[B_IMAGE_ID],
+                    linkUrl = it[B_LINK_URL],
                     x = it[B_X]!!,
                     y = it[B_Y]!!,
                     width = it[B_WIDTH]!!,
@@ -190,7 +228,7 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
             }
             .groupBy({ it.second }, { it.first })
 
-        return dsl.select(C_ID, C_HEIGHT)
+        return dsl.select(C_ID, C_HEIGHT, C_BACKGROUND_IMAGE_ID)
             .from(CANVASES)
             .orderBy(C_POSITION)
             .fetch {
@@ -198,6 +236,7 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
                 AboutPageCanvas(
                     id = canvasId,
                     height = it[C_HEIGHT]!!,
+                    backgroundImageId = it[C_BACKGROUND_IMAGE_ID],
                     blocks = blocksByCanvas[canvasId] ?: emptyList(),
                 )
             }

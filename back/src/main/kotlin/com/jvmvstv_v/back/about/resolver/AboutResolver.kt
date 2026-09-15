@@ -25,6 +25,16 @@ class AboutResolver(private val aboutService: AboutService) {
         aboutService.updateCanvasHeight(id, height)
 
     @MutationMapping
+    fun updateAboutPageCanvasBackground(
+        @Argument id: UUID,
+        @Argument mimeType: String,
+        @Argument imageBase64: String,
+    ): AboutPage = aboutService.updateCanvasBackground(id, mimeType, imageBase64)
+
+    @MutationMapping
+    fun removeAboutPageCanvasBackground(@Argument id: UUID): AboutPage = aboutService.removeCanvasBackground(id)
+
+    @MutationMapping
     fun removeAboutPageCanvas(@Argument id: UUID): AboutPage = aboutService.removeCanvas(id)
 
     @MutationMapping
@@ -49,6 +59,17 @@ class AboutResolver(private val aboutService: AboutService) {
     ): AboutPage = aboutService.addPhotoBlock(canvasId, mimeType, imageBase64, x, y, width, height)
 
     @MutationMapping
+    fun addAboutPageButtonBlock(
+        @Argument canvasId: UUID,
+        @Argument text: String,
+        @Argument linkUrl: String,
+        @Argument x: Double,
+        @Argument y: Double,
+        @Argument width: Double,
+        @Argument height: Double,
+    ): AboutPage = aboutService.addButtonBlock(canvasId, text, linkUrl, x, y, width, height)
+
+    @MutationMapping
     fun updateAboutPageBlockLayout(
         @Argument id: UUID,
         @Argument x: Double,
@@ -64,6 +85,10 @@ class AboutResolver(private val aboutService: AboutService) {
     @MutationMapping
     fun updateAboutPageBlockText(@Argument id: UUID, @Argument text: String): AboutPage =
         aboutService.updateBlockText(id, text)
+
+    @MutationMapping
+    fun updateAboutPageBlockLink(@Argument id: UUID, @Argument linkUrl: String): AboutPage =
+        aboutService.updateBlockLink(id, linkUrl)
 
     @MutationMapping
     fun removeAboutPageBlock(@Argument id: UUID): AboutPage = aboutService.removeBlock(id)

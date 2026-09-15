@@ -9,6 +9,8 @@ interface AboutService {
     fun updateBody(body: String): AboutPage
     fun addCanvas(): AboutPage
     fun updateCanvasHeight(id: UUID, height: Double): AboutPage
+    fun updateCanvasBackground(id: UUID, mimeType: String, imageBase64: String): AboutPage
+    fun removeCanvasBackground(id: UUID): AboutPage
     fun removeCanvas(id: UUID): AboutPage
     fun addTextBlock(canvasId: UUID, text: String, x: Double, y: Double, width: Double, height: Double): AboutPage
     fun addPhotoBlock(
@@ -20,8 +22,18 @@ interface AboutService {
         width: Double,
         height: Double,
     ): AboutPage
+    fun addButtonBlock(
+        canvasId: UUID,
+        text: String,
+        linkUrl: String,
+        x: Double,
+        y: Double,
+        width: Double,
+        height: Double,
+    ): AboutPage
     fun updateBlockLayout(id: UUID, x: Double, y: Double, width: Double, height: Double): AboutPage
     fun updateBlockAlign(id: UUID, align: AboutPageBlockAlign): AboutPage
     fun updateBlockText(id: UUID, text: String): AboutPage
+    fun updateBlockLink(id: UUID, linkUrl: String): AboutPage
     fun removeBlock(id: UUID): AboutPage
 }

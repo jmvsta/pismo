@@ -118,6 +118,7 @@ function About() {
             <AboutCanvas
               key={canvas.id}
               height={canvas.height}
+              backgroundImageId={canvas.backgroundImageId}
               blocks={canvas.blocks}
               editable={editMode}
               onAddText={async (text, x, y, width, height) =>
@@ -126,6 +127,9 @@ function About() {
               onAddPhoto={async (mimeType, imageBase64, x, y, width, height) =>
                 setPage(await aboutService.addPhotoBlock(canvas.id, mimeType, imageBase64, x, y, width, height))
               }
+              onAddButton={async (text, linkUrl, x, y, width, height) =>
+                setPage(await aboutService.addButtonBlock(canvas.id, text, linkUrl, x, y, width, height))
+              }
               onUpdateLayout={async (id, x, y, width, height) =>
                 setPage(await aboutService.updateBlockLayout(id, x, y, width, height))
               }
@@ -133,8 +137,13 @@ function About() {
                 setPage(await aboutService.updateBlockAlign(id, align))
               }
               onUpdateText={async (id, text) => setPage(await aboutService.updateBlockText(id, text))}
+              onUpdateLink={async (id, linkUrl) => setPage(await aboutService.updateBlockLink(id, linkUrl))}
               onRemove={async (id) => setPage(await aboutService.removeBlock(id))}
               onUpdateHeight={async (height) => setPage(await aboutService.updateCanvasHeight(canvas.id, height))}
+              onUpdateBackground={async (mimeType, imageBase64) =>
+                setPage(await aboutService.updateCanvasBackground(canvas.id, mimeType, imageBase64))
+              }
+              onRemoveBackground={async () => setPage(await aboutService.removeCanvasBackground(canvas.id))}
               onRemoveCanvas={async () => setPage(await aboutService.removeCanvas(canvas.id))}
             />
           ))}

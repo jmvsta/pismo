@@ -1,4 +1,4 @@
-export type AboutPageBlockType = 'TEXT' | 'PHOTO'
+export type AboutPageBlockType = 'TEXT' | 'PHOTO' | 'BUTTON'
 export type AboutPageBlockAlign = 'LEFT' | 'CENTER' | 'RIGHT'
 
 export interface AboutPageBlock {
@@ -6,6 +6,7 @@ export interface AboutPageBlock {
   type: AboutPageBlockType
   text: string | null
   imageId: string | null
+  linkUrl: string | null
   x: number
   y: number
   width: number
@@ -16,6 +17,7 @@ export interface AboutPageBlock {
 export interface AboutPageCanvas {
   id: string
   height: number
+  backgroundImageId: string | null
   blocks: AboutPageBlock[]
 }
 

@@ -38,6 +38,19 @@ class AboutServiceImpl(
         return aboutRepository.updateCanvasHeight(id, height)
     }
 
+    override fun updateCanvasBackground(id: UUID, mimeType: String, imageBase64: String): AboutPage {
+        CurrentUser.requireAdmin()
+        val image = imageService.store(ImageOwnerType.ABOUT_PAGE_PHOTO, id, mimeType, imageBase64)
+        aboutRepository.setCanvasBackground(id, image.id)?.let { imageService.delete(it) }
+        return aboutRepository.find()
+    }
+
+    override fun removeCanvasBackground(id: UUID): AboutPage {
+        CurrentUser.requireAdmin()
+        aboutRepository.setCanvasBackground(id, null)?.let { imageService.delete(it) }
+        return aboutRepository.find()
+    }
+
     override fun removeCanvas(id: UUID): AboutPage {
         CurrentUser.requireAdmin()
         aboutRepository.removeCanvas(id).forEach { imageService.delete(it) }
@@ -66,6 +79,21 @@ class AboutServiceImpl(
         return aboutRepository.addPhotoBlock(blockId, canvasId, image.id, x, y, width, height)
     }
 
+    override fun addButtonBlock(
+        canvasId: UUID,
+        text: String,
+        linkUrl: String,
+        x: Double,
+        y: Double,
+        width: Double,
+        height: Double,
+    ): AboutPage {
+        CurrentUser.requireAdmin()
+        requireValidLayout(x, y, width, height)
+        requireNonBlankLink(linkUrl)
+        return aboutRepository.addButtonBlock(UUID.randomUUID(), canvasId, text, linkUrl, x, y, width, height)
+    }
+
     override fun updateBlockLayout(id: UUID, x: Double, y: Double, width: Double, height: Double): AboutPage {
         CurrentUser.requireAdmin()
         requireValidLayout(x, y, width, height)
@@ -82,10 +110,20 @@ class AboutServiceImpl(
         return aboutRepository.updateBlockText(id, text)
     }
 
+    override fun updateBlockLink(id: UUID, linkUrl: String): AboutPage {
+        CurrentUser.requireAdmin()
+        requireNonBlankLink(linkUrl)
+        return aboutRepository.updateBlockLink(id, linkUrl)
+    }
+
     override fun removeBlock(id: UUID): AboutPage {
         CurrentUser.requireAdmin()
         aboutRepository.removeBlock(id)?.let { imageService.delete(it) }
         return aboutRepository.find()
+    }
+
+    private fun requireNonBlankLink(linkUrl: String) {
+        if (linkUrl.isBlank()) throw AuthException("Button link can't be empty")
     }
 
     private fun requireValidLayout(x: Double, y: Double, width: Double, height: Double) {
