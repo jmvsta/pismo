@@ -43,12 +43,12 @@ function ForumPostCard({ post, onOpen, onThanked }: ForumPostCardProps) {
       </div>
       <div className="forum-post-title">{post.title}</div>
       <div className="forum-post-content">
-        <div className="text-muted forum-post-excerpt">{renderRichText(post.body)}</div>
         {coverPhoto && (
           <div className={`forum-post-photo${coverPhotoUrl ? '' : ' photo-placeholder'}`}>
             {coverPhotoUrl ? <img src={coverPhotoUrl} alt={coverPhoto.caption ?? ''} /> : <span>letter photo</span>}
           </div>
         )}
+        <div className="text-muted forum-post-excerpt">{renderRichText(post.body)}</div>
       </div>
       <div className="forum-post-footer text-muted">
         <span className="forum-reply-count">
