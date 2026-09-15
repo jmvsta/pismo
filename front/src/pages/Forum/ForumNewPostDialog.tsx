@@ -3,8 +3,6 @@ import { forumService } from '../../services/forum/index.ts'
 import type { ForumPost, ForumTopic } from '../../services/forum/index.ts'
 import EmojiPicker from '../../components/EmojiPicker/EmojiPicker.tsx'
 import PhotoAttachments, { type PendingPhoto } from '../../components/PhotoAttachments/PhotoAttachments.tsx'
-import { useRichTextFormatting } from '../../hooks/useRichTextFormatting.ts'
-import RichTextLinkPrompt from '../../components/RichTextLinkPrompt/RichTextLinkPrompt.tsx'
 
 interface ForumNewPostDialogProps {
   topics: ForumTopic[]
@@ -20,7 +18,6 @@ function ForumNewPostDialog({ topics, onClose, onCreated }: ForumNewPostDialogPr
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
-  const formatting = useRichTextFormatting(bodyRef, body, setBody)
 
   const canSubmit = topicId !== '' && title.trim() !== '' && body.trim() !== '' && !submitting
 
@@ -91,8 +88,7 @@ function ForumNewPostDialog({ topics, onClose, onCreated }: ForumNewPostDialogPr
           <p className="text-muted text-sm">
             Supports <code># Heading</code>, <code>**bold**</code>, <code>*italic*</code>,{' '}
             <code>&lt;s&gt;strikethrough&lt;/s&gt;</code>, <code>&lt;u&gt;underline&lt;/u&gt;</code>, and{' '}
-            <code>&lt;a href='https://...'&gt;link&lt;/a&gt;</code> (also <code>mailto:</code>). Select text and
-            press ctrl/cmd+b/i/u/s to format it, or ctrl/cmd+a to link it.
+            <code>&lt;a href='https://...'&gt;link&lt;/a&gt;</code> (also <code>mailto:</code>).
           </p>
           <textarea
             id="forum-new-post-body"
@@ -100,18 +96,9 @@ function ForumNewPostDialog({ topics, onClose, onCreated }: ForumNewPostDialogPr
             ref={bodyRef}
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            onKeyDown={formatting.handleKeyDown}
             rows={5}
           />
           <EmojiPicker onSelect={handleEmojiSelect} />
-          {formatting.linkPromptOpen && (
-            <RichTextLinkPrompt
-              url={formatting.linkUrl}
-              onUrlChange={formatting.setLinkUrl}
-              onConfirm={formatting.confirmLink}
-              onCancel={formatting.cancelLink}
-            />
-          )}
         </div>
 
         <PhotoAttachments photos={photos} onChange={setPhotos} disabled={submitting} />

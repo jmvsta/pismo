@@ -6,8 +6,6 @@ import type { AboutPage, AboutPageBlockAlign, AboutPageLanguage } from '../../se
 import { useUserStore } from '../../store/userStore.ts'
 import { useLanguageStore } from '../../store/languageStore.ts'
 import { renderRichText } from '../../lib/richText.tsx'
-import { useRichTextFormatting } from '../../hooks/useRichTextFormatting.ts'
-import RichTextLinkPrompt from '../../components/RichTextLinkPrompt/RichTextLinkPrompt.tsx'
 import AboutCanvas from './AboutCanvas.tsx'
 import { aboutEditText } from './aboutEditText.ts'
 import { uiText } from '../../i18n/uiText.ts'
@@ -32,7 +30,6 @@ function About() {
   const [body, setBody] = useState('')
   const [savingBody, setSavingBody] = useState(false)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
-  const bodyFormatting = useRichTextFormatting(bodyRef, body, setBody)
 
   pageRef.current = page
 
@@ -105,8 +102,7 @@ function About() {
                 <code>#### Smallest heading</code>, <code>**bold**</code>, <code>*italic*</code>,{' '}
                 <code>&lt;s&gt;strikethrough&lt;/s&gt;</code>, <code>&lt;u&gt;underline&lt;/u&gt;</code>, and{' '}
                 <code>&lt;a href='https://...'&gt;link&lt;/a&gt;</code> (also <code>mailto:</code>). Leave a blank
-                line between paragraphs. Select text and press ctrl/cmd+b/i/u/s to format it, or ctrl/cmd+a to link
-                it.
+                line between paragraphs.
               </p>
               <textarea
                 id="about-body"
@@ -115,16 +111,7 @@ function About() {
                 rows={10}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                onKeyDown={bodyFormatting.handleKeyDown}
               />
-              {bodyFormatting.linkPromptOpen && (
-                <RichTextLinkPrompt
-                  url={bodyFormatting.linkUrl}
-                  onUrlChange={bodyFormatting.setLinkUrl}
-                  onConfirm={bodyFormatting.confirmLink}
-                  onCancel={bodyFormatting.cancelLink}
-                />
-              )}
               <button
                 type="button"
                 className="btn btn-primary self-start"
