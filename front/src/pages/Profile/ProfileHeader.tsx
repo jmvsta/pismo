@@ -2,6 +2,7 @@ import { useState, type ChangeEvent } from 'react'
 import type { User } from '../../services/user/index.ts'
 import type { UserBadge } from '../../services/badges/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
+import { renderRichText } from '../../lib/richText.tsx'
 import BadgeChips from './BadgeChips.tsx'
 import ProfileBioEditor from './ProfileBioEditor.tsx'
 import ProfileNicknameEditor from './ProfileNicknameEditor.tsx'
@@ -85,8 +86,10 @@ function ProfileHeader({ user, badges, onAvatarChange, onBioChange, onNicknameCh
         </div>
         {onBioChange ? (
           <ProfileBioEditor initialBio={user.bio} onSave={onBioChange} />
+        ) : user.bio ? (
+          <div className="profile-bio">{renderRichText(user.bio)}</div>
         ) : (
-          <p className="profile-bio">{user.bio || 'No bio yet.'}</p>
+          <p className="profile-bio">No bio yet.</p>
         )}
         {error && <p className="text-muted profile-avatar-error">{error}</p>}
         <BadgeChips badges={badges.slice(0, 3)} />
