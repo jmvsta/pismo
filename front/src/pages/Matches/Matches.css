@@ -122,6 +122,9 @@
   font-size: 13px;
   line-height: 1.5;
 }
+.match-card-bio > * {
+  margin: 0;
+}
 
 .match-card-questionnaire-link {
   align-self: flex-start;

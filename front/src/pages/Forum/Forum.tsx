@@ -8,6 +8,7 @@ import { uiText } from '../../i18n/uiText.ts'
 import { matchingService } from '../../services/matching/index.ts'
 import type { SuggestedProfile } from '../../services/matching/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
+import { renderRichText } from '../../lib/richText.tsx'
 import ForumPostCard from './ForumPostCard.tsx'
 import ForumNewPostDialog from './ForumNewPostDialog.tsx'
 import ForumNewTopicDialog from './ForumNewTopicDialog.tsx'
@@ -300,7 +301,9 @@ function Forum() {
                                                     )}
                                                 </div>
                                                 {suggestion.user.bio && (
-                                                    <p className="text-muted forum-suggested-bio">{suggestion.user.bio}</p>
+                                                    <div className="text-muted forum-suggested-bio">
+                                                        {renderRichText(suggestion.user.bio)}
+                                                    </div>
                                                 )}
                                             </div>
                                         </Link>

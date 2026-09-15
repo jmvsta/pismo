@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { MatchProfile } from '../../services/matching/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
+import { renderRichText } from '../../lib/richText.tsx'
 import EnvelopeIcon from '../../components/icons/EnvelopeIcon.tsx'
 
 export type MatchCardVariant = 'new' | 'pending' | 'pending-outgoing' | 'hidden' | 'matched'
@@ -73,7 +74,7 @@ function MatchCard({
           </span>
         )}
 
-        {profile.bio && <p className="text-muted match-card-bio">{profile.bio}</p>}
+        {profile.bio && <div className="text-muted match-card-bio">{renderRichText(profile.bio)}</div>}
 
         <div className="match-card-interests">
           {sharedInterests.length === 0 ? (

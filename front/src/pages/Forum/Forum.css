@@ -316,6 +316,9 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
+.forum-suggested-bio > * {
+  margin: 0;
+}
 .forum-suggested-empty {
   padding: 9px 0;
   margin: 0;

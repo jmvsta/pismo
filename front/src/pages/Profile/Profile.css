@@ -130,6 +130,12 @@
   max-width: 100%;
   margin: 10px 0 14px;
 }
+.profile-bio > * {
+  margin: 0 0 8px;
+}
+.profile-bio > *:last-child {
+  margin-bottom: 0;
+}
 .profile-badges {
   display: flex;
   gap: 6px;
