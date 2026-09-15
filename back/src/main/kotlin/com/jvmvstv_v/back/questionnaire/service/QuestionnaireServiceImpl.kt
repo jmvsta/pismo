@@ -1,7 +1,6 @@
 package com.jvmvstv_v.back.questionnaire.service
 
 import com.jvmvstv_v.back.common.CurrentUser
-import com.jvmvstv_v.back.matching.service.MatchingService
 import com.jvmvstv_v.back.questionnaire.model.QuestionnaireKind
 import com.jvmvstv_v.back.questionnaire.model.QuestionnaireVersion
 import com.jvmvstv_v.back.questionnaire.model.SaveQuestionnaireResponseInput
@@ -14,7 +13,6 @@ import java.util.UUID
 @Service
 class QuestionnaireServiceImpl(
     private val questionnaireRepository: QuestionnaireRepository,
-    private val matchingService: MatchingService,
 ) : QuestionnaireService {
     override fun activeQuestionnaire(kind: QuestionnaireKind): QuestionnaireVersion? =
         questionnaireRepository.findActiveVersion(kind)
@@ -30,11 +28,8 @@ class QuestionnaireServiceImpl(
     override fun myResponse(questionnaireVersionId: Int): UserQuestionnaireResponse? =
         questionnaireRepository.findResponse(CurrentUser.id, questionnaireVersionId)
 
-    // Questionnaire answers are visible pre-match (unlike photo/bio), but the response still
-    // carries a full `user`, so that one field needs the same redaction the matching feed uses.
     override fun response(userId: UUID, questionnaireVersionId: Int): UserQuestionnaireResponse? =
         questionnaireRepository.findResponse(userId, questionnaireVersionId)
-            ?.let { it.copy(user = matchingService.redactUnlessMatched(it.user)) }
 
     override fun saveResponse(input: SaveQuestionnaireResponseInput): UserQuestionnaireResponse =
         questionnaireRepository.saveResponse(CurrentUser.id, input)

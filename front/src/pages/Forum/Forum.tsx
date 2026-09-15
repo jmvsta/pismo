@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { forumService } from '../../services/forum/index.ts'
 import type { ForumPost, ForumReply, ForumTopic } from '../../services/forum/index.ts'
 import { useUserStore } from '../../store/userStore.ts'
+import { useLanguageStore } from '../../store/languageStore.ts'
+import { uiText } from '../../i18n/uiText.ts'
 import { matchingService } from '../../services/matching/index.ts'
 import type { SuggestedProfile } from '../../services/matching/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
@@ -17,6 +19,7 @@ type SortMode = 'latest' | 'top' | 'unanswered'
 const PAGE_SIZE = 10
 
 function Forum() {
+    const language = useLanguageStore((state) => state.language)
     const [topics, setTopics] = useState<ForumTopic[]>([])
     const [activeTopic, setActiveTopic] = useState<string | 'all'>('all')
     const [sortMode, setSortMode] = useState<SortMode>('latest')
@@ -32,7 +35,16 @@ function Forum() {
     const currentUser = useUserStore((state) => state.currentUser)
     const [suggestedProfiles, setSuggestedProfiles] = useState<SuggestedProfile[]>([])
     const [letterRequestState, setLetterRequestState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+    const [showScrollTop, setShowScrollTop] = useState(false)
     const selectedPost = posts.find((post) => post.id === selectedPostId) ?? null
+
+    useEffect(() => {
+        const handleScroll = () => setShowScrollTop(window.scrollY > 600)
+        window.addEventListener('scroll', handleScroll, { passive: true })
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [])
+
+    const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
 
     const handleRequestLetter = async () => {
         if (letterRequestState === 'sending' || letterRequestState === 'sent') return
@@ -177,19 +189,19 @@ function Forum() {
                             className="btn btn-primary btn-block forum-new-post"
                             onClick={() => setIsNewPostOpen(true)}
                         >
-                            + New post
+                            {uiText('forumNewPost', language)}
                         </button>
                     )}
                     <div className="forum-topics">
                         <h6 className="forum-topics-toggle" onClick={() => setIsTopicsOpen((prev) => !prev)}>
-                            Topics
+                            {uiText('forumTopics', language)}
                         </h6>
                         <div className={`forum-topics-list${isTopicsOpen ? ' is-open' : ''}`}>
                             <span
                                 className={activeTopic === 'all' ? 'is-active' : undefined}
                                 onClick={() => setActiveTopic('all')}
                             >
-              All posts
+              {uiText('forumAllPosts', language)}
             </span>
                             {activeTopics.map((topic) => (
                                 <span
@@ -200,7 +212,9 @@ function Forum() {
                 {topic.title}
               </span>
                             ))}
-                            {frozenTopics.length > 0 && <h6 className="forum-topics-frozen-label">Frozen</h6>}
+                            {frozenTopics.length > 0 && (
+                                <h6 className="forum-topics-frozen-label">{uiText('forumFrozen', language)}</h6>
+                            )}
                             {frozenTopics.map((topic) => (
                                 <span
                                     key={topic.id}
@@ -216,7 +230,7 @@ function Forum() {
                                     className="btn btn-ghost forum-new-topic-btn"
                                     onClick={() => setIsNewTopicOpen(true)}
                                 >
-                                    + New topic
+                                    {uiText('forumNewTopic', language)}
                                 </button>
                             )}
                         </div>
@@ -226,23 +240,23 @@ function Forum() {
                 <main className="forum-feed">
                     <div className="forum-sort">
             <span className={sortMode === 'latest' ? 'is-active' : undefined} onClick={() => setSortMode('latest')}>
-              Latest
+              {uiText('forumLatest', language)}
             </span>
                         <span className={sortMode === 'top' ? 'is-active' : undefined} onClick={() => setSortMode('top')}>
-              Top this week
+              {uiText('forumTopThisWeek', language)}
             </span>
                         <span
                             className={sortMode === 'unanswered' ? 'is-active' : undefined}
                             onClick={() => setSortMode('unanswered')}
                         >
-              Unanswered
+              {uiText('forumUnanswered', language)}
             </span>
                     </div>
 
                     {feedError && <p className="text-muted forum-empty">{feedError}</p>}
 
                     {!feedError && visiblePosts.length === 0 && (
-                        <p className="text-muted forum-empty">Nothing here yet — check back later.</p>
+                        <p className="text-muted forum-empty">{uiText('forumNothingHere', language)}</p>
                     )}
 
                     {visiblePosts.map((post) => (
@@ -257,7 +271,7 @@ function Forum() {
                     {hasMore && sortMode !== 'unanswered' && (
                         <div className="forum-load-more">
                             <button type="button" className="btn btn-ghost" onClick={handleLoadMore} disabled={loadingMore}>
-                                {loadingMore ? 'Loading…' : 'Load more posts ↓'}
+                                {loadingMore ? uiText('forumLoading', language) : uiText('forumLoadMore', language)}
                             </button>
                         </div>
                     )}
@@ -266,7 +280,7 @@ function Forum() {
                 {currentUser && (
                     <aside className="forum-sidebar-right">
                         <div>
-                            <h6>Suggested pen pals</h6>
+                            <h6>{uiText('forumSuggestedPenPals', language)}</h6>
                             <div className="forum-suggested">
                                 {suggestedProfiles.length === 0 && (
                                     <p className="text-muted forum-suggested-empty">No matches yet.</p>
@@ -294,7 +308,7 @@ function Forum() {
                                 })}
                             </div>
                             <Link to="/matches" className="btn btn-ghost forum-see-all">
-                                See all recommended →
+                                {uiText('forumSeeAllRecommended', language)}
                             </Link>
                         </div>
 
@@ -321,20 +335,13 @@ function Forum() {
                                 <line x1="9" y1="18" x2="9" y2="22" />
                                 <line x1="5" y1="22" x2="13" y2="22" />
                             </svg>
-                            <div className="forum-mailbox-title">Send me a letter</div>
+                            <div className="forum-mailbox-title">{uiText('forumMailboxTitle', language)}</div>
                             {letterRequestState === 'sent' ? (
-                                <div className="forum-mailbox-copy">
-                                    Sent! A moderator will pick this up and write to you soon.
-                                </div>
+                                <div className="forum-mailbox-copy">{uiText('forumMailboxSent', language)}</div>
                             ) : letterRequestState === 'error' ? (
-                                <div className="forum-mailbox-copy">Something went wrong — try again.</div>
+                                <div className="forum-mailbox-copy">{uiText('forumMailboxError', language)}</div>
                             ) : (
-                                <div className="forum-mailbox-copy">
-                                    I wish to share with you a letter. Handwritten, with a carefully chosen paper
-                                    and a stamp, taken to the post office, mailed the old style. Dozen mailed
-                                    already, plenty received in return. If this idea makes You smile, come and
-                                    share with us! May I send you a letter?
-                                </div>
+                                <div className="forum-mailbox-copy">{uiText('forumMailboxCopy', language)}</div>
                             )}
                         </button>
                     </aside>
@@ -371,6 +378,17 @@ function Forum() {
                     onReplyUpdated={handleReplyUpdated}
                     onReplyDeleted={handleReplyDeleted}
                 />
+            )}
+
+            {showScrollTop && (
+                <button
+                    type="button"
+                    className="forum-scroll-top"
+                    onClick={scrollToTop}
+                    aria-label="Scroll to top"
+                >
+                    ↑
+                </button>
             )}
         </div>
     )

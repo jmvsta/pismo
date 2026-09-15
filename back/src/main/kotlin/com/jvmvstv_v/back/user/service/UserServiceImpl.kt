@@ -5,7 +5,6 @@ import com.jvmvstv_v.back.common.CurrentUser
 import com.jvmvstv_v.back.common.SecureTokenGenerator
 import com.jvmvstv_v.back.image.model.ImageOwnerType
 import com.jvmvstv_v.back.image.service.ImageService
-import com.jvmvstv_v.back.matching.service.MatchingService
 import com.jvmvstv_v.back.user.email.EmailGateway
 import com.jvmvstv_v.back.user.model.LoginInput
 import com.jvmvstv_v.back.user.model.OauthProvider
@@ -32,15 +31,11 @@ class UserServiceImpl(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
     private val imageService: ImageService,
-    private val matchingService: MatchingService,
     private val emailGateway: EmailGateway,
 ) : UserService {
     override fun currentUser(): User? = CurrentUser.idOrNull?.let { userRepository.findById(it) }
 
-    // The only caller is the user(id) query, which is how a matching-feed card links out to
-    // a full profile page -- so it has to respect the same pre-match privacy rule the feed
-    // itself applies, or that card would leak the photo/bio it just redacted.
-    override fun findById(id: UUID): User? = userRepository.findById(id)?.let { matchingService.redactUnlessMatched(it) }
+    override fun findById(id: UUID): User? = userRepository.findById(id)
 
     override fun updateProfile(input: UpdateProfileInput): User {
         input.nickname?.let { validateNickname(it, CurrentUser.id) }

@@ -56,7 +56,7 @@ function ProfileHeader({ user, badges, onAvatarChange, onBioChange, onNicknameCh
   return (
     <div className="profile-header">
       <div
-        className={`profile-avatar${avatarUrl ? '' : ' photo-placeholder'}${onAvatarChange ? ' profile-avatar-editable' : ''}`}
+        className={`profile-avatar profile-avatar-hero${avatarUrl ? '' : ' photo-placeholder'}${onAvatarChange ? ' profile-avatar-editable' : ''}`}
       >
         {avatarUrl ? <img src={avatarUrl} alt={user.nickname} /> : <span>avatar</span>}
         {onAvatarChange && (

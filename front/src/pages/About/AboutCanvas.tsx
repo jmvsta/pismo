@@ -7,6 +7,7 @@ import { renderRichText } from '../../lib/richText.tsx'
 import { useRichTextFormatting } from '../../hooks/useRichTextFormatting.ts'
 import RichTextLinkPrompt from '../../components/RichTextLinkPrompt/RichTextLinkPrompt.tsx'
 import EmojiPicker from '../../components/EmojiPicker/EmojiPicker.tsx'
+import { aboutEditText } from './aboutEditText.ts'
 
 function readAsBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -38,7 +39,6 @@ function rawTextFor(block: AboutPageBlock, language: AboutPageLanguage): string 
 }
 
 function displayTextFor(block: AboutPageBlock, language: AboutPageLanguage): string {
-  if (block.type === 'BUTTON') return block.textEn ?? ''
   return pickTranslation(block.textEn ?? '', block.textRu, block.textSrb, language)
 }
 
@@ -225,17 +225,17 @@ function AboutCanvas({
   const startEditingText = (block: AboutPageBlock) => {
     setSelectedId(block.id)
     setEditingId(block.id)
-    setDraftText(block.type === 'BUTTON' ? block.textEn ?? '' : rawTextFor(block, language))
+    setDraftText(rawTextFor(block, language))
     editFormatting.cancelLink()
   }
 
   const saveEditingText = async (block: AboutPageBlock) => {
     const text = draftText.trim()
-    const previous = block.type === 'BUTTON' ? block.textEn ?? '' : rawTextFor(block, language)
+    const previous = rawTextFor(block, language)
     setEditingId(null)
     if (!text || text === previous) return
     try {
-      await onUpdateText(block.id, text, block.type === 'BUTTON' ? 'EN' : language)
+      await onUpdateText(block.id, text, language)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save this text.')
     }
@@ -356,10 +356,10 @@ function AboutCanvas({
       {editable && (
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" className="btn btn-secondary" onClick={handleAddText}>
-            + Add text
+            {aboutEditText('addText', language)}
           </button>
           <button type="button" className="btn btn-secondary" onClick={handlePickPhoto} disabled={uploadingPhoto}>
-            {uploadingPhoto ? 'Uploading…' : '+ Add photo'}
+            {uploadingPhoto ? aboutEditText('uploading', language) : aboutEditText('addPhoto', language)}
           </button>
           <input
             ref={fileInputRef}
@@ -369,7 +369,7 @@ function AboutCanvas({
             hidden
           />
           <button type="button" className="btn btn-secondary" onClick={handleAddButton}>
-            + Add button
+            {aboutEditText('addButton', language)}
           </button>
           <button
             type="button"
@@ -377,11 +377,15 @@ function AboutCanvas({
             onClick={handlePickBackground}
             disabled={uploadingBackground}
           >
-            {uploadingBackground ? 'Uploading…' : backgroundImageId ? 'Change background' : '+ Set background'}
+            {uploadingBackground
+              ? aboutEditText('uploading', language)
+              : backgroundImageId
+                ? aboutEditText('changeBackground', language)
+                : aboutEditText('setBackground', language)}
           </button>
           {backgroundImageId && (
             <button type="button" className="btn btn-secondary" onClick={handleRemoveBackground}>
-              Remove background
+              {aboutEditText('removeBackground', language)}
             </button>
           )}
           <input
@@ -396,7 +400,7 @@ function AboutCanvas({
             className="btn btn-secondary ml-auto text-[var(--color-accent)]"
             onClick={handleRemoveCanvas}
           >
-            Remove canvas
+            {aboutEditText('removeCanvas', language)}
           </button>
         </div>
       )}
@@ -537,7 +541,7 @@ function AboutCanvas({
                         className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
                         onClick={() => startEditingText(block)}
                       >
-                        Edit
+                        {aboutEditText('edit', language)}
                       </button>
                     )}
                     {block.type === 'BUTTON' && (
@@ -546,7 +550,7 @@ function AboutCanvas({
                         className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
                         onClick={() => startEditingLink(block)}
                       >
-                        Link
+                        {aboutEditText('link', language)}
                       </button>
                     )}
                     {block.type !== 'BUTTON' && (
@@ -579,7 +583,7 @@ function AboutCanvas({
                       className="border border-[var(--color-divider)] px-2 py-1 text-[11px] text-[var(--color-accent)]"
                       onClick={() => handleRemove(block.id)}
                     >
-                      Delete
+                      {aboutEditText('delete', language)}
                     </button>
                   </div>
                   <div

@@ -4,12 +4,13 @@ import { aboutService } from '../../services/about/index.ts'
 import { pickTranslation } from '../../services/about/index.ts'
 import type { AboutPage, AboutPageBlockAlign, AboutPageLanguage } from '../../services/about/index.ts'
 import { useUserStore } from '../../store/userStore.ts'
+import { useLanguageStore } from '../../store/languageStore.ts'
 import { renderRichText } from '../../lib/richText.tsx'
 import { useRichTextFormatting } from '../../hooks/useRichTextFormatting.ts'
 import RichTextLinkPrompt from '../../components/RichTextLinkPrompt/RichTextLinkPrompt.tsx'
 import AboutCanvas from './AboutCanvas.tsx'
-
-const LANGUAGES: AboutPageLanguage[] = ['EN', 'RU', 'SRB']
+import { aboutEditText } from './aboutEditText.ts'
+import { uiText } from '../../i18n/uiText.ts'
 
 function rawBodyFor(page: AboutPage, language: AboutPageLanguage): string {
   if (language === 'RU') return page.bodyRu ?? ''
@@ -21,15 +22,19 @@ function About() {
   const currentUser = useUserStore((state) => state.currentUser)
   const isAdmin = currentUser?.role === 'ADMIN'
 
+  const language = useLanguageStore((state) => state.language)
+  const pageRef = useRef<AboutPage | null>(null)
+
   const [page, setPage] = useState<AboutPage | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editMode, setEditMode] = useState(false)
-  const [language, setLanguage] = useState<AboutPageLanguage>('EN')
 
   const [body, setBody] = useState('')
   const [savingBody, setSavingBody] = useState(false)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
   const bodyFormatting = useRichTextFormatting(bodyRef, body, setBody)
+
+  pageRef.current = page
 
   useEffect(() => {
     let cancelled = false
@@ -38,7 +43,7 @@ function About() {
       .then((result) => {
         if (cancelled) return
         setPage(result)
-        setBody(rawBodyFor(result, 'EN'))
+        setBody(rawBodyFor(result, language))
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load this page.')
@@ -46,12 +51,12 @@ function About() {
     return () => {
       cancelled = true
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleLanguageChange = (next: AboutPageLanguage) => {
-    setLanguage(next)
-    if (page) setBody(rawBodyFor(page, next))
-  }
+  useEffect(() => {
+    if (pageRef.current) setBody(rawBodyFor(pageRef.current, language))
+  }, [language])
 
   const handleSaveBody = async () => {
     setSavingBody(true)
@@ -66,33 +71,23 @@ function About() {
   }
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-6 px-6 pt-6 pb-12 sm:px-10 sm:pt-12">
+    <div className="mx-auto flex max-w-[1200px] flex-col gap-6 px-6 pt-6 pb-12 sm:px-10 sm:pt-12">
       <div className="flex items-center justify-between gap-4">
         <Link
           to="/"
           className="mb-0 inline-block text-[13px] text-[var(--color-text)] no-underline hover:text-[var(--color-accent)]"
         >
-          ← Back to feed
+          {uiText('backToFeed', language)}
         </Link>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
-            {LANGUAGES.map((lang) => (
-              <button
-                key={lang}
-                type="button"
-                className={`btn btn-ghost${language === lang ? ' text-[var(--color-accent)] font-bold' : ''}`}
-                onClick={() => handleLanguageChange(lang)}
-              >
-                {lang}
-              </button>
-            ))}
-          </div>
-          {isAdmin && (
-            <button type="button" className="btn btn-secondary" onClick={() => setEditMode((v) => !v)}>
-              {editMode ? 'Done editing' : 'Edit page'}
-            </button>
-          )}
-        </div>
+        {isAdmin && (
+          <button
+            type="button"
+            className="btn btn-secondary text-base px-4 py-2"
+            onClick={() => setEditMode((v) => !v)}
+          >
+            {editMode ? aboutEditText('doneEditing', language) : aboutEditText('editPage', language)}
+          </button>
+        )}
       </div>
 
       {error && <p className="text-muted">{error}</p>}
@@ -136,7 +131,7 @@ function About() {
                 onClick={handleSaveBody}
                 disabled={savingBody}
               >
-                {savingBody ? 'Saving…' : 'Save text'}
+                {savingBody ? aboutEditText('savingText', language) : aboutEditText('saveText', language)}
               </button>
             </div>
           ) : (
@@ -195,7 +190,7 @@ function About() {
                 }
               }}
             >
-              + Add canvas
+              {aboutEditText('addCanvas', language)}
             </button>
           )}
         </>

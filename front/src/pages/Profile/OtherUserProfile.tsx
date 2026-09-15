@@ -5,6 +5,8 @@ import type { User } from '../../services/user/index.ts'
 import { matchingService } from '../../services/matching/index.ts'
 import type { PenPalConnection, PenPalRequest } from '../../services/matching/index.ts'
 import { useUserStore } from '../../store/userStore.ts'
+import { useLanguageStore } from '../../store/languageStore.ts'
+import { uiText } from '../../i18n/uiText.ts'
 import ProfileHeader from './ProfileHeader.tsx'
 import PenPalLetterAction from '../../components/PenPalLetterAction/PenPalLetterAction.tsx'
 import './Profile.css'
@@ -18,6 +20,7 @@ type RequestState = 'idle' | 'sending' | 'sent' | 'error'
 
 function OtherUserProfile({ userId }: OtherUserProfileProps) {
   const currentUserId = useUserStore((state) => state.currentUser?.id)
+  const language = useLanguageStore((state) => state.language)
   const [user, setUser] = useState<User | null>(null)
   const [status, setStatus] = useState<LoadStatus>('loading')
   const [error, setError] = useState<string | null>(null)
@@ -157,7 +160,7 @@ function OtherUserProfile({ userId }: OtherUserProfileProps) {
       <div className="profile-page">
         <div className="profile-card">
           <Link to="/" className="profile-back">
-            ← Back to feed
+            {uiText('backToFeed', language)}
           </Link>
           <p className="text-muted profile-empty">This account has been deleted.</p>
         </div>
@@ -169,7 +172,7 @@ function OtherUserProfile({ userId }: OtherUserProfileProps) {
     <div className="profile-page">
       <div className="profile-card">
         <Link to="/" className="profile-back">
-          ← Back to feed
+          {uiText('backToFeed', language)}
         </Link>
 
         <ProfileHeader user={user} badges={[]} />
@@ -217,10 +220,6 @@ function OtherUserProfile({ userId }: OtherUserProfileProps) {
           </div>
         )}
         {actionError && <p className="text-muted match-card-error profile-action-error">{actionError}</p>}
-
-        <p className="text-muted profile-empty">
-          Letters, badges, and other activity aren't available for other users yet.
-        </p>
       </div>
     </div>
   )
