@@ -69,19 +69,7 @@ function ForumReplyThread({
 
   return (
     <div className="forum-reply">
-      <div className="forum-reply-meta text-muted">
-        {reply.author.nickname}
-        {canEdit && !isEditing && (
-          <span className="forum-item-actions">
-            <button type="button" className="forum-reply-link" onClick={() => setIsEditing(true)}>
-              Edit
-            </button>
-            <button type="button" className="forum-reply-link" onClick={handleReplyDelete}>
-              Delete
-            </button>
-          </span>
-        )}
-      </div>
+      <div className="forum-reply-meta text-muted">{reply.author.nickname}</div>
       {isEditing ? (
         <ForumEditForm
           initialBody={reply.body}
@@ -93,7 +81,7 @@ function ForumReplyThread({
         <>
           <div className="forum-reply-body">{renderRichText(reply.body)}</div>
           {reply.photos.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+            <div className="forum-reply-photos flex flex-wrap gap-2">
               {reply.photos.map((photo) => {
                 const src = imageUrl(photo.imageId) ?? ''
                 const alt = photo.caption ?? ''
@@ -116,6 +104,16 @@ function ForumReplyThread({
         <button type="button" className="forum-reply-link" onClick={() => setIsReplying((prev) => !prev)}>
           Reply
         </button>
+        {canEdit && !isEditing && (
+          <span className="forum-item-actions">
+            <button type="button" className="forum-reply-link" onClick={() => setIsEditing(true)}>
+              Edit
+            </button>
+            <button type="button" className="forum-reply-link" onClick={handleReplyDelete}>
+              Delete
+            </button>
+          </span>
+        )}
       </div>
       {isReplying && <ForumReplyComposer onSubmit={handleSubmitReply} onCancel={() => setIsReplying(false)} />}
       {children.length > 0 && (

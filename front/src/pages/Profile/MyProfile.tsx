@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useUserStore } from '../../store/userStore.ts'
+import { useNotificationStore } from '../../store/notificationStore.ts'
 import { badgesService } from '../../services/badges/index.ts'
 import type { UserBadge, UserLetterRankBadge } from '../../services/badges/index.ts'
 import { lettersService } from '../../services/letters/index.ts'
@@ -61,10 +62,25 @@ function MyProfile() {
   const [activityError, setActivityError] = useState<string | null>(null)
   const [allForumPosts, setAllForumPosts] = useState<ForumPost[]>([])
   const [questionnaireSlots, setQuestionnaireSlots] = useState<QuestionnaireSlot[]>([])
+  const notifications = useNotificationStore((state) => state.notifications)
+  const lastNotificationIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     loadCurrentUser()
   }, [loadCurrentUser])
+
+  useEffect(() => {
+    const latest = notifications[0]
+    if (!latest) return
+    const isFirstRun = lastNotificationIdRef.current === null
+    lastNotificationIdRef.current = latest.id
+    if (isFirstRun) return
+    if (latest.type !== 'LETTER_SENT' && latest.type !== 'LETTER_DELIVERED') return
+
+    Promise.all([lettersService.sentLetters(), lettersService.receivedLetters()])
+      .then(([sent, received]) => setLetterRows(toLetterRows(sent, received)))
+      .catch(() => {})
+  }, [notifications])
 
   useEffect(() => {
     let cancelled = false

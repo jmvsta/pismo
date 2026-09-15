@@ -27,7 +27,7 @@ function ForumReplyComposer({ placeholder, submitLabel = 'Reply →', onSubmit, 
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (body.trim() === '' || submitting) return
+    if ((body.trim() === '' && photos.length === 0) || submitting) return
     setSubmitting(true)
     setError(null)
     try {

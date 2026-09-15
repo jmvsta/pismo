@@ -359,6 +359,9 @@
   line-height: 1.5;
   margin: 0 0 8px;
 }
+.forum-reply-photos {
+  margin-bottom: 8px;
+}
 .forum-reply-actions {
   display: flex;
   gap: 14px;
