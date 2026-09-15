@@ -2,6 +2,7 @@ package com.jvmvstv_v.back.about.service
 
 import com.jvmvstv_v.back.about.model.AboutPage
 import com.jvmvstv_v.back.about.model.AboutPageBlockAlign
+import com.jvmvstv_v.back.about.model.AboutPageLanguage
 import com.jvmvstv_v.back.about.repository.AboutRepository
 import com.jvmvstv_v.back.common.AuthException
 import com.jvmvstv_v.back.common.CurrentUser
@@ -20,9 +21,9 @@ class AboutServiceImpl(
 ) : AboutService {
     override fun aboutPage(): AboutPage = aboutRepository.find()
 
-    override fun updateBody(body: String): AboutPage {
+    override fun updateBody(body: String, language: AboutPageLanguage): AboutPage {
         CurrentUser.requireAdmin()
-        return aboutRepository.updateBody(body, CurrentUser.id)
+        return aboutRepository.updateBody(body, language, CurrentUser.id)
     }
 
     override fun addCanvas(): AboutPage {
@@ -105,9 +106,9 @@ class AboutServiceImpl(
         return aboutRepository.updateBlockAlign(id, align)
     }
 
-    override fun updateBlockText(id: UUID, text: String): AboutPage {
+    override fun updateBlockText(id: UUID, text: String, language: AboutPageLanguage): AboutPage {
         CurrentUser.requireAdmin()
-        return aboutRepository.updateBlockText(id, text)
+        return aboutRepository.updateBlockText(id, text, language)
     }
 
     override fun updateBlockLink(id: UUID, linkUrl: String): AboutPage {

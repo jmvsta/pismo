@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import './AboutCanvas.css'
-import type { AboutPageBlock, AboutPageBlockAlign } from '../../services/about/index.ts'
+import type { AboutPageBlock, AboutPageBlockAlign, AboutPageLanguage } from '../../services/about/index.ts'
+import { pickTranslation } from '../../services/about/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
 import { renderRichText } from '../../lib/richText.tsx'
 import { useRichTextFormatting } from '../../hooks/useRichTextFormatting.ts'
@@ -30,6 +31,17 @@ function textAlignFor(align: AboutPageBlockAlign): 'left' | 'center' | 'right' {
   return align.toLowerCase() as 'left' | 'center' | 'right'
 }
 
+function rawTextFor(block: AboutPageBlock, language: AboutPageLanguage): string {
+  if (language === 'RU') return block.textRu ?? ''
+  if (language === 'SRB') return block.textSrb ?? ''
+  return block.textEn ?? ''
+}
+
+function displayTextFor(block: AboutPageBlock, language: AboutPageLanguage): string {
+  if (block.type === 'BUTTON') return block.textEn ?? ''
+  return pickTranslation(block.textEn ?? '', block.textRu, block.textSrb, language)
+}
+
 const DEFAULT_TEXT_LAYOUT = { x: 30, y: 5, width: 40, height: 15 }
 const DEFAULT_PHOTO_LAYOUT = { x: 35, y: 25, width: 30, height: 30 }
 const DEFAULT_BUTTON_LAYOUT = { x: 35, y: 42, width: 30, height: 10 }
@@ -45,6 +57,7 @@ interface AboutCanvasProps {
   backgroundImageId: string | null
   blocks: AboutPageBlock[]
   editable: boolean
+  language: AboutPageLanguage
   onAddText: (text: string, x: number, y: number, width: number, height: number) => Promise<void>
   onAddPhoto: (
     mimeType: string,
@@ -64,7 +77,7 @@ interface AboutCanvasProps {
   ) => Promise<void>
   onUpdateLayout: (id: string, x: number, y: number, width: number, height: number) => Promise<void>
   onUpdateAlign: (id: string, align: AboutPageBlockAlign) => Promise<void>
-  onUpdateText: (id: string, text: string) => Promise<void>
+  onUpdateText: (id: string, text: string, language: AboutPageLanguage) => Promise<void>
   onUpdateLink: (id: string, linkUrl: string) => Promise<void>
   onRemove: (id: string) => Promise<void>
   onUpdateHeight: (height: number) => Promise<void>
@@ -78,6 +91,7 @@ function AboutCanvas({
   backgroundImageId,
   blocks,
   editable,
+  language,
   onAddText,
   onAddPhoto,
   onAddButton,
@@ -211,16 +225,17 @@ function AboutCanvas({
   const startEditingText = (block: AboutPageBlock) => {
     setSelectedId(block.id)
     setEditingId(block.id)
-    setDraftText(block.text ?? '')
+    setDraftText(block.type === 'BUTTON' ? block.textEn ?? '' : rawTextFor(block, language))
     editFormatting.cancelLink()
   }
 
   const saveEditingText = async (block: AboutPageBlock) => {
     const text = draftText.trim()
+    const previous = block.type === 'BUTTON' ? block.textEn ?? '' : rawTextFor(block, language)
     setEditingId(null)
-    if (!text || text === block.text) return
+    if (!text || text === previous) return
     try {
-      await onUpdateText(block.id, text)
+      await onUpdateText(block.id, text, block.type === 'BUTTON' ? 'EN' : language)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save this text.')
     }
@@ -481,7 +496,7 @@ function AboutCanvas({
                     }}
                     onDoubleClick={() => editable && startEditingText(block)}
                   >
-                    {block.text}
+                    {displayTextFor(block, language)}
                   </a>
                 ) : (
                   <div
@@ -489,7 +504,7 @@ function AboutCanvas({
                     style={{ textAlign: textAlignFor(block.align) }}
                     onDoubleClick={() => editable && startEditingText(block)}
                   >
-                    {renderRichText(block.text ?? '')}
+                    {renderRichText(displayTextFor(block, language))}
                   </div>
                 )}
               </div>

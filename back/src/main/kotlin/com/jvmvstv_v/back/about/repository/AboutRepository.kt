@@ -2,11 +2,12 @@ package com.jvmvstv_v.back.about.repository
 
 import com.jvmvstv_v.back.about.model.AboutPage
 import com.jvmvstv_v.back.about.model.AboutPageBlockAlign
+import com.jvmvstv_v.back.about.model.AboutPageLanguage
 import java.util.UUID
 
 interface AboutRepository {
     fun find(): AboutPage
-    fun updateBody(body: String, updatedBy: UUID): AboutPage
+    fun updateBody(body: String, language: AboutPageLanguage, updatedBy: UUID): AboutPage
     fun addCanvas(id: UUID): AboutPage
     fun updateCanvasHeight(id: UUID, height: Double): AboutPage
 
@@ -30,7 +31,7 @@ interface AboutRepository {
     ): AboutPage
     fun updateBlockLayout(id: UUID, x: Double, y: Double, width: Double, height: Double): AboutPage
     fun updateBlockAlign(id: UUID, align: AboutPageBlockAlign): AboutPage
-    fun updateBlockText(id: UUID, text: String): AboutPage
+    fun updateBlockText(id: UUID, text: String, language: AboutPageLanguage): AboutPage
     fun updateBlockLink(id: UUID, linkUrl: String): AboutPage
 
     /** Removes the block. Returns its image id, if any, so the caller can delete its blob. */

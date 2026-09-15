@@ -1,9 +1,11 @@
 import type { GraphqlClient } from '../graphqlClient.ts'
-import type { AboutPage, AboutPageBlockAlign } from './types.ts'
+import type { AboutPage, AboutPageBlockAlign, AboutPageLanguage } from './types.ts'
 import type { AboutService } from './AboutService.ts'
 
 const ABOUT_PAGE_FIELDS = `
-  body
+  bodyEn
+  bodyRu
+  bodySrb
   updatedAt
   canvases {
     id
@@ -12,7 +14,9 @@ const ABOUT_PAGE_FIELDS = `
     blocks {
       id
       type
-      text
+      textEn
+      textRu
+      textSrb
       imageId
       linkUrl
       x
@@ -33,8 +37,8 @@ const ABOUT_PAGE_QUERY = `
 `
 
 const UPDATE_ABOUT_PAGE_BODY_MUTATION = `
-  mutation UpdateAboutPageBody($body: String!) {
-    updateAboutPageBody(body: $body) {
+  mutation UpdateAboutPageBody($body: String!, $language: AboutPageLanguage!) {
+    updateAboutPageBody(body: $body, language: $language) {
       ${ABOUT_PAGE_FIELDS}
     }
   }
@@ -160,8 +164,8 @@ const UPDATE_ABOUT_PAGE_BLOCK_ALIGN_MUTATION = `
 `
 
 const UPDATE_ABOUT_PAGE_BLOCK_TEXT_MUTATION = `
-  mutation UpdateAboutPageBlockText($id: ID!, $text: String!) {
-    updateAboutPageBlockText(id: $id, text: $text) {
+  mutation UpdateAboutPageBlockText($id: ID!, $text: String!, $language: AboutPageLanguage!) {
+    updateAboutPageBlockText(id: $id, text: $text, language: $language) {
       ${ABOUT_PAGE_FIELDS}
     }
   }
@@ -195,11 +199,11 @@ export class GraphqlAboutService implements AboutService {
     return data.aboutPage
   }
 
-  async updateBody(body: string): Promise<AboutPage> {
-    const data = await this.client.request<{ updateAboutPageBody: AboutPage }, { body: string }>(
-      UPDATE_ABOUT_PAGE_BODY_MUTATION,
-      { body },
-    )
+  async updateBody(body: string, language: AboutPageLanguage): Promise<AboutPage> {
+    const data = await this.client.request<
+      { updateAboutPageBody: AboutPage },
+      { body: string; language: AboutPageLanguage }
+    >(UPDATE_ABOUT_PAGE_BODY_MUTATION, { body, language })
     return data.updateAboutPageBody
   }
 
@@ -319,11 +323,11 @@ export class GraphqlAboutService implements AboutService {
     return data.updateAboutPageBlockAlign
   }
 
-  async updateBlockText(id: string, text: string): Promise<AboutPage> {
+  async updateBlockText(id: string, text: string, language: AboutPageLanguage): Promise<AboutPage> {
     const data = await this.client.request<
       { updateAboutPageBlockText: AboutPage },
-      { id: string; text: string }
-    >(UPDATE_ABOUT_PAGE_BLOCK_TEXT_MUTATION, { id, text })
+      { id: string; text: string; language: AboutPageLanguage }
+    >(UPDATE_ABOUT_PAGE_BLOCK_TEXT_MUTATION, { id, text, language })
     return data.updateAboutPageBlockText
   }
 

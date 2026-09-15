@@ -4,11 +4,14 @@ import java.util.UUID
 
 enum class AboutPageBlockType { TEXT, PHOTO, BUTTON }
 enum class AboutPageBlockAlign { LEFT, CENTER, RIGHT }
+enum class AboutPageLanguage { EN, RU, SRB }
 
 data class AboutPageBlock(
     val id: UUID,
     val type: AboutPageBlockType,
-    val text: String?,
+    val textEn: String?,
+    val textRu: String?,
+    val textSrb: String?,
     val imageId: UUID?,
     val linkUrl: String?,
     val x: Double,
@@ -26,7 +29,9 @@ data class AboutPageCanvas(
 )
 
 data class AboutPage(
-    val body: String,
+    val bodyEn: String,
+    val bodyRu: String?,
+    val bodySrb: String?,
     val canvases: List<AboutPageCanvas>,
     val updatedAt: String,
 )

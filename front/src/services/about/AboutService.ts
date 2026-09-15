@@ -1,8 +1,8 @@
-import type { AboutPage, AboutPageBlockAlign } from './types.ts'
+import type { AboutPage, AboutPageBlockAlign, AboutPageLanguage } from './types.ts'
 
 export interface AboutService {
   aboutPage(): Promise<AboutPage>
-  updateBody(body: string): Promise<AboutPage>
+  updateBody(body: string, language: AboutPageLanguage): Promise<AboutPage>
   addCanvas(): Promise<AboutPage>
   updateCanvasHeight(id: string, height: number): Promise<AboutPage>
   updateCanvasBackground(id: string, mimeType: string, imageBase64: string): Promise<AboutPage>
@@ -36,7 +36,7 @@ export interface AboutService {
   ): Promise<AboutPage>
   updateBlockLayout(id: string, x: number, y: number, width: number, height: number): Promise<AboutPage>
   updateBlockAlign(id: string, align: AboutPageBlockAlign): Promise<AboutPage>
-  updateBlockText(id: string, text: string): Promise<AboutPage>
+  updateBlockText(id: string, text: string, language: AboutPageLanguage): Promise<AboutPage>
   updateBlockLink(id: string, linkUrl: string): Promise<AboutPage>
   removeBlock(id: string): Promise<AboutPage>
 }

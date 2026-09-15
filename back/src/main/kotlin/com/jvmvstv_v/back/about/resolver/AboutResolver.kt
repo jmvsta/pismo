@@ -2,6 +2,7 @@ package com.jvmvstv_v.back.about.resolver
 
 import com.jvmvstv_v.back.about.model.AboutPage
 import com.jvmvstv_v.back.about.model.AboutPageBlockAlign
+import com.jvmvstv_v.back.about.model.AboutPageLanguage
 import com.jvmvstv_v.back.about.service.AboutService
 import org.springframework.graphql.data.method.annotation.Argument
 import org.springframework.graphql.data.method.annotation.MutationMapping
@@ -15,7 +16,8 @@ class AboutResolver(private val aboutService: AboutService) {
     fun aboutPage(): AboutPage = aboutService.aboutPage()
 
     @MutationMapping
-    fun updateAboutPageBody(@Argument body: String): AboutPage = aboutService.updateBody(body)
+    fun updateAboutPageBody(@Argument body: String, @Argument language: AboutPageLanguage): AboutPage =
+        aboutService.updateBody(body, language)
 
     @MutationMapping
     fun addAboutPageCanvas(): AboutPage = aboutService.addCanvas()
@@ -83,8 +85,8 @@ class AboutResolver(private val aboutService: AboutService) {
         aboutService.updateBlockAlign(id, align)
 
     @MutationMapping
-    fun updateAboutPageBlockText(@Argument id: UUID, @Argument text: String): AboutPage =
-        aboutService.updateBlockText(id, text)
+    fun updateAboutPageBlockText(@Argument id: UUID, @Argument text: String, @Argument language: AboutPageLanguage): AboutPage =
+        aboutService.updateBlockText(id, text, language)
 
     @MutationMapping
     fun updateAboutPageBlockLink(@Argument id: UUID, @Argument linkUrl: String): AboutPage =

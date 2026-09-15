@@ -5,7 +5,9 @@ import com.jvmvstv_v.back.about.model.AboutPageBlock
 import com.jvmvstv_v.back.about.model.AboutPageBlockAlign
 import com.jvmvstv_v.back.about.model.AboutPageBlockType
 import com.jvmvstv_v.back.about.model.AboutPageCanvas
+import com.jvmvstv_v.back.about.model.AboutPageLanguage
 import org.jooq.DSLContext
+import org.jooq.Field
 import org.jooq.impl.DSL
 import org.jooq.impl.SQLDataType
 import org.springframework.stereotype.Repository
@@ -18,7 +20,9 @@ private const val SINGLETON_ID: Short = 1
 class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
     private val PAGE = DSL.table("about_page")
     private val P_ID = DSL.field("id", SQLDataType.SMALLINT)
-    private val P_BODY = DSL.field("body", SQLDataType.VARCHAR)
+    private val P_BODY_EN = DSL.field("body_en", SQLDataType.VARCHAR)
+    private val P_BODY_RU = DSL.field("body_ru", SQLDataType.VARCHAR)
+    private val P_BODY_SRB = DSL.field("body_srb", SQLDataType.VARCHAR)
     private val P_UPDATED_BY = DSL.field("updated_by", SQLDataType.UUID)
     private val P_UPDATED_AT = DSL.field("updated_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
 
@@ -33,7 +37,9 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
     private val B_ID = DSL.field("id", SQLDataType.UUID)
     private val B_CANVAS_ID = DSL.field("canvas_id", SQLDataType.UUID)
     private val B_TYPE = DSL.field("block_type", SQLDataType.VARCHAR)
-    private val B_TEXT = DSL.field("text", SQLDataType.VARCHAR)
+    private val B_TEXT_EN = DSL.field("text_en", SQLDataType.VARCHAR)
+    private val B_TEXT_RU = DSL.field("text_ru", SQLDataType.VARCHAR)
+    private val B_TEXT_SRB = DSL.field("text_srb", SQLDataType.VARCHAR)
     private val B_IMAGE_ID = DSL.field("image_id", SQLDataType.UUID)
     private val B_LINK_URL = DSL.field("link_url", SQLDataType.VARCHAR)
     private val B_X = DSL.field("x", SQLDataType.DOUBLE)
@@ -44,19 +50,33 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
     private val B_Z_INDEX = DSL.field("z_index", SQLDataType.INTEGER)
     private val B_UPDATED_AT = DSL.field("updated_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
 
+    private fun bodyColumnFor(language: AboutPageLanguage): Field<String> = when (language) {
+        AboutPageLanguage.EN -> P_BODY_EN
+        AboutPageLanguage.RU -> P_BODY_RU
+        AboutPageLanguage.SRB -> P_BODY_SRB
+    }
+
+    private fun textColumnFor(language: AboutPageLanguage): Field<String> = when (language) {
+        AboutPageLanguage.EN -> B_TEXT_EN
+        AboutPageLanguage.RU -> B_TEXT_RU
+        AboutPageLanguage.SRB -> B_TEXT_SRB
+    }
+
     override fun find(): AboutPage {
-        val record = dsl.select(P_BODY, P_UPDATED_AT).from(PAGE).where(P_ID.eq(SINGLETON_ID))
+        val record = dsl.select(P_BODY_EN, P_BODY_RU, P_BODY_SRB, P_UPDATED_AT).from(PAGE).where(P_ID.eq(SINGLETON_ID))
             .fetchOne() ?: error("about_page singleton row missing")
         return AboutPage(
-            body = record[P_BODY]!!,
+            bodyEn = record[P_BODY_EN]!!,
+            bodyRu = record[P_BODY_RU],
+            bodySrb = record[P_BODY_SRB],
             canvases = findCanvases(),
             updatedAt = record[P_UPDATED_AT]!!.toString(),
         )
     }
 
-    override fun updateBody(body: String, updatedBy: UUID): AboutPage {
+    override fun updateBody(body: String, language: AboutPageLanguage, updatedBy: UUID): AboutPage {
         dsl.update(PAGE)
-            .set(P_BODY, body)
+            .set(bodyColumnFor(language), body)
             .set(P_UPDATED_BY, updatedBy)
             .set(P_UPDATED_AT, OffsetDateTime.now())
             .where(P_ID.eq(SINGLETON_ID))
@@ -163,9 +183,9 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
         return find()
     }
 
-    override fun updateBlockText(id: UUID, text: String): AboutPage {
+    override fun updateBlockText(id: UUID, text: String, language: AboutPageLanguage): AboutPage {
         dsl.update(BLOCKS)
-            .set(B_TEXT, text)
+            .set(textColumnFor(language), text)
             .set(B_UPDATED_AT, OffsetDateTime.now())
             .where(B_ID.eq(id))
             .execute()
@@ -191,7 +211,7 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
         id: UUID,
         canvasId: UUID,
         type: AboutPageBlockType,
-        text: String?,
+        textEn: String?,
         imageId: UUID?,
         linkUrl: String?,
         x: Double,
@@ -202,21 +222,23 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
         val nextZIndex = (dsl.select(DSL.max(B_Z_INDEX)).from(BLOCKS).where(B_CANVAS_ID.eq(canvasId))
             .fetchOne(0, Int::class.java) ?: -1) + 1
         dsl.insertInto(BLOCKS)
-            .columns(B_ID, B_CANVAS_ID, B_TYPE, B_TEXT, B_IMAGE_ID, B_LINK_URL, B_X, B_Y, B_WIDTH, B_HEIGHT, B_ALIGN, B_Z_INDEX)
-            .values(id, canvasId, type.name, text, imageId, linkUrl, x, y, width, height, AboutPageBlockAlign.LEFT.name, nextZIndex)
+            .columns(B_ID, B_CANVAS_ID, B_TYPE, B_TEXT_EN, B_IMAGE_ID, B_LINK_URL, B_X, B_Y, B_WIDTH, B_HEIGHT, B_ALIGN, B_Z_INDEX)
+            .values(id, canvasId, type.name, textEn, imageId, linkUrl, x, y, width, height, AboutPageBlockAlign.LEFT.name, nextZIndex)
             .execute()
     }
 
     private fun findCanvases(): List<AboutPageCanvas> {
         val blocksByCanvas = dsl
-            .select(B_ID, B_CANVAS_ID, B_TYPE, B_TEXT, B_IMAGE_ID, B_LINK_URL, B_X, B_Y, B_WIDTH, B_HEIGHT, B_ALIGN, B_Z_INDEX)
+            .select(B_ID, B_CANVAS_ID, B_TYPE, B_TEXT_EN, B_TEXT_RU, B_TEXT_SRB, B_IMAGE_ID, B_LINK_URL, B_X, B_Y, B_WIDTH, B_HEIGHT, B_ALIGN, B_Z_INDEX)
             .from(BLOCKS)
             .orderBy(B_Z_INDEX)
             .fetch {
                 AboutPageBlock(
                     id = it[B_ID]!!,
                     type = AboutPageBlockType.valueOf(it[B_TYPE]!!),
-                    text = it[B_TEXT],
+                    textEn = it[B_TEXT_EN],
+                    textRu = it[B_TEXT_RU],
+                    textSrb = it[B_TEXT_SRB],
                     imageId = it[B_IMAGE_ID],
                     linkUrl = it[B_LINK_URL],
                     x = it[B_X]!!,

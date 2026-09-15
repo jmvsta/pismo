@@ -1,12 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { aboutService } from '../../services/about/index.ts'
-import type { AboutPage, AboutPageBlockAlign } from '../../services/about/index.ts'
+import { pickTranslation } from '../../services/about/index.ts'
+import type { AboutPage, AboutPageBlockAlign, AboutPageLanguage } from '../../services/about/index.ts'
 import { useUserStore } from '../../store/userStore.ts'
 import { renderRichText } from '../../lib/richText.tsx'
 import { useRichTextFormatting } from '../../hooks/useRichTextFormatting.ts'
 import RichTextLinkPrompt from '../../components/RichTextLinkPrompt/RichTextLinkPrompt.tsx'
 import AboutCanvas from './AboutCanvas.tsx'
+
+const LANGUAGES: AboutPageLanguage[] = ['EN', 'RU', 'SRB']
+
+function rawBodyFor(page: AboutPage, language: AboutPageLanguage): string {
+  if (language === 'RU') return page.bodyRu ?? ''
+  if (language === 'SRB') return page.bodySrb ?? ''
+  return page.bodyEn
+}
 
 function About() {
   const currentUser = useUserStore((state) => state.currentUser)
@@ -15,6 +24,7 @@ function About() {
   const [page, setPage] = useState<AboutPage | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editMode, setEditMode] = useState(false)
+  const [language, setLanguage] = useState<AboutPageLanguage>('EN')
 
   const [body, setBody] = useState('')
   const [savingBody, setSavingBody] = useState(false)
@@ -28,7 +38,7 @@ function About() {
       .then((result) => {
         if (cancelled) return
         setPage(result)
-        setBody(result.body)
+        setBody(rawBodyFor(result, 'EN'))
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load this page.')
@@ -38,11 +48,16 @@ function About() {
     }
   }, [])
 
+  const handleLanguageChange = (next: AboutPageLanguage) => {
+    setLanguage(next)
+    if (page) setBody(rawBodyFor(page, next))
+  }
+
   const handleSaveBody = async () => {
     setSavingBody(true)
     setError(null)
     try {
-      setPage(await aboutService.updateBody(body))
+      setPage(await aboutService.updateBody(body, language))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save the text.')
     } finally {
@@ -59,11 +74,25 @@ function About() {
         >
           ← Back to feed
         </Link>
-        {isAdmin && (
-          <button type="button" className="btn btn-secondary" onClick={() => setEditMode((v) => !v)}>
-            {editMode ? 'Done editing' : 'Edit page'}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            {LANGUAGES.map((lang) => (
+              <button
+                key={lang}
+                type="button"
+                className={`btn btn-ghost${language === lang ? ' text-[var(--color-accent)] font-bold' : ''}`}
+                onClick={() => handleLanguageChange(lang)}
+              >
+                {lang}
+              </button>
+            ))}
+          </div>
+          {isAdmin && (
+            <button type="button" className="btn btn-secondary" onClick={() => setEditMode((v) => !v)}>
+              {editMode ? 'Done editing' : 'Edit page'}
+            </button>
+          )}
+        </div>
       </div>
 
       {error && <p className="text-muted">{error}</p>}
@@ -111,7 +140,9 @@ function About() {
               </button>
             </div>
           ) : (
-            <div className="flex flex-col gap-4 leading-relaxed">{renderRichText(page.body)}</div>
+            <div className="flex flex-col gap-4 leading-relaxed">
+              {renderRichText(pickTranslation(page.bodyEn, page.bodyRu, page.bodySrb, language))}
+            </div>
           )}
 
           {page.canvases.map((canvas) => (
@@ -121,6 +152,7 @@ function About() {
               backgroundImageId={canvas.backgroundImageId}
               blocks={canvas.blocks}
               editable={editMode}
+              language={language}
               onAddText={async (text, x, y, width, height) =>
                 setPage(await aboutService.addTextBlock(canvas.id, text, x, y, width, height))
               }
@@ -136,7 +168,9 @@ function About() {
               onUpdateAlign={async (id: string, align: AboutPageBlockAlign) =>
                 setPage(await aboutService.updateBlockAlign(id, align))
               }
-              onUpdateText={async (id, text) => setPage(await aboutService.updateBlockText(id, text))}
+              onUpdateText={async (id, text, textLanguage) =>
+                setPage(await aboutService.updateBlockText(id, text, textLanguage))
+              }
               onUpdateLink={async (id, linkUrl) => setPage(await aboutService.updateBlockLink(id, linkUrl))}
               onRemove={async (id) => setPage(await aboutService.removeBlock(id))}
               onUpdateHeight={async (height) => setPage(await aboutService.updateCanvasHeight(canvas.id, height))}
