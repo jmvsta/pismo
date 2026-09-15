@@ -129,19 +129,20 @@ function ProfilePenPals({ onGoToAddressTab }: ProfilePenPalsProps) {
       {rows.map((row) => {
         const other = row.connection.userA.id === currentUserId ? row.connection.userB : row.connection.userA
         const avatarUrl = imageUrl(other.avatarImageId)
-        const requesterId = row.connection.request?.requester.id
-        const hasEverSentFirstLetter = row.letters.some(
-          (letter) => letter.sender.id === requesterId && letter.status !== 'DRAFT',
-        )
+        const hasEverSentFirstLetter = row.letters.some((letter) => letter.status !== 'DRAFT')
         const otherAddressVisible =
           hasEverSentFirstLetter && row.otherConsent?.status === 'GRANTED' && Boolean(row.otherConsent.address)
 
         const openLetter = row.letters.find((letter) => OPEN_STATUSES.has(letter.status)) ?? null
         const deliveredLetters = row.letters.filter((letter) => letter.status === 'DELIVERED')
         const lastDelivered = deliveredLetters[0] ?? null
+        const isModeratorLetterRequest = row.connection.request?.source === 'MODERATOR_LETTER_REQUEST'
+        const moderatorId = row.connection.request?.addressee.id
         const eligibleSenderId = lastDelivered
           ? otherUserId(row.connection, lastDelivered.sender.id)
-          : (requesterId ?? currentUserId)
+          : isModeratorLetterRequest && moderatorId
+            ? moderatorId
+            : currentUserId
         const isMyTurnToSend = !openLetter && eligibleSenderId === currentUserId
 
         return (

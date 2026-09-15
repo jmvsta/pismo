@@ -71,11 +71,11 @@ class UserServiceImpl(
     }
 
     override fun login(input: LoginInput): User {
-        val credentials = userRepository.findCredentialsByEmail(input.email)
-            ?: throw AuthException("Invalid email or password")
+        val credentials = userRepository.findCredentialsByEmailOrNickname(input.email)
+            ?: throw AuthException("Invalid email/username or password")
         val passwordHash = credentials.passwordHash
         if (passwordHash == null || !passwordEncoder.matches(input.password, passwordHash)) {
-            throw AuthException("Invalid email or password")
+            throw AuthException("Invalid email/username or password")
         }
         val user = userRepository.findById(credentials.id) ?: error("User ${credentials.id} not found")
         requireActiveStatus(user)

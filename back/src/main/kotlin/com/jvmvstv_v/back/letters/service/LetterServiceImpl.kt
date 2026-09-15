@@ -10,6 +10,7 @@ import com.jvmvstv_v.back.letters.model.LetterStatus
 import com.jvmvstv_v.back.letters.model.SubmitLetterFeedbackInput
 import com.jvmvstv_v.back.letters.repository.LetterRepository
 import com.jvmvstv_v.back.matching.model.PenPalConnection
+import com.jvmvstv_v.back.matching.model.PenPalRequestSource
 import com.jvmvstv_v.back.matching.repository.MatchingRepository
 import com.jvmvstv_v.back.notification.model.NotificationType
 import com.jvmvstv_v.back.notification.service.NotificationService
@@ -53,9 +54,12 @@ class LetterServiceImpl(
         }
         val lastDelivered = letters.firstOrNull { it.status == LetterStatus.DELIVERED }
         if (lastDelivered == null) {
-            val requesterId = connection.request?.requester?.id
-            if (requesterId != null && senderId != requesterId) {
-                throw AuthException("Only the person who reached out can send the first letter")
+            val request = connection.request
+            if (request != null && request.source == PenPalRequestSource.MODERATOR_LETTER_REQUEST) {
+                val moderatorId = request.addressee.id
+                if (senderId != moderatorId) {
+                    throw AuthException("Wait for the moderator to send the first letter")
+                }
             }
         } else if (lastDelivered.sender.id == senderId) {
             throw AuthException("Wait for your pen pal to reply first")

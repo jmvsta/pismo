@@ -4,6 +4,7 @@ import com.jvmvstv_v.back.common.AuthException
 import com.jvmvstv_v.back.common.CurrentUser
 import com.jvmvstv_v.back.matching.model.PenPalConnection
 import com.jvmvstv_v.back.matching.model.PenPalRequest
+import com.jvmvstv_v.back.matching.model.PenPalRequestSource
 import com.jvmvstv_v.back.matching.model.PenPalRequestStatus
 import com.jvmvstv_v.back.matching.model.SuggestedProfile
 import com.jvmvstv_v.back.matching.model.UserMatch
@@ -131,6 +132,7 @@ class MatchingServiceImpl(
                     requesterId,
                     moderator.id,
                     "Send me a letter — I'd love a handwritten letter from a moderator.",
+                    PenPalRequestSource.MODERATOR_LETTER_REQUEST,
                 )
             matchingRepository.respondToRequest(request.id, true)
             notificationService.notify(

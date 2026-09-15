@@ -5,6 +5,8 @@ import java.util.UUID
 
 enum class PenPalRequestStatus { PENDING, ACCEPTED, DECLINED, CANCELLED }
 
+enum class PenPalRequestSource { STANDARD, MODERATOR_LETTER_REQUEST }
+
 data class UserMatch(
     val userA: User,
     val userB: User,
@@ -26,6 +28,7 @@ data class PenPalRequest(
     val addressee: User,
     val status: PenPalRequestStatus,
     val message: String?,
+    val source: PenPalRequestSource,
     val createdAt: String,
     val respondedAt: String?,
 )

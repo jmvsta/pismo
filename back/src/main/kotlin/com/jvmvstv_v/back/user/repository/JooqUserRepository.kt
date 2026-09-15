@@ -99,6 +99,13 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
             .where(DSL.lower(EMAIL).eq(email.lowercase())).and(DELETED_AT.isNull)
             .fetchOne { UserCredentials(id = it[ID]!!, passwordHash = it[PASSWORD_HASH]) }
 
+    override fun findCredentialsByEmailOrNickname(identifier: String): UserCredentials? =
+        dsl.select(ID, PASSWORD_HASH)
+            .from(USERS)
+            .where(DSL.lower(EMAIL).eq(identifier.lowercase()).or(DSL.lower(NICKNAME).eq(identifier.lowercase())))
+            .and(DELETED_AT.isNull)
+            .fetchOne { UserCredentials(id = it[ID]!!, passwordHash = it[PASSWORD_HASH]) }
+
     override fun setAuthToken(userId: UUID, token: String, expiresAt: OffsetDateTime) {
         dsl.update(USERS)
             .set(AUTH_TOKEN, token)
