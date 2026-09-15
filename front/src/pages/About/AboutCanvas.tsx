@@ -494,13 +494,13 @@ function AboutCanvas({
                     href={block.linkUrl ?? undefined}
                     target="_blank"
                     rel="noreferrer"
-                    className="about-canvas-button-block flex h-full w-full items-center justify-center overflow-hidden text-center no-underline"
+                    className="about-canvas-button-block flex h-full w-full items-center justify-center overflow-hidden text-center no-underline [&_*]:m-0"
                     onClick={(e) => {
                       if (editable) e.preventDefault()
                     }}
                     onDoubleClick={() => editable && startEditingText(block)}
                   >
-                    {displayTextFor(block, language)}
+                    {renderRichText(displayTextFor(block, language))}
                   </a>
                 ) : (
                   <div
