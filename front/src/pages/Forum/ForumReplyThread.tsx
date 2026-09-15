@@ -7,6 +7,8 @@ import { renderRichText } from '../../lib/richText.tsx'
 import ThanksButton from './ThanksButton.tsx'
 import ForumReplyComposer from './ForumReplyComposer.tsx'
 import ForumEditForm from './ForumEditForm.tsx'
+import ForumItemActions from './ForumItemActions.tsx'
+import ReplyIcon from './ReplyIcon.tsx'
 import PhotoLightbox from '../../components/PhotoLightbox/PhotoLightbox.tsx'
 
 interface ForumReplyThreadProps {
@@ -101,18 +103,16 @@ function ForumReplyThread({
       )}
       <div className="forum-reply-actions text-muted">
         <ThanksButton count={reply.thanksCount} pressed={reply.thankedByMe} onThank={handleThank} />
-        <button type="button" className="forum-reply-link" onClick={() => setIsReplying((prev) => !prev)}>
-          Reply
+        <button
+          type="button"
+          className="forum-reply-link"
+          onClick={() => setIsReplying((prev) => !prev)}
+          aria-label="Reply"
+        >
+          <ReplyIcon />
         </button>
         {canEdit && !isEditing && (
-          <span className="forum-item-actions">
-            <button type="button" className="forum-reply-link" onClick={() => setIsEditing(true)}>
-              Edit
-            </button>
-            <button type="button" className="forum-reply-link" onClick={handleReplyDelete}>
-              Delete
-            </button>
-          </span>
+          <ForumItemActions onEdit={() => setIsEditing(true)} onDelete={handleReplyDelete} />
         )}
       </div>
       {isReplying && <ForumReplyComposer onSubmit={handleSubmitReply} onCancel={() => setIsReplying(false)} />}

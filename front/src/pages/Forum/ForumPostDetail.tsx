@@ -8,6 +8,8 @@ import ThanksButton from './ThanksButton.tsx'
 import ForumReplyComposer from './ForumReplyComposer.tsx'
 import ForumReplyThread from './ForumReplyThread.tsx'
 import ForumEditForm from './ForumEditForm.tsx'
+import ForumItemActions from './ForumItemActions.tsx'
+import ReplyIcon from './ReplyIcon.tsx'
 import PhotoLightbox from '../../components/PhotoLightbox/PhotoLightbox.tsx'
 
 interface ForumPostDetailProps {
@@ -106,14 +108,7 @@ function ForumPostDetail({
           <span className="tag tag-accent">{post.topic.title}</span>
           <span className="text-muted">{post.author.nickname}</span>
           {canEdit && !isEditing && (
-            <span className="forum-item-actions">
-              <button type="button" className="forum-reply-link" onClick={() => setIsEditing(true)}>
-                Edit
-              </button>
-              <button type="button" className="forum-reply-link" onClick={handlePostDelete}>
-                Delete
-              </button>
-            </span>
+            <ForumItemActions onEdit={() => setIsEditing(true)} onDelete={handlePostDelete} />
           )}
         </div>
 
@@ -147,21 +142,20 @@ function ForumPostDetail({
             )}
           </>
         )}
-        <ThanksButton count={post.thanksCount} pressed={post.thankedByMe} onThank={handlePostThank} />
+        <div className="forum-post-actions">
+          <ThanksButton count={post.thanksCount} pressed={post.thankedByMe} onThank={handlePostThank} />
+          <button
+            type="button"
+            className="forum-reply-link"
+            onClick={() => setIsComposingTopLevel((prev) => !prev)}
+            aria-label="New reply thread"
+          >
+            <ReplyIcon />
+            {post.replyCount}
+          </button>
+        </div>
 
         <div className="forum-reply-thread">
-          <div className="forum-reply-thread-header">
-            <h6>Replies</h6>
-            <button
-              type="button"
-              className="btn btn-icon"
-              onClick={() => setIsComposingTopLevel((prev) => !prev)}
-              aria-label="New reply thread"
-            >
-              +
-            </button>
-          </div>
-
           {isComposingTopLevel && (
             <ForumReplyComposer
               placeholder="Start a new reply thread…"

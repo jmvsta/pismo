@@ -2,6 +2,7 @@ import { forumService } from '../../services/forum/index.ts'
 import type { ForumPost } from '../../services/forum/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
 import ThanksButton from './ThanksButton.tsx'
+import ReplyIcon from './ReplyIcon.tsx'
 
 interface ForumPostCardProps {
   post: ForumPost
@@ -49,7 +50,10 @@ function ForumPostCard({ post, onOpen, onThanked }: ForumPostCardProps) {
         )}
       </div>
       <div className="forum-post-footer text-muted">
-        <span>{post.replyCount} replies</span>
+        <span className="forum-reply-count">
+          <ReplyIcon />
+          {post.replyCount}
+        </span>
         <ThanksButton count={post.thanksCount} pressed={post.thankedByMe} onThank={handleThank} />
       </div>
     </article>
