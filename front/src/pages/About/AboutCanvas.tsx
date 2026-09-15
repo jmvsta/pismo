@@ -4,7 +4,6 @@ import type { AboutPageBlock, AboutPageBlockAlign, AboutPageLanguage } from '../
 import { pickTranslation } from '../../services/about/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
 import { renderRichText } from '../../lib/richText.tsx'
-import { useRichTextFormatting } from '../../hooks/useRichTextFormatting.ts'
 import RichTextLinkPrompt from '../../components/RichTextLinkPrompt/RichTextLinkPrompt.tsx'
 import EmojiPicker from '../../components/EmojiPicker/EmojiPicker.tsx'
 import { aboutEditText } from './aboutEditText.ts'
@@ -120,7 +119,6 @@ function AboutCanvas({
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [uploadingBackground, setUploadingBackground] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const editFormatting = useRichTextFormatting(editTextareaRef, draftText, setDraftText)
 
   if (!editable && blocks.length === 0) return null
 
@@ -226,7 +224,6 @@ function AboutCanvas({
     setSelectedId(block.id)
     setEditingId(block.id)
     setDraftText(rawTextFor(block, language))
-    editFormatting.cancelLink()
   }
 
   const saveEditingText = async (block: AboutPageBlock) => {
@@ -468,7 +465,6 @@ function AboutCanvas({
                       autoFocus
                       value={draftText}
                       onChange={(e) => setDraftText(e.target.value)}
-                      onKeyDown={editFormatting.handleKeyDown}
                       onPointerDown={(e) => e.stopPropagation()}
                     />
                     <div
@@ -479,14 +475,6 @@ function AboutCanvas({
                       <div className="flex items-center gap-1 bg-[var(--color-bg)] p-1 shadow-sm">
                         <EmojiPicker onSelect={handleEmojiInsert} />
                       </div>
-                      {editFormatting.linkPromptOpen && (
-                        <RichTextLinkPrompt
-                          url={editFormatting.linkUrl}
-                          onUrlChange={editFormatting.setLinkUrl}
-                          onConfirm={editFormatting.confirmLink}
-                          onCancel={editFormatting.cancelLink}
-                        />
-                      )}
                     </div>
                   </div>
                 ) : block.type === 'BUTTON' ? (

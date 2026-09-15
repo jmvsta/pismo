@@ -5,7 +5,7 @@ interface RichTextLinkPromptProps {
   onCancel: () => void
 }
 
-/** The small URL input that ctrl/cmd+a opens (see useRichTextFormatting). */
+/** A small URL input, used to set a button block's link on the About page. */
 function RichTextLinkPrompt({ url, onUrlChange, onConfirm, onCancel }: RichTextLinkPromptProps) {
   return (
     <div className="flex flex-wrap items-center gap-2 border border-[var(--color-divider)] bg-[var(--color-surface)] p-2">

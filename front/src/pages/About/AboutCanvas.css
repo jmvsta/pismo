@@ -40,6 +40,9 @@
   overflow: hidden;
   transition: background-color 0.15s ease;
 }
+.about-canvas-button-block * {
+  color: inherit;
+}
 .about-canvas-button-block:hover {
   background: var(--color-accent-600);
 }
