@@ -93,6 +93,12 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
                 .where(DSL.lower(EMAIL).eq(email.lowercase())).or(DSL.lower(NICKNAME).eq(nickname.lowercase()))
         )
 
+    override fun existsByNickname(nickname: String, excludingUserId: UUID): Boolean =
+        dsl.fetchExists(
+            dsl.selectOne().from(USERS)
+                .where(DSL.lower(NICKNAME).eq(nickname.lowercase())).and(ID.ne(excludingUserId))
+        )
+
     override fun findCredentialsByEmail(email: String): UserCredentials? =
         dsl.select(ID, PASSWORD_HASH)
             .from(USERS)

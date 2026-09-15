@@ -46,9 +46,10 @@ async function loadRow(connection: PenPalConnection, currentUserId: string): Pro
 
 interface ProfilePenPalsProps {
   onGoToAddressTab: () => void
+  onLetterChanged?: () => void
 }
 
-function ProfilePenPals({ onGoToAddressTab }: ProfilePenPalsProps) {
+function ProfilePenPals({ onGoToAddressTab, onLetterChanged }: ProfilePenPalsProps) {
   const currentUserId = useUserStore((state) => state.currentUser?.id)
   const [rows, setRows] = useState<ConnectionRow[]>([])
   const [myAddress, setMyAddress] = useState<UserAddress | null>(null)
@@ -97,6 +98,7 @@ function ProfilePenPals({ onGoToAddressTab }: ProfilePenPalsProps) {
           : row,
       ),
     )
+    onLetterChanged?.()
   }
 
   const handleToggleShare = async (row: ConnectionRow) => {

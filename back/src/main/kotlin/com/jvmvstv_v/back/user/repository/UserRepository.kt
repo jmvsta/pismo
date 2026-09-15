@@ -18,6 +18,7 @@ interface UserRepository {
     fun setAvatarImage(userId: UUID, imageId: UUID): User
     fun create(input: RegisterInput, passwordHash: String): User
     fun existsByEmailOrNickname(email: String, nickname: String): Boolean
+    fun existsByNickname(nickname: String, excludingUserId: UUID): Boolean
     fun findCredentialsByEmail(email: String): UserCredentials?
     fun findCredentialsByEmailOrNickname(identifier: String): UserCredentials?
     fun setAuthToken(userId: UUID, token: String, expiresAt: OffsetDateTime)

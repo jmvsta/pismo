@@ -3,6 +3,7 @@ import { useUserStore } from '../../store/userStore.ts'
 import { matchingService } from '../../services/matching/index.ts'
 import type { PenPalConnection } from '../../services/matching/index.ts'
 import MatchCard from './MatchCard.tsx'
+import PenPalLetterAction from '../../components/PenPalLetterAction/PenPalLetterAction.tsx'
 
 function MatchedTab() {
   const currentUserId = useUserStore((state) => state.currentUser?.id)
@@ -57,6 +58,16 @@ function MatchedTab() {
             sharedInterests={[]}
             score={null}
             onEndConnection={() => handleEndConnection(connection.id)}
+            extraActions={
+              currentUserId && (
+                <PenPalLetterAction
+                  connection={connection}
+                  currentUserId={currentUserId}
+                  otherId={other.id}
+                  otherNickname={other.nickname}
+                />
+              )
+            }
           />
         )
       })}

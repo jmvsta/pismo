@@ -69,6 +69,12 @@ function MyProfile() {
     loadCurrentUser()
   }, [loadCurrentUser])
 
+  const refreshLetters = () => {
+    Promise.all([lettersService.sentLetters(), lettersService.receivedLetters()])
+      .then(([sent, received]) => setLetterRows(toLetterRows(sent, received)))
+      .catch(() => {})
+  }
+
   useEffect(() => {
     const latest = notifications[0]
     if (!latest) return
@@ -77,9 +83,7 @@ function MyProfile() {
     if (isFirstRun) return
     if (latest.type !== 'LETTER_SENT' && latest.type !== 'LETTER_DELIVERED') return
 
-    Promise.all([lettersService.sentLetters(), lettersService.receivedLetters()])
-      .then(([sent, received]) => setLetterRows(toLetterRows(sent, received)))
-      .catch(() => {})
+    refreshLetters()
   }, [notifications])
 
   useEffect(() => {
@@ -153,7 +157,9 @@ function MyProfile() {
   }
 
   const lettersSentCount = letterRows.filter((row) => row.direction === 'outgoing').length
-  const lettersReceivedCount = letterRows.filter((row) => row.direction === 'incoming').length
+  const lettersReceivedCount = letterRows.filter(
+    (row) => row.direction === 'incoming' && row.status === 'DELIVERED',
+  ).length
   const myForumPosts = allForumPosts.filter((post) => post.author.id === currentUser.id)
 
   return (
@@ -168,6 +174,7 @@ function MyProfile() {
           badges={badges}
           onAvatarChange={updateAvatar}
           onBioChange={(bio) => updateProfile({ bio })}
+          onNicknameChange={(nickname) => updateProfile({ nickname })}
         />
 
         {!currentUser.emailVerifiedAt && <ProfileVerifyEmailBanner />}
@@ -175,15 +182,15 @@ function MyProfile() {
         <div className="profile-stats">
           <div className="profile-stat">
             <div className="profile-stat-value">{lettersSentCount}</div>
-            <div className="text-muted">letters sent</div>
+            <div className="text-muted">sent</div>
           </div>
           <div className="profile-stat">
             <div className="profile-stat-value">{lettersReceivedCount}</div>
-            <div className="text-muted">letters received</div>
+            <div className="text-muted">received</div>
           </div>
           <div className="profile-stat">
             <div className="profile-stat-value">{activePenPalCount}</div>
-            <div className="text-muted">active pen pals</div>
+            <div className="text-muted">pen pals</div>
           </div>
         </div>
 
@@ -202,7 +209,9 @@ function MyProfile() {
 
           {activityError && activeTab !== 'penpals' && <p className="text-muted profile-empty">{activityError}</p>}
 
-          {activeTab === 'penpals' && <ProfilePenPals onGoToAddressTab={() => setActiveTab('address')} />}
+          {activeTab === 'penpals' && (
+            <ProfilePenPals onGoToAddressTab={() => setActiveTab('address')} onLetterChanged={refreshLetters} />
+          )}
           {activeTab === 'letters' && <ProfileLettersTable rows={letterRows} />}
           {activeTab === 'forum' && <ProfileForumActivity posts={myForumPosts} />}
           {activeTab === 'questionnaire' && (

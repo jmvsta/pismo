@@ -42,8 +42,22 @@ class UserServiceImpl(
     // itself applies, or that card would leak the photo/bio it just redacted.
     override fun findById(id: UUID): User? = userRepository.findById(id)?.let { matchingService.redactUnlessMatched(it) }
 
-    override fun updateProfile(input: UpdateProfileInput): User =
-        userRepository.update(CurrentUser.id, input)
+    override fun updateProfile(input: UpdateProfileInput): User {
+        input.nickname?.let { validateNickname(it, CurrentUser.id) }
+        return try {
+            userRepository.update(CurrentUser.id, input)
+        } catch (ex: DuplicateKeyException) {
+            throw AuthException("This nickname is already taken")
+        }
+    }
+
+    private fun validateNickname(nickname: String, userId: UUID) {
+        if (nickname.trim().length < 3) throw AuthException("Nickname must be at least 3 characters")
+        if (nickname.length > 50) throw AuthException("Nickname must be at most 50 characters")
+        if (userRepository.existsByNickname(nickname, userId)) {
+            throw AuthException("This nickname is already taken")
+        }
+    }
 
     override fun replaceAvatar(mimeType: String, imageBase64: String): User {
         val userId = CurrentUser.id
