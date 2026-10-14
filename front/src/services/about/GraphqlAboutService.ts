@@ -1,16 +1,14 @@
 import type { GraphqlClient } from '../graphqlClient.ts'
-import type { AboutPage, AboutPageBlockAlign, AboutPageLanguage } from './types.ts'
+import type { AboutPage, AboutPageBlockAlign, AboutPageLanguage, AboutPageMoveDirection } from './types.ts'
 import type { AboutService } from './AboutService.ts'
 
 const ABOUT_PAGE_FIELDS = `
-  bodyEn
-  bodyRu
-  bodySrb
   updatedAt
   canvases {
     id
     height
     backgroundImageId
+    rounded
     blocks {
       id
       type
@@ -19,11 +17,15 @@ const ABOUT_PAGE_FIELDS = `
       textSrb
       imageId
       linkUrl
+      galleryImageIds
+      slideIntervalSeconds
       x
       y
       width
       height
       align
+      layer
+      rounded
     }
   }
 `
@@ -31,14 +33,6 @@ const ABOUT_PAGE_FIELDS = `
 const ABOUT_PAGE_QUERY = `
   query AboutPage {
     aboutPage {
-      ${ABOUT_PAGE_FIELDS}
-    }
-  }
-`
-
-const UPDATE_ABOUT_PAGE_BODY_MUTATION = `
-  mutation UpdateAboutPageBody($body: String!, $language: AboutPageLanguage!) {
-    updateAboutPageBody(body: $body, language: $language) {
       ${ABOUT_PAGE_FIELDS}
     }
   }
@@ -52,9 +46,33 @@ const ADD_ABOUT_PAGE_CANVAS_MUTATION = `
   }
 `
 
+const MOVE_ABOUT_PAGE_CANVAS_MUTATION = `
+  mutation MoveAboutPageCanvas($id: ID!, $direction: AboutPageMoveDirection!) {
+    moveAboutPageCanvas(id: $id, direction: $direction) {
+      ${ABOUT_PAGE_FIELDS}
+    }
+  }
+`
+
 const UPDATE_ABOUT_PAGE_CANVAS_HEIGHT_MUTATION = `
   mutation UpdateAboutPageCanvasHeight($id: ID!, $height: Float!) {
     updateAboutPageCanvasHeight(id: $id, height: $height) {
+      ${ABOUT_PAGE_FIELDS}
+    }
+  }
+`
+
+const UPDATE_ABOUT_PAGE_CANVAS_ROUNDED_MUTATION = `
+  mutation UpdateAboutPageCanvasRounded($id: ID!, $rounded: Boolean!) {
+    updateAboutPageCanvasRounded(id: $id, rounded: $rounded) {
+      ${ABOUT_PAGE_FIELDS}
+    }
+  }
+`
+
+const UPDATE_ABOUT_PAGE_BLOCK_ROUNDED_MUTATION = `
+  mutation UpdateAboutPageBlockRounded($id: ID!, $rounded: Boolean!) {
+    updateAboutPageBlockRounded(id: $id, rounded: $rounded) {
       ${ABOUT_PAGE_FIELDS}
     }
   }
@@ -147,6 +165,52 @@ const ADD_ABOUT_PAGE_BUTTON_BLOCK_MUTATION = `
   }
 `
 
+const ADD_ABOUT_PAGE_GALLERY_BLOCK_MUTATION = `
+  mutation AddAboutPageGalleryBlock(
+    $canvasId: ID!
+    $x: Float!
+    $y: Float!
+    $width: Float!
+    $height: Float!
+    $slideIntervalSeconds: Float!
+  ) {
+    addAboutPageGalleryBlock(
+      canvasId: $canvasId
+      x: $x
+      y: $y
+      width: $width
+      height: $height
+      slideIntervalSeconds: $slideIntervalSeconds
+    ) {
+      ${ABOUT_PAGE_FIELDS}
+    }
+  }
+`
+
+const ADD_ABOUT_PAGE_GALLERY_PHOTO_MUTATION = `
+  mutation AddAboutPageGalleryPhoto($blockId: ID!, $mimeType: String!, $imageBase64: String!) {
+    addAboutPageGalleryPhoto(blockId: $blockId, mimeType: $mimeType, imageBase64: $imageBase64) {
+      ${ABOUT_PAGE_FIELDS}
+    }
+  }
+`
+
+const REMOVE_ABOUT_PAGE_GALLERY_PHOTO_MUTATION = `
+  mutation RemoveAboutPageGalleryPhoto($blockId: ID!, $imageId: ID!) {
+    removeAboutPageGalleryPhoto(blockId: $blockId, imageId: $imageId) {
+      ${ABOUT_PAGE_FIELDS}
+    }
+  }
+`
+
+const UPDATE_ABOUT_PAGE_GALLERY_INTERVAL_MUTATION = `
+  mutation UpdateAboutPageGalleryInterval($id: ID!, $slideIntervalSeconds: Float!) {
+    updateAboutPageGalleryInterval(id: $id, slideIntervalSeconds: $slideIntervalSeconds) {
+      ${ABOUT_PAGE_FIELDS}
+    }
+  }
+`
+
 const UPDATE_ABOUT_PAGE_BLOCK_LAYOUT_MUTATION = `
   mutation UpdateAboutPageBlockLayout($id: ID!, $x: Float!, $y: Float!, $width: Float!, $height: Float!) {
     updateAboutPageBlockLayout(id: $id, x: $x, y: $y, width: $width, height: $height) {
@@ -158,6 +222,14 @@ const UPDATE_ABOUT_PAGE_BLOCK_LAYOUT_MUTATION = `
 const UPDATE_ABOUT_PAGE_BLOCK_ALIGN_MUTATION = `
   mutation UpdateAboutPageBlockAlign($id: ID!, $align: AboutPageBlockAlign!) {
     updateAboutPageBlockAlign(id: $id, align: $align) {
+      ${ABOUT_PAGE_FIELDS}
+    }
+  }
+`
+
+const UPDATE_ABOUT_PAGE_BLOCK_LAYER_MUTATION = `
+  mutation UpdateAboutPageBlockLayer($id: ID!, $layer: Int!) {
+    updateAboutPageBlockLayer(id: $id, layer: $layer) {
       ${ABOUT_PAGE_FIELDS}
     }
   }
@@ -199,17 +271,17 @@ export class GraphqlAboutService implements AboutService {
     return data.aboutPage
   }
 
-  async updateBody(body: string, language: AboutPageLanguage): Promise<AboutPage> {
-    const data = await this.client.request<
-      { updateAboutPageBody: AboutPage },
-      { body: string; language: AboutPageLanguage }
-    >(UPDATE_ABOUT_PAGE_BODY_MUTATION, { body, language })
-    return data.updateAboutPageBody
-  }
-
   async addCanvas(): Promise<AboutPage> {
     const data = await this.client.request<{ addAboutPageCanvas: AboutPage }>(ADD_ABOUT_PAGE_CANVAS_MUTATION)
     return data.addAboutPageCanvas
+  }
+
+  async moveCanvas(id: string, direction: AboutPageMoveDirection): Promise<AboutPage> {
+    const data = await this.client.request<
+      { moveAboutPageCanvas: AboutPage },
+      { id: string; direction: AboutPageMoveDirection }
+    >(MOVE_ABOUT_PAGE_CANVAS_MUTATION, { id, direction })
+    return data.moveAboutPageCanvas
   }
 
   async updateCanvasHeight(id: string, height: number): Promise<AboutPage> {
@@ -218,6 +290,22 @@ export class GraphqlAboutService implements AboutService {
       { id: string; height: number }
     >(UPDATE_ABOUT_PAGE_CANVAS_HEIGHT_MUTATION, { id, height })
     return data.updateAboutPageCanvasHeight
+  }
+
+  async updateCanvasRounded(id: string, rounded: boolean): Promise<AboutPage> {
+    const data = await this.client.request<
+      { updateAboutPageCanvasRounded: AboutPage },
+      { id: string; rounded: boolean }
+    >(UPDATE_ABOUT_PAGE_CANVAS_ROUNDED_MUTATION, { id, rounded })
+    return data.updateAboutPageCanvasRounded
+  }
+
+  async updateBlockRounded(id: string, rounded: boolean): Promise<AboutPage> {
+    const data = await this.client.request<
+      { updateAboutPageBlockRounded: AboutPage },
+      { id: string; rounded: boolean }
+    >(UPDATE_ABOUT_PAGE_BLOCK_ROUNDED_MUTATION, { id, rounded })
+    return data.updateAboutPageBlockRounded
   }
 
   async updateCanvasBackground(id: string, mimeType: string, imageBase64: string): Promise<AboutPage> {
@@ -307,6 +395,45 @@ export class GraphqlAboutService implements AboutService {
     return data.addAboutPageButtonBlock
   }
 
+  async addGalleryBlock(
+    canvasId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    slideIntervalSeconds: number,
+  ): Promise<AboutPage> {
+    const data = await this.client.request<
+      { addAboutPageGalleryBlock: AboutPage },
+      { canvasId: string; x: number; y: number; width: number; height: number; slideIntervalSeconds: number }
+    >(ADD_ABOUT_PAGE_GALLERY_BLOCK_MUTATION, { canvasId, x, y, width, height, slideIntervalSeconds })
+    return data.addAboutPageGalleryBlock
+  }
+
+  async addGalleryPhoto(blockId: string, mimeType: string, imageBase64: string): Promise<AboutPage> {
+    const data = await this.client.request<
+      { addAboutPageGalleryPhoto: AboutPage },
+      { blockId: string; mimeType: string; imageBase64: string }
+    >(ADD_ABOUT_PAGE_GALLERY_PHOTO_MUTATION, { blockId, mimeType, imageBase64 })
+    return data.addAboutPageGalleryPhoto
+  }
+
+  async removeGalleryPhoto(blockId: string, imageId: string): Promise<AboutPage> {
+    const data = await this.client.request<
+      { removeAboutPageGalleryPhoto: AboutPage },
+      { blockId: string; imageId: string }
+    >(REMOVE_ABOUT_PAGE_GALLERY_PHOTO_MUTATION, { blockId, imageId })
+    return data.removeAboutPageGalleryPhoto
+  }
+
+  async updateGalleryInterval(id: string, slideIntervalSeconds: number): Promise<AboutPage> {
+    const data = await this.client.request<
+      { updateAboutPageGalleryInterval: AboutPage },
+      { id: string; slideIntervalSeconds: number }
+    >(UPDATE_ABOUT_PAGE_GALLERY_INTERVAL_MUTATION, { id, slideIntervalSeconds })
+    return data.updateAboutPageGalleryInterval
+  }
+
   async updateBlockLayout(id: string, x: number, y: number, width: number, height: number): Promise<AboutPage> {
     const data = await this.client.request<
       { updateAboutPageBlockLayout: AboutPage },
@@ -321,6 +448,14 @@ export class GraphqlAboutService implements AboutService {
       { id: string; align: AboutPageBlockAlign }
     >(UPDATE_ABOUT_PAGE_BLOCK_ALIGN_MUTATION, { id, align })
     return data.updateAboutPageBlockAlign
+  }
+
+  async updateBlockLayer(id: string, layer: number): Promise<AboutPage> {
+    const data = await this.client.request<
+      { updateAboutPageBlockLayer: AboutPage },
+      { id: string; layer: number }
+    >(UPDATE_ABOUT_PAGE_BLOCK_LAYER_MUTATION, { id, layer })
+    return data.updateAboutPageBlockLayer
   }
 
   async updateBlockText(id: string, text: string, language: AboutPageLanguage): Promise<AboutPage> {

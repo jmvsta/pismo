@@ -123,7 +123,7 @@ class MatchingServiceImpl(
     override fun requestLetterFromModerators(): Boolean {
         val requesterId = CurrentUser.id
         val moderators = userRepository.findAll()
-            .filter { (it.role == UserRole.MODERATOR || it.role == UserRole.ADMIN) && it.id != requesterId }
+            .filter { it.role == UserRole.MODERATOR && it.id != requesterId }
         val pendingWithRequester = matchingRepository.findRequestsForUser(requesterId, PenPalRequestStatus.PENDING)
         moderators.forEach { moderator ->
             if (matchingRepository.isConnected(requesterId, moderator.id)) return@forEach

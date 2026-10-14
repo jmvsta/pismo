@@ -1,11 +1,17 @@
 import { useRef, useState } from 'react'
 import './AboutCanvas.css'
-import type { AboutPageBlock, AboutPageBlockAlign, AboutPageLanguage } from '../../services/about/index.ts'
+import type {
+  AboutPageBlock,
+  AboutPageBlockAlign,
+  AboutPageLanguage,
+  AboutPageMoveDirection,
+} from '../../services/about/index.ts'
 import { pickTranslation } from '../../services/about/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
 import { renderRichText } from '../../lib/richText.tsx'
 import RichTextLinkPrompt from '../../components/RichTextLinkPrompt/RichTextLinkPrompt.tsx'
 import EmojiPicker from '../../components/EmojiPicker/EmojiPicker.tsx'
+import GallerySlideshow from './GallerySlideshow.tsx'
 import { aboutEditText } from './aboutEditText.ts'
 
 function readAsBase64(file: File): Promise<string> {
@@ -44,6 +50,18 @@ function displayTextFor(block: AboutPageBlock, language: AboutPageLanguage): str
 const DEFAULT_TEXT_LAYOUT = { x: 30, y: 5, width: 40, height: 15 }
 const DEFAULT_PHOTO_LAYOUT = { x: 35, y: 25, width: 30, height: 30 }
 const DEFAULT_BUTTON_LAYOUT = { x: 35, y: 42, width: 30, height: 10 }
+const DEFAULT_GALLERY_LAYOUT = { x: 25, y: 10, width: 50, height: 50 }
+const DEFAULT_SLIDE_INTERVAL = 4
+const MIN_SLIDE_INTERVAL = 1
+const MAX_SLIDE_INTERVAL = 120
+const IMAGE_ACCEPT = 'image/png, image/jpeg, image/webp, image/gif'
+// Blocks stack at their layer number (1, 2, 3...). These sit above any realistic layer: the
+// canvas height handle stays grabbable, and a block being text/link-edited, plus the
+// selected block's toolbar/handle overlay, stay usable without changing any block's stacking.
+const BLOCK_RADIUS = 'clamp(6px, 2.4cqw, 28px)'
+const CANVAS_RADIUS = 'clamp(10px, 3vw, 28px)'
+const CANVAS_RESIZE_Z_INDEX = 900
+const EDITING_Z_INDEX = 1000
 const MIN_SIZE = 6
 const MIN_CANVAS_HEIGHT = 10
 const MAX_CANVAS_HEIGHT = 300
@@ -54,9 +72,13 @@ type LiveLayout = { id: string; x: number; y: number; width: number; height: num
 interface AboutCanvasProps {
   height: number
   backgroundImageId: string | null
+  rounded: boolean
   blocks: AboutPageBlock[]
   editable: boolean
   language: AboutPageLanguage
+  canMoveUp: boolean
+  canMoveDown: boolean
+  onMove: (direction: AboutPageMoveDirection) => Promise<void>
   onAddText: (text: string, x: number, y: number, width: number, height: number) => Promise<void>
   onAddPhoto: (
     mimeType: string,
@@ -74,8 +96,15 @@ interface AboutCanvasProps {
     width: number,
     height: number,
   ) => Promise<void>
+  onAddGallery: (x: number, y: number, width: number, height: number, slideIntervalSeconds: number) => Promise<void>
+  onAddGalleryPhoto: (blockId: string, mimeType: string, imageBase64: string) => Promise<void>
+  onRemoveGalleryPhoto: (blockId: string, imageId: string) => Promise<void>
+  onUpdateGalleryInterval: (id: string, slideIntervalSeconds: number) => Promise<void>
   onUpdateLayout: (id: string, x: number, y: number, width: number, height: number) => Promise<void>
   onUpdateAlign: (id: string, align: AboutPageBlockAlign) => Promise<void>
+  onUpdateLayer: (id: string, layer: number) => Promise<void>
+  onUpdateRounded: (rounded: boolean) => Promise<void>
+  onUpdateBlockRounded: (id: string, rounded: boolean) => Promise<void>
   onUpdateText: (id: string, text: string, language: AboutPageLanguage) => Promise<void>
   onUpdateLink: (id: string, linkUrl: string) => Promise<void>
   onRemove: (id: string) => Promise<void>
@@ -88,14 +117,25 @@ interface AboutCanvasProps {
 function AboutCanvas({
   height,
   backgroundImageId,
+  rounded,
   blocks,
   editable,
   language,
+  canMoveUp,
+  canMoveDown,
+  onMove,
   onAddText,
   onAddPhoto,
   onAddButton,
+  onAddGallery,
+  onAddGalleryPhoto,
+  onRemoveGalleryPhoto,
+  onUpdateGalleryInterval,
   onUpdateLayout,
   onUpdateAlign,
+  onUpdateLayer,
+  onUpdateRounded,
+  onUpdateBlockRounded,
   onUpdateText,
   onUpdateLink,
   onRemove,
@@ -106,6 +146,7 @@ function AboutCanvas({
 }: AboutCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const galleryFileInputRef = useRef<HTMLInputElement>(null)
   const backgroundFileInputRef = useRef<HTMLInputElement>(null)
   const editTextareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -118,9 +159,15 @@ function AboutCanvas({
   const [liveHeight, setLiveHeight] = useState<number | null>(null)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [uploadingBackground, setUploadingBackground] = useState(false)
+  const [uploadingGallery, setUploadingGallery] = useState(false)
+  const [intervalDraft, setIntervalDraft] = useState<string | null>(null)
+  const [layerDraft, setLayerDraft] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   if (!editable && blocks.length === 0) return null
+
+  const selectedBlock = editable ? blocks.find((block) => block.id === selectedId) : undefined
+  const selectedGallery = selectedBlock?.type === 'GALLERY' ? selectedBlock : undefined
 
   const layoutFor = (block: AboutPageBlock) => (liveLayout?.id === block.id ? liveLayout : block)
 
@@ -285,6 +332,104 @@ function AboutCanvas({
     }
   }
 
+  const handleMoveCanvas = async (direction: AboutPageMoveDirection) => {
+    setError(null)
+    try {
+      await onMove(direction)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not move this canvas.')
+    }
+  }
+
+  const handleCanvasRounded = async (checked: boolean) => {
+    setError(null)
+    try {
+      await onUpdateRounded(checked)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not change the corners.')
+    }
+  }
+
+  const handleBlockRounded = async (block: AboutPageBlock, checked: boolean) => {
+    setError(null)
+    try {
+      await onUpdateBlockRounded(block.id, checked)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not change the corners.')
+    }
+  }
+
+  const commitLayer = async (block: AboutPageBlock) => {
+    const raw = layerDraft
+    setLayerDraft(null)
+    if (raw === null || !raw.trim()) return
+    const value = Math.round(Number(raw))
+    if (!Number.isFinite(value)) return
+    const layer = clamp(value, 1, blocks.length)
+    if (layer === block.layer) return
+    try {
+      await onUpdateLayer(block.id, layer)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not change the layer.')
+    }
+  }
+
+  const handleAddGallery = async () => {
+    setError(null)
+    try {
+      await onAddGallery(
+        DEFAULT_GALLERY_LAYOUT.x,
+        DEFAULT_GALLERY_LAYOUT.y,
+        DEFAULT_GALLERY_LAYOUT.width,
+        DEFAULT_GALLERY_LAYOUT.height,
+        DEFAULT_SLIDE_INTERVAL,
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not add a gallery.')
+    }
+  }
+
+  const handleGalleryPhotosChosen = async (blockId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? [])
+    e.target.value = ''
+    if (files.length === 0) return
+    setUploadingGallery(true)
+    setError(null)
+    try {
+      for (const file of files) {
+        await onAddGalleryPhoto(blockId, file.type, await readAsBase64(file))
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not upload these photos.')
+    } finally {
+      setUploadingGallery(false)
+    }
+  }
+
+  const handleRemoveGalleryPhoto = async (blockId: string, imageId: string) => {
+    setError(null)
+    try {
+      await onRemoveGalleryPhoto(blockId, imageId)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not remove this photo.')
+    }
+  }
+
+  const commitSlideInterval = async (block: AboutPageBlock) => {
+    const raw = intervalDraft
+    setIntervalDraft(null)
+    if (raw === null) return
+    const value = Number(raw)
+    if (!raw.trim() || !Number.isFinite(value)) return
+    const seconds = clamp(value, MIN_SLIDE_INTERVAL, MAX_SLIDE_INTERVAL)
+    if (seconds === block.slideIntervalSeconds) return
+    try {
+      await onUpdateGalleryInterval(block.id, seconds)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save the slide interval.')
+    }
+  }
+
   const handlePickPhoto = () => fileInputRef.current?.click()
 
   const handlePhotoChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -352,19 +497,36 @@ function AboutCanvas({
     <div className="flex flex-col gap-2">
       {editable && (
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="btn btn-secondary disabled:opacity-40"
+            disabled={!canMoveUp}
+            title={aboutEditText('moveUp', language)}
+            aria-label={aboutEditText('moveUp', language)}
+            onClick={() => handleMoveCanvas('UP')}
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary disabled:opacity-40"
+            disabled={!canMoveDown}
+            title={aboutEditText('moveDown', language)}
+            aria-label={aboutEditText('moveDown', language)}
+            onClick={() => handleMoveCanvas('DOWN')}
+          >
+            ↓
+          </button>
           <button type="button" className="btn btn-secondary" onClick={handleAddText}>
             {aboutEditText('addText', language)}
           </button>
           <button type="button" className="btn btn-secondary" onClick={handlePickPhoto} disabled={uploadingPhoto}>
             {uploadingPhoto ? aboutEditText('uploading', language) : aboutEditText('addPhoto', language)}
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/png, image/jpeg, image/webp, image/gif"
-            onChange={handlePhotoChosen}
-            hidden
-          />
+          <input ref={fileInputRef} type="file" accept={IMAGE_ACCEPT} onChange={handlePhotoChosen} hidden />
+          <button type="button" className="btn btn-secondary" onClick={handleAddGallery}>
+            {aboutEditText('addGallery', language)}
+          </button>
           <button type="button" className="btn btn-secondary" onClick={handleAddButton}>
             {aboutEditText('addButton', language)}
           </button>
@@ -392,6 +554,14 @@ function AboutCanvas({
             onChange={handleBackgroundChosen}
             hidden
           />
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={rounded}
+              onChange={(e) => handleCanvasRounded(e.target.checked)}
+            />
+            {aboutEditText('rounded', language)}
+          </label>
           <button
             type="button"
             className="btn btn-secondary ml-auto text-[var(--color-accent)]"
@@ -415,35 +585,45 @@ function AboutCanvas({
           backgroundImage: backgroundImageId ? `url(${imageUrl(backgroundImageId)})` : undefined,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
+          borderRadius: rounded ? CANVAS_RADIUS : undefined,
+          // Clip blocks to the rounded corners on the public page; in edit mode the block
+          // toolbars sit outside the canvas edge, so clipping would hide them.
+          overflow: rounded && !editable ? 'hidden' : undefined,
         }}
         onPointerDown={() => editable && setSelectedId(null)}
       >
         {blocks.map((block) => {
           const layout = layoutFor(block)
-          const isSelected = editable && selectedId === block.id
           const isEditingText = editingId === block.id
 
           return (
             <div
               key={block.id}
-              className={
-                editable
-                  ? `absolute border ${isSelected ? 'border-[var(--color-accent)]' : 'border-[var(--color-divider)]'}`
-                  : 'absolute'
-              }
+              className={editable ? 'absolute border border-[var(--color-divider)]' : 'absolute'}
               style={{
                 left: `${layout.x}%`,
                 top: `${layout.y}%`,
                 width: `${layout.width}%`,
                 height: `${layout.height}%`,
-                zIndex: isSelected ? 100 : undefined,
+                zIndex: isEditingText || editingLinkId === block.id ? EDITING_Z_INDEX : block.layer,
                 touchAction: 'none',
                 cursor: editable && !isEditingText ? 'move' : undefined,
+                borderRadius: block.rounded ? BLOCK_RADIUS : undefined,
               }}
               onPointerDown={beginDrag(block, 'move')}
             >
-              <div className="h-full w-full overflow-hidden">
-                {block.type === 'PHOTO' ? (
+              <div
+                className="h-full w-full overflow-hidden"
+                style={{ borderRadius: block.rounded ? BLOCK_RADIUS : undefined, isolation: 'isolate' }}
+              >
+                {block.type === 'GALLERY' ? (
+                  <GallerySlideshow
+                    imageIds={block.galleryImageIds}
+                    intervalSeconds={block.slideIntervalSeconds ?? DEFAULT_SLIDE_INTERVAL}
+                    objectPosition={objectPositionFor(block.align)}
+                    emptyLabel={editable ? aboutEditText('galleryEmpty', language) : undefined}
+                  />
+                ) : block.type === 'PHOTO' ? (
                   <img
                     src={imageUrl(block.imageId) ?? undefined}
                     alt=""
@@ -516,85 +696,182 @@ function AboutCanvas({
                 </div>
               )}
 
-              {isSelected && !isEditingText && editingLinkId !== block.id && (
-                <>
-                  <div
-                    className="absolute flex gap-1 bg-[var(--color-bg)] p-1 shadow-sm"
-                    style={{ top: -34, left: 0 }}
-                    onPointerDown={(e) => e.stopPropagation()}
-                  >
-                    {(block.type === 'TEXT' || block.type === 'BUTTON') && (
-                      <button
-                        type="button"
-                        className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
-                        onClick={() => startEditingText(block)}
-                      >
-                        {aboutEditText('edit', language)}
-                      </button>
-                    )}
-                    {block.type === 'BUTTON' && (
-                      <button
-                        type="button"
-                        className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
-                        onClick={() => startEditingLink(block)}
-                      >
-                        {aboutEditText('link', language)}
-                      </button>
-                    )}
-                    {block.type !== 'BUTTON' && (
-                      <>
-                        <button
-                          type="button"
-                          className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
-                          onClick={() => onUpdateAlign(block.id, 'LEFT')}
-                        >
-                          ⟵
-                        </button>
-                        <button
-                          type="button"
-                          className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
-                          onClick={() => onUpdateAlign(block.id, 'CENTER')}
-                        >
-                          ⟷
-                        </button>
-                        <button
-                          type="button"
-                          className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
-                          onClick={() => onUpdateAlign(block.id, 'RIGHT')}
-                        >
-                          ⟶
-                        </button>
-                      </>
-                    )}
-                    <button
-                      type="button"
-                      className="border border-[var(--color-divider)] px-2 py-1 text-[11px] text-[var(--color-accent)]"
-                      onClick={() => handleRemove(block.id)}
-                    >
-                      {aboutEditText('delete', language)}
-                    </button>
-                  </div>
-                  <div
-                    className="absolute h-4 w-4 cursor-nwse-resize bg-[var(--color-accent)]"
-                    style={{ right: 0, bottom: 0, touchAction: 'none' }}
-                    onPointerDown={beginDrag(block, 'resize')}
-                  />
-                </>
+              {editable && (
+                <span className="block-layer-badge pointer-events-none absolute bottom-0 left-0 bg-[var(--color-accent)] px-1 text-[10px] leading-4 text-[var(--color-bg)]">
+                  {block.layer}
+                </span>
               )}
+
             </div>
           )
         })}
 
+        {selectedBlock && editingId !== selectedBlock.id && editingLinkId !== selectedBlock.id && (
+          <div
+            className="pointer-events-none absolute border border-[var(--color-accent)]"
+            style={{
+              left: `${layoutFor(selectedBlock).x}%`,
+              top: `${layoutFor(selectedBlock).y}%`,
+              width: `${layoutFor(selectedBlock).width}%`,
+              height: `${layoutFor(selectedBlock).height}%`,
+              zIndex: EDITING_Z_INDEX,
+              borderRadius: selectedBlock.rounded ? BLOCK_RADIUS : undefined,
+            }}
+          >
+            <div
+              className="pointer-events-auto absolute flex items-center gap-1 bg-[var(--color-bg)] p-1 shadow-sm"
+              style={{ top: -34, left: 0 }}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              {(selectedBlock.type === 'TEXT' || selectedBlock.type === 'BUTTON') && (
+                <button
+                  type="button"
+                  className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
+                  onClick={() => startEditingText(selectedBlock)}
+                >
+                  {aboutEditText('edit', language)}
+                </button>
+              )}
+              {selectedBlock.type === 'BUTTON' && (
+                <button
+                  type="button"
+                  className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
+                  onClick={() => startEditingLink(selectedBlock)}
+                >
+                  {aboutEditText('link', language)}
+                </button>
+              )}
+              {selectedBlock.type !== 'BUTTON' && (
+                <>
+                  <button
+                    type="button"
+                    className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
+                    onClick={() => onUpdateAlign(selectedBlock.id, 'LEFT')}
+                  >
+                    ⟵
+                  </button>
+                  <button
+                    type="button"
+                    className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
+                    onClick={() => onUpdateAlign(selectedBlock.id, 'CENTER')}
+                  >
+                    ⟷
+                  </button>
+                  <button
+                    type="button"
+                    className="border border-[var(--color-divider)] px-2 py-1 text-[11px]"
+                    onClick={() => onUpdateAlign(selectedBlock.id, 'RIGHT')}
+                  >
+                    ⟶
+                  </button>
+                </>
+              )}
+              <label className="flex items-center gap-1 text-[11px]">
+                <input
+                  type="checkbox"
+                  checked={selectedBlock.rounded}
+                  onChange={(e) => handleBlockRounded(selectedBlock, e.target.checked)}
+                />
+                {aboutEditText('rounded', language)}
+              </label>
+              <label className="flex items-center gap-1 text-[11px]" title={aboutEditText('layerHint', language)}>
+                {aboutEditText('layer', language)}
+                <input
+                  type="number"
+                  className="w-12 border border-[var(--color-divider)] bg-transparent px-1 py-0.5 text-[11px]"
+                  min={1}
+                  max={blocks.length}
+                  value={layerDraft ?? String(selectedBlock.layer)}
+                  onChange={(e) => setLayerDraft(e.target.value)}
+                  onBlur={() => commitLayer(selectedBlock)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') e.currentTarget.blur()
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                className="border border-[var(--color-divider)] px-2 py-1 text-[11px] text-[var(--color-accent)]"
+                onClick={() => handleRemove(selectedBlock.id)}
+              >
+                {aboutEditText('delete', language)}
+              </button>
+            </div>
+            <div
+              className="pointer-events-auto absolute h-4 w-4 cursor-nwse-resize bg-[var(--color-accent)]"
+              style={{ right: 0, bottom: 0, touchAction: 'none' }}
+              onPointerDown={beginDrag(selectedBlock, 'resize')}
+            />
+          </div>
+        )}
+
         {editable && (
           <div
             className="absolute inset-x-0 bottom-0 flex h-3 cursor-ns-resize items-center justify-center"
-            style={{ touchAction: 'none' }}
+            style={{ touchAction: 'none', zIndex: CANVAS_RESIZE_Z_INDEX }}
             onPointerDown={beginCanvasResize}
           >
             <div className="h-1 w-10 bg-[var(--color-accent)]" />
           </div>
         )}
       </div>
+
+      {selectedGallery && (
+        <div className="flex flex-col gap-3 border border-[var(--color-divider)] p-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => galleryFileInputRef.current?.click()}
+              disabled={uploadingGallery}
+            >
+              {uploadingGallery ? aboutEditText('uploading', language) : aboutEditText('addPhotos', language)}
+            </button>
+            <input
+              ref={galleryFileInputRef}
+              type="file"
+              accept={IMAGE_ACCEPT}
+              multiple
+              onChange={(e) => handleGalleryPhotosChosen(selectedGallery.id, e)}
+              hidden
+            />
+            <label className="flex items-center gap-2 text-sm">
+              {aboutEditText('slideInterval', language)}
+              <input
+                type="number"
+                className="input w-24"
+                min={MIN_SLIDE_INTERVAL}
+                max={MAX_SLIDE_INTERVAL}
+                step={0.5}
+                value={intervalDraft ?? String(selectedGallery.slideIntervalSeconds ?? DEFAULT_SLIDE_INTERVAL)}
+                onChange={(e) => setIntervalDraft(e.target.value)}
+                onBlur={() => commitSlideInterval(selectedGallery)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') e.currentTarget.blur()
+                }}
+              />
+            </label>
+          </div>
+          {selectedGallery.galleryImageIds.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {selectedGallery.galleryImageIds.map((imageId) => (
+                <div key={imageId} className="relative h-16 w-16">
+                  <img src={imageUrl(imageId) ?? undefined} alt="" className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    className="absolute top-0 right-0 bg-[var(--color-bg)] px-1 text-[12px] leading-tight text-[var(--color-accent)]"
+                    title={aboutEditText('removePhoto', language)}
+                    aria-label={aboutEditText('removePhoto', language)}
+                    onClick={() => handleRemoveGalleryPhoto(selectedGallery.id, imageId)}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {error && <p className="text-muted">{error}</p>}
     </div>

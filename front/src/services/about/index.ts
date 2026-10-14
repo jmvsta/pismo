@@ -9,6 +9,7 @@ export type {
   AboutPageBlockType,
   AboutPageBlockAlign,
   AboutPageLanguage,
+  AboutPageMoveDirection,
 } from './types.ts'
 export { pickTranslation } from './types.ts'
 

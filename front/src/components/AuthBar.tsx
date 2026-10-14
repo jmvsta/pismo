@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useUserStore } from '../store/userStore.ts'
 import { useNotificationStore } from '../store/notificationStore.ts'
@@ -20,11 +20,30 @@ function AuthBar() {
   const language = useLanguageStore((state) => state.language)
   const setLanguage = useLanguageStore((state) => state.setLanguage)
 
+  const [langOpen, setLangOpen] = useState(false)
+  const langRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     if (!currentUser) return
     connectNotifications()
     return () => disconnectNotifications()
   }, [currentUser, connectNotifications, disconnectNotifications])
+
+  useEffect(() => {
+    if (!langOpen) return
+    const onPointerDown = (event: PointerEvent) => {
+      if (langRef.current && !langRef.current.contains(event.target as Node)) setLangOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setLangOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [langOpen])
 
   const handleLogout = async () => {
     await logout()
@@ -59,26 +78,45 @@ function AuthBar() {
         <span className="brand-short">{uiText('navHome', language)}</span>
       </Link>
       <div className="auth-bar-actions">
-        <div className="auth-bar-lang">
-          {LANGUAGES.map((lang) => (
-            <button
-              key={lang}
-              type="button"
-              className={`auth-bar-lang-btn${language === lang ? ' is-active' : ''}`}
-              onClick={() => setLanguage(lang)}
-            >
-              {lang}
-            </button>
-          ))}
+        <ThemeToggle />
+        <div className="auth-bar-lang" ref={langRef}>
+          <button
+            type="button"
+            className="auth-bar-lang-btn is-active auth-bar-lang-toggle"
+            aria-haspopup="listbox"
+            aria-expanded={langOpen}
+            onClick={() => setLangOpen((open) => !open)}
+          >
+            {language}
+            <span className="auth-bar-lang-caret" aria-hidden="true" />
+          </button>
+          {langOpen && (
+            <div className="auth-bar-lang-menu" role="listbox">
+              {LANGUAGES.filter((lang) => lang !== language).map((lang) => (
+                <button
+                  key={lang}
+                  type="button"
+                  role="option"
+                  aria-selected="false"
+                  className="auth-bar-lang-btn"
+                  onClick={() => {
+                    setLanguage(lang)
+                    setLangOpen(false)
+                  }}
+                >
+                  {lang}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         {currentUser ? (
           <>
             <NotificationBell />
-            <ThemeToggle />
             {canModerate && (
               <Link
                 to="/admin"
-                className="btn btn-icon"
+                className="btn btn-icon auth-bar-icon"
                 aria-label={uiText('navModerate', language)}
                 title={uiText('navModerate', language)}
               >
@@ -111,7 +149,7 @@ function AuthBar() {
             </Link>
             <button
               type="button"
-              className="btn btn-ghost"
+              className="btn btn-ghost auth-bar-icon"
               onClick={handleLogout}
               aria-label={uiText('navLogOut', language)}
               title={uiText('navLogOut', language)}
@@ -136,7 +174,6 @@ function AuthBar() {
           </>
         ) : (
           <>
-            <ThemeToggle />
             <Link to="/login" className="btn btn-ghost">
               {uiText('navLogIn', language)}
             </Link>

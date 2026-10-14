@@ -121,9 +121,23 @@
 .match-card-bio {
   font-size: 13px;
   line-height: 1.5;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 .match-card-bio > * {
   margin: 0;
+}
+
+.match-card-show-more {
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-accent);
+  text-decoration: underline;
 }
 
 .match-card-questionnaire-link {
