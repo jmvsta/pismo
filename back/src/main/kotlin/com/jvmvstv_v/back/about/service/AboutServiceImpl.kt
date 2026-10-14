@@ -3,6 +3,7 @@ package com.jvmvstv_v.back.about.service
 import com.jvmvstv_v.back.about.model.AboutPage
 import com.jvmvstv_v.back.about.model.AboutPageBlockAlign
 import com.jvmvstv_v.back.about.model.AboutPageLanguage
+import com.jvmvstv_v.back.about.model.AboutPageMoveDirection
 import com.jvmvstv_v.back.about.repository.AboutRepository
 import com.jvmvstv_v.back.common.AuthException
 import com.jvmvstv_v.back.common.CurrentUser
@@ -13,6 +14,9 @@ import java.util.UUID
 
 private const val MIN_CANVAS_HEIGHT = 10.0
 private const val MAX_CANVAS_HEIGHT = 300.0
+private const val MIN_SLIDE_INTERVAL = 1.0
+private const val MAX_SLIDE_INTERVAL = 120.0
+private const val MAX_GALLERY_PHOTOS = 30
 
 @Service
 class AboutServiceImpl(
@@ -21,14 +25,14 @@ class AboutServiceImpl(
 ) : AboutService {
     override fun aboutPage(): AboutPage = aboutRepository.find()
 
-    override fun updateBody(body: String, language: AboutPageLanguage): AboutPage {
-        CurrentUser.requireModerator()
-        return aboutRepository.updateBody(body, language, CurrentUser.id)
-    }
-
     override fun addCanvas(): AboutPage {
         CurrentUser.requireModerator()
         return aboutRepository.addCanvas(UUID.randomUUID())
+    }
+
+    override fun moveCanvas(id: UUID, direction: AboutPageMoveDirection): AboutPage {
+        CurrentUser.requireModerator()
+        return aboutRepository.moveCanvas(id, direction)
     }
 
     override fun updateCanvasHeight(id: UUID, height: Double): AboutPage {
@@ -37,6 +41,16 @@ class AboutServiceImpl(
             throw AuthException("Canvas height must be between $MIN_CANVAS_HEIGHT and $MAX_CANVAS_HEIGHT")
         }
         return aboutRepository.updateCanvasHeight(id, height)
+    }
+
+    override fun updateCanvasRounded(id: UUID, rounded: Boolean): AboutPage {
+        CurrentUser.requireModerator()
+        return aboutRepository.updateCanvasRounded(id, rounded)
+    }
+
+    override fun updateBlockRounded(id: UUID, rounded: Boolean): AboutPage {
+        CurrentUser.requireModerator()
+        return aboutRepository.updateBlockRounded(id, rounded)
     }
 
     override fun updateCanvasBackground(id: UUID, mimeType: String, imageBase64: String): AboutPage {
@@ -95,6 +109,44 @@ class AboutServiceImpl(
         return aboutRepository.addButtonBlock(UUID.randomUUID(), canvasId, text, linkUrl, x, y, width, height)
     }
 
+    override fun addGalleryBlock(
+        canvasId: UUID,
+        x: Double,
+        y: Double,
+        width: Double,
+        height: Double,
+        slideIntervalSeconds: Double,
+    ): AboutPage {
+        CurrentUser.requireModerator()
+        requireValidLayout(x, y, width, height)
+        requireValidSlideInterval(slideIntervalSeconds)
+        return aboutRepository.addGalleryBlock(UUID.randomUUID(), canvasId, x, y, width, height, slideIntervalSeconds)
+    }
+
+    override fun addGalleryPhoto(blockId: UUID, mimeType: String, imageBase64: String): AboutPage {
+        CurrentUser.requireModerator()
+        requireGalleryBlock(blockId)
+        if (aboutRepository.countGalleryPhotos(blockId) >= MAX_GALLERY_PHOTOS) {
+            throw AuthException("A gallery can hold at most $MAX_GALLERY_PHOTOS photos")
+        }
+        val image = imageService.store(ImageOwnerType.ABOUT_PAGE_PHOTO, blockId, mimeType, imageBase64)
+        return aboutRepository.addGalleryPhoto(blockId, image.id)
+    }
+
+    override fun removeGalleryPhoto(blockId: UUID, imageId: UUID): AboutPage {
+        CurrentUser.requireModerator()
+        requireGalleryBlock(blockId)
+        aboutRepository.removeGalleryPhoto(blockId, imageId)?.let { imageService.delete(it) }
+        return aboutRepository.find()
+    }
+
+    override fun updateGalleryInterval(id: UUID, slideIntervalSeconds: Double): AboutPage {
+        CurrentUser.requireModerator()
+        requireGalleryBlock(id)
+        requireValidSlideInterval(slideIntervalSeconds)
+        return aboutRepository.updateGalleryInterval(id, slideIntervalSeconds)
+    }
+
     override fun updateBlockLayout(id: UUID, x: Double, y: Double, width: Double, height: Double): AboutPage {
         CurrentUser.requireModerator()
         requireValidLayout(x, y, width, height)
@@ -104,6 +156,12 @@ class AboutServiceImpl(
     override fun updateBlockAlign(id: UUID, align: AboutPageBlockAlign): AboutPage {
         CurrentUser.requireModerator()
         return aboutRepository.updateBlockAlign(id, align)
+    }
+
+    override fun updateBlockLayer(id: UUID, layer: Int): AboutPage {
+        CurrentUser.requireModerator()
+        if (layer < 1) throw AuthException("Layer must be 1 or higher")
+        return aboutRepository.updateBlockLayer(id, layer)
     }
 
     override fun updateBlockText(id: UUID, text: String, language: AboutPageLanguage): AboutPage {
@@ -119,8 +177,18 @@ class AboutServiceImpl(
 
     override fun removeBlock(id: UUID): AboutPage {
         CurrentUser.requireModerator()
-        aboutRepository.removeBlock(id)?.let { imageService.delete(it) }
+        aboutRepository.removeBlock(id).forEach { imageService.delete(it) }
         return aboutRepository.find()
+    }
+
+    private fun requireGalleryBlock(id: UUID) {
+        if (!aboutRepository.isGalleryBlock(id)) throw AuthException("Block $id is not a gallery")
+    }
+
+    private fun requireValidSlideInterval(seconds: Double) {
+        if (seconds !in MIN_SLIDE_INTERVAL..MAX_SLIDE_INTERVAL) {
+            throw AuthException("Slide interval must be between $MIN_SLIDE_INTERVAL and $MAX_SLIDE_INTERVAL seconds")
+        }
     }
 
     private fun requireNonBlankLink(linkUrl: String) {

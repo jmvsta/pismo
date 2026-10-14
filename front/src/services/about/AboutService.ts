@@ -1,10 +1,12 @@
-import type { AboutPage, AboutPageBlockAlign, AboutPageLanguage } from './types.ts'
+import type { AboutPage, AboutPageBlockAlign, AboutPageLanguage, AboutPageMoveDirection } from './types.ts'
 
 export interface AboutService {
   aboutPage(): Promise<AboutPage>
-  updateBody(body: string, language: AboutPageLanguage): Promise<AboutPage>
   addCanvas(): Promise<AboutPage>
+  moveCanvas(id: string, direction: AboutPageMoveDirection): Promise<AboutPage>
   updateCanvasHeight(id: string, height: number): Promise<AboutPage>
+  updateCanvasRounded(id: string, rounded: boolean): Promise<AboutPage>
+  updateBlockRounded(id: string, rounded: boolean): Promise<AboutPage>
   updateCanvasBackground(id: string, mimeType: string, imageBase64: string): Promise<AboutPage>
   removeCanvasBackground(id: string): Promise<AboutPage>
   removeCanvas(id: string): Promise<AboutPage>
@@ -34,8 +36,20 @@ export interface AboutService {
     width: number,
     height: number,
   ): Promise<AboutPage>
+  addGalleryBlock(
+    canvasId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    slideIntervalSeconds: number,
+  ): Promise<AboutPage>
+  addGalleryPhoto(blockId: string, mimeType: string, imageBase64: string): Promise<AboutPage>
+  removeGalleryPhoto(blockId: string, imageId: string): Promise<AboutPage>
+  updateGalleryInterval(id: string, slideIntervalSeconds: number): Promise<AboutPage>
   updateBlockLayout(id: string, x: number, y: number, width: number, height: number): Promise<AboutPage>
   updateBlockAlign(id: string, align: AboutPageBlockAlign): Promise<AboutPage>
+  updateBlockLayer(id: string, layer: number): Promise<AboutPage>
   updateBlockText(id: string, text: string, language: AboutPageLanguage): Promise<AboutPage>
   updateBlockLink(id: string, linkUrl: string): Promise<AboutPage>
   removeBlock(id: string): Promise<AboutPage>

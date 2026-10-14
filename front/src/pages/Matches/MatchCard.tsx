@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { MatchProfile } from '../../services/matching/index.ts'
@@ -48,6 +49,18 @@ function MatchCard({
 }: MatchCardProps) {
   const flag = countryFlag(profile.countryCode)
   const avatarUrl = imageUrl(profile.avatarImageId)
+  const bioRef = useRef<HTMLDivElement>(null)
+  const [bioTruncated, setBioTruncated] = useState(false)
+
+  useLayoutEffect(() => {
+    const el = bioRef.current
+    if (!el) return
+    const measure = () => setBioTruncated(el.scrollHeight > el.clientHeight + 1)
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [profile.bio])
 
   return (
     <div className="card match-card">
@@ -74,7 +87,18 @@ function MatchCard({
           </span>
         )}
 
-        {profile.bio && <div className="text-muted match-card-bio">{renderRichText(profile.bio)}</div>}
+        {profile.bio && (
+          <>
+            <div ref={bioRef} className="text-muted match-card-bio">
+              {renderRichText(profile.bio)}
+            </div>
+            {bioTruncated && (
+              <Link to={`/profile/${profile.id}`} className="match-card-show-more">
+                Show more
+              </Link>
+            )}
+          </>
+        )}
 
         <div className="match-card-interests">
           {sharedInterests.length === 0 ? (

@@ -3,9 +3,11 @@ extend type Query {
 }
 
 extend type Mutation {
-    updateAboutPageBody(body: String!, language: AboutPageLanguage! = EN): AboutPage!
     addAboutPageCanvas: AboutPage!
+    moveAboutPageCanvas(id: ID!, direction: AboutPageMoveDirection!): AboutPage!
     updateAboutPageCanvasHeight(id: ID!, height: Float!): AboutPage!
+    updateAboutPageCanvasRounded(id: ID!, rounded: Boolean!): AboutPage!
+    updateAboutPageBlockRounded(id: ID!, rounded: Boolean!): AboutPage!
     updateAboutPageCanvasBackground(id: ID!, mimeType: String!, imageBase64: String!): AboutPage!
     removeAboutPageCanvasBackground(id: ID!): AboutPage!
     removeAboutPageCanvas(id: ID!): AboutPage!
@@ -35,23 +37,29 @@ extend type Mutation {
         width: Float!
         height: Float!
     ): AboutPage!
+    addAboutPageGalleryBlock(
+        canvasId: ID!
+        x: Float!
+        y: Float!
+        width: Float!
+        height: Float!
+        slideIntervalSeconds: Float!
+    ): AboutPage!
+    addAboutPageGalleryPhoto(blockId: ID!, mimeType: String!, imageBase64: String!): AboutPage!
+    removeAboutPageGalleryPhoto(blockId: ID!, imageId: ID!): AboutPage!
+    updateAboutPageGalleryInterval(id: ID!, slideIntervalSeconds: Float!): AboutPage!
     updateAboutPageBlockLayout(id: ID!, x: Float!, y: Float!, width: Float!, height: Float!): AboutPage!
     updateAboutPageBlockAlign(id: ID!, align: AboutPageBlockAlign!): AboutPage!
+    updateAboutPageBlockLayer(id: ID!, layer: Int!): AboutPage!
     updateAboutPageBlockText(id: ID!, text: String!, language: AboutPageLanguage! = EN): AboutPage!
     updateAboutPageBlockLink(id: ID!, linkUrl: String!): AboutPage!
     removeAboutPageBlock(id: ID!): AboutPage!
 }
 
-"""Singleton "About us" page. bodyEn/bodyRu/bodySrb are the page's own body text in each
-language -- a light markdown subset (headings, bold, italic, strikethrough, links) rendered
-client-side -- with bodyEn always set and bodyRu/bodySrb optional overrides a reader falls
-back from to bodyEn when unset. canvases is an ordered, admin-managed list of freeform
-canvases, each holding its own text/photo/button blocks and its own resizable height.
-Everything here is editable by admins only."""
+"""Singleton "About us" page. canvases is an ordered, admin-managed list of freeform
+canvases, each holding its own text/photo/button/gallery blocks and its own resizable
+height. Everything here is editable by admins only."""
 type AboutPage {
-    bodyEn: String!
-    bodyRu: String
-    bodySrb: String
     canvases: [AboutPageCanvas!]!
     updatedAt: String!
 }
@@ -63,6 +71,7 @@ type AboutPageCanvas {
     id: ID!
     height: Float!
     backgroundImageId: ID
+    rounded: Boolean!
     blocks: [AboutPageBlock!]!
 }
 
@@ -70,6 +79,12 @@ enum AboutPageBlockType {
     TEXT
     PHOTO
     BUTTON
+    GALLERY
+}
+
+enum AboutPageMoveDirection {
+    UP
+    DOWN
 }
 
 enum AboutPageBlockAlign {
@@ -87,7 +102,10 @@ enum AboutPageLanguage {
 """A single item on a canvas. x/y is the top-left corner and width/height is the
 footprint, all as percentages of the canvas so the layout is responsive. textEn/textRu/textSrb
 hold a TEXT or BUTTON block's content per language, with textEn always set for those types
-and textRu/textSrb optional overrides a reader falls back from to textEn when unset."""
+and textRu/textSrb optional overrides a reader falls back from to textEn when unset.
+A GALLERY block instead carries its photos in galleryImageIds (in display order) and cycles
+through them as a slideshow, advancing every slideIntervalSeconds. layer is the block's
+stacking order within its canvas, from 1 (backmost) upwards, with no gaps or duplicates."""
 type AboutPageBlock {
     id: ID!
     type: AboutPageBlockType!
@@ -96,9 +114,13 @@ type AboutPageBlock {
     textSrb: String
     imageId: ID
     linkUrl: String
+    galleryImageIds: [ID!]!
+    slideIntervalSeconds: Float
     x: Float!
     y: Float!
     width: Float!
     height: Float!
     align: AboutPageBlockAlign!
+    layer: Int!
+    rounded: Boolean!
 }

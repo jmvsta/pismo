@@ -1,46 +1,29 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { aboutService } from '../../services/about/index.ts'
-import { pickTranslation } from '../../services/about/index.ts'
-import type { AboutPage, AboutPageBlockAlign, AboutPageLanguage } from '../../services/about/index.ts'
+import type { AboutPage, AboutPageBlockAlign } from '../../services/about/index.ts'
 import { useUserStore } from '../../store/userStore.ts'
 import { useLanguageStore } from '../../store/languageStore.ts'
-import { renderRichText } from '../../lib/richText.tsx'
 import AboutCanvas from './AboutCanvas.tsx'
 import { aboutEditText } from './aboutEditText.ts'
 import { uiText } from '../../i18n/uiText.ts'
-
-function rawBodyFor(page: AboutPage, language: AboutPageLanguage): string {
-  if (language === 'RU') return page.bodyRu ?? ''
-  if (language === 'SRB') return page.bodySrb ?? ''
-  return page.bodyEn
-}
 
 function About() {
   const currentUser = useUserStore((state) => state.currentUser)
   const canModerate = currentUser?.role === 'ADMIN' || currentUser?.role === 'MODERATOR'
 
   const language = useLanguageStore((state) => state.language)
-  const pageRef = useRef<AboutPage | null>(null)
 
   const [page, setPage] = useState<AboutPage | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editMode, setEditMode] = useState(false)
-
-  const [body, setBody] = useState('')
-  const [savingBody, setSavingBody] = useState(false)
-  const bodyRef = useRef<HTMLTextAreaElement>(null)
-
-  pageRef.current = page
 
   useEffect(() => {
     let cancelled = false
     aboutService
       .aboutPage()
       .then((result) => {
-        if (cancelled) return
-        setPage(result)
-        setBody(rawBodyFor(result, language))
+        if (!cancelled) setPage(result)
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load this page.')
@@ -48,24 +31,7 @@ function About() {
     return () => {
       cancelled = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  useEffect(() => {
-    if (pageRef.current) setBody(rawBodyFor(pageRef.current, language))
-  }, [language])
-
-  const handleSaveBody = async () => {
-    setSavingBody(true)
-    setError(null)
-    try {
-      setPage(await aboutService.updateBody(body, language))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save the text.')
-    } finally {
-      setSavingBody(false)
-    }
-  }
 
   return (
     <div className="mx-auto flex max-w-[1200px] flex-col gap-6 px-6 pt-6 pb-12 sm:px-10 sm:pt-12">
@@ -92,49 +58,18 @@ function About() {
 
       {page && (
         <>
-          {editMode ? (
-            <div className="flex flex-col gap-2">
-              <label htmlFor="about-body" className="font-semibold">
-                Page text
-              </label>
-              <p className="text-muted text-sm">
-                Supports <code># Heading</code>, <code>## Subheading</code>, <code>### Subheading</code>,{' '}
-                <code>#### Smallest heading</code>, <code>**bold**</code>, <code>*italic*</code>,{' '}
-                <code>&lt;s&gt;strikethrough&lt;/s&gt;</code>, <code>&lt;u&gt;underline&lt;/u&gt;</code>, and{' '}
-                <code>&lt;a href='https://...'&gt;link&lt;/a&gt;</code> (also <code>mailto:</code>). Leave a blank
-                line between paragraphs.
-              </p>
-              <textarea
-                id="about-body"
-                ref={bodyRef}
-                className="input"
-                rows={10}
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-              />
-              <button
-                type="button"
-                className="btn btn-primary self-start"
-                onClick={handleSaveBody}
-                disabled={savingBody}
-              >
-                {savingBody ? aboutEditText('savingText', language) : aboutEditText('saveText', language)}
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4 leading-relaxed">
-              {renderRichText(pickTranslation(page.bodyEn, page.bodyRu, page.bodySrb, language))}
-            </div>
-          )}
-
-          {page.canvases.map((canvas) => (
+          {page.canvases.map((canvas, index) => (
             <AboutCanvas
               key={canvas.id}
               height={canvas.height}
               backgroundImageId={canvas.backgroundImageId}
+              rounded={canvas.rounded}
               blocks={canvas.blocks}
               editable={editMode}
               language={language}
+              canMoveUp={index > 0}
+              canMoveDown={index < page.canvases.length - 1}
+              onMove={async (direction) => setPage(await aboutService.moveCanvas(canvas.id, direction))}
               onAddText={async (text, x, y, width, height) =>
                 setPage(await aboutService.addTextBlock(canvas.id, text, x, y, width, height))
               }
@@ -144,11 +79,28 @@ function About() {
               onAddButton={async (text, linkUrl, x, y, width, height) =>
                 setPage(await aboutService.addButtonBlock(canvas.id, text, linkUrl, x, y, width, height))
               }
+              onAddGallery={async (x, y, width, height, slideIntervalSeconds) =>
+                setPage(await aboutService.addGalleryBlock(canvas.id, x, y, width, height, slideIntervalSeconds))
+              }
+              onAddGalleryPhoto={async (blockId, mimeType, imageBase64) =>
+                setPage(await aboutService.addGalleryPhoto(blockId, mimeType, imageBase64))
+              }
+              onRemoveGalleryPhoto={async (blockId, imageId) =>
+                setPage(await aboutService.removeGalleryPhoto(blockId, imageId))
+              }
+              onUpdateGalleryInterval={async (id, slideIntervalSeconds) =>
+                setPage(await aboutService.updateGalleryInterval(id, slideIntervalSeconds))
+              }
               onUpdateLayout={async (id, x, y, width, height) =>
                 setPage(await aboutService.updateBlockLayout(id, x, y, width, height))
               }
               onUpdateAlign={async (id: string, align: AboutPageBlockAlign) =>
                 setPage(await aboutService.updateBlockAlign(id, align))
+              }
+              onUpdateLayer={async (id, layer) => setPage(await aboutService.updateBlockLayer(id, layer))}
+              onUpdateRounded={async (rounded) => setPage(await aboutService.updateCanvasRounded(canvas.id, rounded))}
+              onUpdateBlockRounded={async (id, rounded) =>
+                setPage(await aboutService.updateBlockRounded(id, rounded))
               }
               onUpdateText={async (id, text, textLanguage) =>
                 setPage(await aboutService.updateBlockText(id, text, textLanguage))

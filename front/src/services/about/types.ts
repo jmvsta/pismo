@@ -1,6 +1,7 @@
-export type AboutPageBlockType = 'TEXT' | 'PHOTO' | 'BUTTON'
+export type AboutPageBlockType = 'TEXT' | 'PHOTO' | 'BUTTON' | 'GALLERY'
 export type AboutPageBlockAlign = 'LEFT' | 'CENTER' | 'RIGHT'
 export type AboutPageLanguage = 'EN' | 'RU' | 'SRB'
+export type AboutPageMoveDirection = 'UP' | 'DOWN'
 
 export interface AboutPageBlock {
   id: string
@@ -10,24 +11,26 @@ export interface AboutPageBlock {
   textSrb: string | null
   imageId: string | null
   linkUrl: string | null
+  galleryImageIds: string[]
+  slideIntervalSeconds: number | null
   x: number
   y: number
   width: number
   height: number
   align: AboutPageBlockAlign
+  layer: number
+  rounded: boolean
 }
 
 export interface AboutPageCanvas {
   id: string
   height: number
   backgroundImageId: string | null
+  rounded: boolean
   blocks: AboutPageBlock[]
 }
 
 export interface AboutPage {
-  bodyEn: string
-  bodyRu: string | null
-  bodySrb: string | null
   canvases: AboutPageCanvas[]
   updatedAt: string
 }
