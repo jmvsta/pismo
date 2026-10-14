@@ -8,6 +8,9 @@ extend type Mutation {
     updateAboutPageCanvasHeight(id: ID!, height: Float!): AboutPage!
     updateAboutPageCanvasRounded(id: ID!, rounded: Boolean!): AboutPage!
     updateAboutPageBlockRounded(id: ID!, rounded: Boolean!): AboutPage!
+    updateAboutPageCanvasBordered(id: ID!, bordered: Boolean!): AboutPage!
+    updateAboutPageBlockHighlighted(id: ID!, highlighted: Boolean!): AboutPage!
+    updateAboutPageBlockIcon(id: ID!, icon: String): AboutPage!
     updateAboutPageCanvasBackground(id: ID!, mimeType: String!, imageBase64: String!): AboutPage!
     removeAboutPageCanvasBackground(id: ID!): AboutPage!
     removeAboutPageCanvas(id: ID!): AboutPage!
@@ -72,6 +75,7 @@ type AboutPageCanvas {
     height: Float!
     backgroundImageId: ID
     rounded: Boolean!
+    bordered: Boolean!
     blocks: [AboutPageBlock!]!
 }
 
@@ -123,4 +127,6 @@ type AboutPageBlock {
     align: AboutPageBlockAlign!
     layer: Int!
     rounded: Boolean!
+    highlighted: Boolean!
+    icon: String
 }

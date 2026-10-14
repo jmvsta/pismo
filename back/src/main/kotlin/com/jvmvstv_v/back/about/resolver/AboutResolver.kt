@@ -36,6 +36,18 @@ class AboutResolver(private val aboutService: AboutService) {
         aboutService.updateBlockRounded(id, rounded)
 
     @MutationMapping
+    fun updateAboutPageCanvasBordered(@Argument id: UUID, @Argument bordered: Boolean): AboutPage =
+        aboutService.updateCanvasBordered(id, bordered)
+
+    @MutationMapping
+    fun updateAboutPageBlockHighlighted(@Argument id: UUID, @Argument highlighted: Boolean): AboutPage =
+        aboutService.updateBlockHighlighted(id, highlighted)
+
+    @MutationMapping
+    fun updateAboutPageBlockIcon(@Argument id: UUID, @Argument icon: String?): AboutPage =
+        aboutService.updateBlockIcon(id, icon)
+
+    @MutationMapping
     fun updateAboutPageCanvasBackground(
         @Argument id: UUID,
         @Argument mimeType: String,

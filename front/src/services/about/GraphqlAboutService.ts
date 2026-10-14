@@ -9,6 +9,7 @@ const ABOUT_PAGE_FIELDS = `
     height
     backgroundImageId
     rounded
+    bordered
     blocks {
       id
       type
@@ -26,6 +27,8 @@ const ABOUT_PAGE_FIELDS = `
       align
       layer
       rounded
+      highlighted
+      icon
     }
   }
 `
@@ -73,6 +76,30 @@ const UPDATE_ABOUT_PAGE_CANVAS_ROUNDED_MUTATION = `
 const UPDATE_ABOUT_PAGE_BLOCK_ROUNDED_MUTATION = `
   mutation UpdateAboutPageBlockRounded($id: ID!, $rounded: Boolean!) {
     updateAboutPageBlockRounded(id: $id, rounded: $rounded) {
+      ${ABOUT_PAGE_FIELDS}
+    }
+  }
+`
+
+const UPDATE_ABOUT_PAGE_CANVAS_BORDERED_MUTATION = `
+  mutation UpdateAboutPageCanvasBordered($id: ID!, $bordered: Boolean!) {
+    updateAboutPageCanvasBordered(id: $id, bordered: $bordered) {
+      ${ABOUT_PAGE_FIELDS}
+    }
+  }
+`
+
+const UPDATE_ABOUT_PAGE_BLOCK_HIGHLIGHTED_MUTATION = `
+  mutation UpdateAboutPageBlockHighlighted($id: ID!, $highlighted: Boolean!) {
+    updateAboutPageBlockHighlighted(id: $id, highlighted: $highlighted) {
+      ${ABOUT_PAGE_FIELDS}
+    }
+  }
+`
+
+const UPDATE_ABOUT_PAGE_BLOCK_ICON_MUTATION = `
+  mutation UpdateAboutPageBlockIcon($id: ID!, $icon: String) {
+    updateAboutPageBlockIcon(id: $id, icon: $icon) {
       ${ABOUT_PAGE_FIELDS}
     }
   }
@@ -306,6 +333,30 @@ export class GraphqlAboutService implements AboutService {
       { id: string; rounded: boolean }
     >(UPDATE_ABOUT_PAGE_BLOCK_ROUNDED_MUTATION, { id, rounded })
     return data.updateAboutPageBlockRounded
+  }
+
+  async updateCanvasBordered(id: string, bordered: boolean): Promise<AboutPage> {
+    const data = await this.client.request<
+      { updateAboutPageCanvasBordered: AboutPage },
+      { id: string; bordered: boolean }
+    >(UPDATE_ABOUT_PAGE_CANVAS_BORDERED_MUTATION, { id, bordered })
+    return data.updateAboutPageCanvasBordered
+  }
+
+  async updateBlockHighlighted(id: string, highlighted: boolean): Promise<AboutPage> {
+    const data = await this.client.request<
+      { updateAboutPageBlockHighlighted: AboutPage },
+      { id: string; highlighted: boolean }
+    >(UPDATE_ABOUT_PAGE_BLOCK_HIGHLIGHTED_MUTATION, { id, highlighted })
+    return data.updateAboutPageBlockHighlighted
+  }
+
+  async updateBlockIcon(id: string, icon: string | null): Promise<AboutPage> {
+    const data = await this.client.request<
+      { updateAboutPageBlockIcon: AboutPage },
+      { id: string; icon: string | null }
+    >(UPDATE_ABOUT_PAGE_BLOCK_ICON_MUTATION, { id, icon })
+    return data.updateAboutPageBlockIcon
   }
 
   async updateCanvasBackground(id: string, mimeType: string, imageBase64: string): Promise<AboutPage> {

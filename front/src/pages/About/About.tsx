@@ -64,6 +64,7 @@ function About() {
               height={canvas.height}
               backgroundImageId={canvas.backgroundImageId}
               rounded={canvas.rounded}
+              bordered={canvas.bordered}
               blocks={canvas.blocks}
               editable={editMode}
               language={language}
@@ -102,6 +103,13 @@ function About() {
               onUpdateBlockRounded={async (id, rounded) =>
                 setPage(await aboutService.updateBlockRounded(id, rounded))
               }
+              onUpdateBordered={async (bordered) =>
+                setPage(await aboutService.updateCanvasBordered(canvas.id, bordered))
+              }
+              onUpdateBlockHighlighted={async (id, highlighted) =>
+                setPage(await aboutService.updateBlockHighlighted(id, highlighted))
+              }
+              onUpdateBlockIcon={async (id, icon) => setPage(await aboutService.updateBlockIcon(id, icon))}
               onUpdateText={async (id, text, textLanguage) =>
                 setPage(await aboutService.updateBlockText(id, text, textLanguage))
               }

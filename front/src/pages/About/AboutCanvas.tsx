@@ -12,6 +12,8 @@ import { renderRichText } from '../../lib/richText.tsx'
 import RichTextLinkPrompt from '../../components/RichTextLinkPrompt/RichTextLinkPrompt.tsx'
 import EmojiPicker from '../../components/EmojiPicker/EmojiPicker.tsx'
 import GallerySlideshow from './GallerySlideshow.tsx'
+import AboutIconPicker from './AboutIconPicker.tsx'
+import { renderAboutIcon } from './aboutIcons.ts'
 import { aboutEditText } from './aboutEditText.ts'
 
 function readAsBase64(file: File): Promise<string> {
@@ -73,6 +75,7 @@ interface AboutCanvasProps {
   height: number
   backgroundImageId: string | null
   rounded: boolean
+  bordered: boolean
   blocks: AboutPageBlock[]
   editable: boolean
   language: AboutPageLanguage
@@ -105,6 +108,9 @@ interface AboutCanvasProps {
   onUpdateLayer: (id: string, layer: number) => Promise<void>
   onUpdateRounded: (rounded: boolean) => Promise<void>
   onUpdateBlockRounded: (id: string, rounded: boolean) => Promise<void>
+  onUpdateBordered: (bordered: boolean) => Promise<void>
+  onUpdateBlockHighlighted: (id: string, highlighted: boolean) => Promise<void>
+  onUpdateBlockIcon: (id: string, icon: string | null) => Promise<void>
   onUpdateText: (id: string, text: string, language: AboutPageLanguage) => Promise<void>
   onUpdateLink: (id: string, linkUrl: string) => Promise<void>
   onRemove: (id: string) => Promise<void>
@@ -118,6 +124,7 @@ function AboutCanvas({
   height,
   backgroundImageId,
   rounded,
+  bordered,
   blocks,
   editable,
   language,
@@ -136,6 +143,9 @@ function AboutCanvas({
   onUpdateLayer,
   onUpdateRounded,
   onUpdateBlockRounded,
+  onUpdateBordered,
+  onUpdateBlockHighlighted,
+  onUpdateBlockIcon,
   onUpdateText,
   onUpdateLink,
   onRemove,
@@ -359,6 +369,33 @@ function AboutCanvas({
     }
   }
 
+  const handleCanvasBordered = async (checked: boolean) => {
+    setError(null)
+    try {
+      await onUpdateBordered(checked)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not change the border.')
+    }
+  }
+
+  const handleBlockHighlighted = async (block: AboutPageBlock, checked: boolean) => {
+    setError(null)
+    try {
+      await onUpdateBlockHighlighted(block.id, checked)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not change the highlight.')
+    }
+  }
+
+  const handleBlockIcon = async (block: AboutPageBlock, icon: string | null) => {
+    setError(null)
+    try {
+      await onUpdateBlockIcon(block.id, icon)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not change the icon.')
+    }
+  }
+
   const commitLayer = async (block: AboutPageBlock) => {
     const raw = layerDraft
     setLayerDraft(null)
@@ -562,6 +599,14 @@ function AboutCanvas({
             />
             {aboutEditText('rounded', language)}
           </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={bordered}
+              onChange={(e) => handleCanvasBordered(e.target.checked)}
+            />
+            {aboutEditText('bordered', language)}
+          </label>
           <button
             type="button"
             className="btn btn-secondary ml-auto text-[var(--color-accent)]"
@@ -574,11 +619,11 @@ function AboutCanvas({
 
       <div
         ref={canvasRef}
-        className={
-          editable
-            ? 'about-canvas relative w-full border border-dashed border-[var(--color-divider)]'
-            : 'about-canvas relative w-full'
-        }
+        className={`about-canvas relative w-full${
+          editable || bordered
+            ? ` border ${bordered ? 'border-solid' : 'border-dashed'} border-[var(--color-divider)]`
+            : ''
+        }`}
         style={{
           aspectRatio: `100 / ${liveHeight ?? height}`,
           containerType: 'inline-size',
@@ -668,11 +713,21 @@ function AboutCanvas({
                     }}
                     onDoubleClick={() => editable && startEditingText(block)}
                   >
-                    {renderRichText(displayTextFor(block, language))}
+                    {renderRichText(
+                      displayTextFor(block, language),
+                      renderAboutIcon(block.icon, {
+                        size: '1em',
+                        stroke: 1.75,
+                        'aria-hidden': true,
+                        style: { display: 'inline-block', verticalAlign: '-0.12em', marginRight: '0.4em' },
+                      }),
+                    )}
                   </a>
                 ) : (
                   <div
-                    className="about-canvas-block-text h-full w-full overflow-hidden text-sm leading-relaxed [&_*]:m-0"
+                    className={`about-canvas-block-text h-full w-full overflow-hidden text-sm leading-relaxed [&_*]:m-0${
+                      block.highlighted ? ' is-highlighted' : ''
+                    }`}
                     style={{ textAlign: textAlignFor(block.align) }}
                     onDoubleClick={() => editable && startEditingText(block)}
                   >
@@ -765,6 +820,23 @@ function AboutCanvas({
                     ⟶
                   </button>
                 </>
+              )}
+              {selectedBlock.type === 'BUTTON' && (
+                <AboutIconPicker
+                  value={selectedBlock.icon}
+                  language={language}
+                  onSelect={(icon) => handleBlockIcon(selectedBlock, icon)}
+                />
+              )}
+              {selectedBlock.type === 'TEXT' && (
+                <label className="flex items-center gap-1 text-[11px]">
+                  <input
+                    type="checkbox"
+                    checked={selectedBlock.highlighted}
+                    onChange={(e) => handleBlockHighlighted(selectedBlock, e.target.checked)}
+                  />
+                  {aboutEditText('highlighted', language)}
+                </label>
               )}
               <label className="flex items-center gap-1 text-[11px]">
                 <input

@@ -27,6 +27,10 @@ const ABOUT_EDIT_TEXT = {
   moveUp: { EN: 'Move up', RU: 'Переместить выше', SRB: 'Pomeri gore' },
   moveDown: { EN: 'Move down', RU: 'Переместить ниже', SRB: 'Pomeri dole' },
   rounded: { EN: 'Rounded', RU: 'Скруглить', SRB: 'Zaobljeno' },
+  bordered: { EN: 'Border', RU: 'Рамка', SRB: 'Okvir' },
+  highlighted: { EN: 'Highlight', RU: 'Выделить', SRB: 'Istakni' },
+  icon: { EN: 'Icon', RU: 'Иконка', SRB: 'Ikona' },
+  noIcon: { EN: 'No icon', RU: 'Без иконки', SRB: 'Bez ikone' },
   layer: { EN: 'Layer', RU: 'Слой', SRB: 'Sloj' },
   layerHint: {
     EN: 'Layer: 1 is the backmost',

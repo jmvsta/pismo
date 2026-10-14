@@ -7,6 +7,9 @@ export interface AboutService {
   updateCanvasHeight(id: string, height: number): Promise<AboutPage>
   updateCanvasRounded(id: string, rounded: boolean): Promise<AboutPage>
   updateBlockRounded(id: string, rounded: boolean): Promise<AboutPage>
+  updateCanvasBordered(id: string, bordered: boolean): Promise<AboutPage>
+  updateBlockHighlighted(id: string, highlighted: boolean): Promise<AboutPage>
+  updateBlockIcon(id: string, icon: string | null): Promise<AboutPage>
   updateCanvasBackground(id: string, mimeType: string, imageBase64: string): Promise<AboutPage>
   removeCanvasBackground(id: string): Promise<AboutPage>
   removeCanvas(id: string): Promise<AboutPage>

@@ -29,6 +29,7 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
     private val C_BACKGROUND_IMAGE_ID = DSL.field("background_image_id", SQLDataType.UUID)
     private val C_POSITION = DSL.field("position", SQLDataType.INTEGER)
     private val C_ROUNDED = DSL.field("rounded", SQLDataType.BOOLEAN)
+    private val C_BORDERED = DSL.field("bordered", SQLDataType.BOOLEAN)
     private val C_UPDATED_AT = DSL.field("updated_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
 
     private val BLOCKS = DSL.table("about_page_blocks")
@@ -48,6 +49,8 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
     private val B_Z_INDEX = DSL.field("z_index", SQLDataType.INTEGER)
     private val B_SLIDE_INTERVAL = DSL.field("slide_interval_seconds", SQLDataType.DOUBLE)
     private val B_ROUNDED = DSL.field("rounded", SQLDataType.BOOLEAN)
+    private val B_HIGHLIGHTED = DSL.field("highlighted", SQLDataType.BOOLEAN)
+    private val B_ICON = DSL.field("icon", SQLDataType.VARCHAR)
     private val B_CREATED_AT = DSL.field("created_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
     private val B_UPDATED_AT = DSL.field("updated_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
 
@@ -106,6 +109,15 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
     override fun updateCanvasRounded(id: UUID, rounded: Boolean): AboutPage {
         dsl.update(CANVASES)
             .set(C_ROUNDED, rounded)
+            .set(C_UPDATED_AT, OffsetDateTime.now())
+            .where(C_ID.eq(id))
+            .execute()
+        return find()
+    }
+
+    override fun updateCanvasBordered(id: UUID, bordered: Boolean): AboutPage {
+        dsl.update(CANVASES)
+            .set(C_BORDERED, bordered)
             .set(C_UPDATED_AT, OffsetDateTime.now())
             .where(C_ID.eq(id))
             .execute()
@@ -189,9 +201,6 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
         return find()
     }
 
-    override fun isGalleryBlock(id: UUID): Boolean =
-        dsl.select(B_TYPE).from(BLOCKS).where(B_ID.eq(id)).fetchOne(B_TYPE) == AboutPageBlockType.GALLERY.name
-
     override fun countGalleryPhotos(blockId: UUID): Int =
         dsl.fetchCount(GALLERY_PHOTOS, G_BLOCK_ID.eq(blockId))
 
@@ -250,6 +259,27 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
             .execute()
         return find()
     }
+
+    override fun updateBlockHighlighted(id: UUID, highlighted: Boolean): AboutPage {
+        dsl.update(BLOCKS)
+            .set(B_HIGHLIGHTED, highlighted)
+            .set(B_UPDATED_AT, OffsetDateTime.now())
+            .where(B_ID.eq(id))
+            .execute()
+        return find()
+    }
+
+    override fun updateBlockIcon(id: UUID, icon: String?): AboutPage {
+        dsl.update(BLOCKS)
+            .set(B_ICON, icon)
+            .set(B_UPDATED_AT, OffsetDateTime.now())
+            .where(B_ID.eq(id))
+            .execute()
+        return find()
+    }
+
+    override fun findBlockType(id: UUID): AboutPageBlockType? =
+        dsl.select(B_TYPE).from(BLOCKS).where(B_ID.eq(id)).fetchOne(B_TYPE)?.let { AboutPageBlockType.valueOf(it) }
 
     override fun updateBlockLayer(id: UUID, layer: Int): AboutPage {
         dsl.transaction { configuration ->
@@ -333,14 +363,14 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
         val blockRecordsByCanvas = dsl
             .select(
                 B_ID, B_CANVAS_ID, B_TYPE, B_TEXT_EN, B_TEXT_RU, B_TEXT_SRB, B_IMAGE_ID, B_LINK_URL, B_X, B_Y, B_WIDTH,
-                B_HEIGHT, B_ALIGN, B_SLIDE_INTERVAL, B_ROUNDED,
+                B_HEIGHT, B_ALIGN, B_SLIDE_INTERVAL, B_ROUNDED, B_HIGHLIGHTED, B_ICON,
             )
             .from(BLOCKS)
             .orderBy(B_Z_INDEX, B_CREATED_AT, B_ID)
             .fetch()
             .groupBy { it[B_CANVAS_ID]!! }
 
-        return dsl.select(C_ID, C_HEIGHT, C_BACKGROUND_IMAGE_ID, C_ROUNDED)
+        return dsl.select(C_ID, C_HEIGHT, C_BACKGROUND_IMAGE_ID, C_ROUNDED, C_BORDERED)
             .from(CANVASES)
             .orderBy(C_POSITION, C_ID)
             .fetch {
@@ -350,6 +380,7 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
                     height = it[C_HEIGHT]!!,
                     backgroundImageId = it[C_BACKGROUND_IMAGE_ID],
                     rounded = it[C_ROUNDED]!!,
+                    bordered = it[C_BORDERED]!!,
                     blocks = (blockRecordsByCanvas[canvasId] ?: emptyList()).mapIndexed { index, block ->
                         AboutPageBlock(
                             id = block[B_ID]!!,
@@ -368,6 +399,8 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
                             align = AboutPageBlockAlign.valueOf(block[B_ALIGN]!!),
                             layer = index + 1,
                             rounded = block[B_ROUNDED]!!,
+                            highlighted = block[B_HIGHLIGHTED]!!,
+                            icon = block[B_ICON],
                         )
                     },
                 )

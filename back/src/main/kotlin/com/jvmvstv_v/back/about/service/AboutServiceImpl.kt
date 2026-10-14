@@ -2,6 +2,7 @@ package com.jvmvstv_v.back.about.service
 
 import com.jvmvstv_v.back.about.model.AboutPage
 import com.jvmvstv_v.back.about.model.AboutPageBlockAlign
+import com.jvmvstv_v.back.about.model.AboutPageBlockType
 import com.jvmvstv_v.back.about.model.AboutPageLanguage
 import com.jvmvstv_v.back.about.model.AboutPageMoveDirection
 import com.jvmvstv_v.back.about.repository.AboutRepository
@@ -17,6 +18,7 @@ private const val MAX_CANVAS_HEIGHT = 300.0
 private const val MIN_SLIDE_INTERVAL = 1.0
 private const val MAX_SLIDE_INTERVAL = 120.0
 private const val MAX_GALLERY_PHOTOS = 30
+private val ICON_NAME_PATTERN = Regex("^[a-z0-9-]{1,40}$")
 
 @Service
 class AboutServiceImpl(
@@ -51,6 +53,25 @@ class AboutServiceImpl(
     override fun updateBlockRounded(id: UUID, rounded: Boolean): AboutPage {
         CurrentUser.requireModerator()
         return aboutRepository.updateBlockRounded(id, rounded)
+    }
+
+    override fun updateCanvasBordered(id: UUID, bordered: Boolean): AboutPage {
+        CurrentUser.requireModerator()
+        return aboutRepository.updateCanvasBordered(id, bordered)
+    }
+
+    override fun updateBlockHighlighted(id: UUID, highlighted: Boolean): AboutPage {
+        CurrentUser.requireModerator()
+        requireBlockType(id, AboutPageBlockType.TEXT, "Only text blocks can be highlighted")
+        return aboutRepository.updateBlockHighlighted(id, highlighted)
+    }
+
+    override fun updateBlockIcon(id: UUID, icon: String?): AboutPage {
+        CurrentUser.requireModerator()
+        requireBlockType(id, AboutPageBlockType.BUTTON, "Only buttons can have an icon")
+        val name = icon?.trim()?.takeIf { it.isNotEmpty() }
+        if (name != null && !ICON_NAME_PATTERN.matches(name)) throw AuthException("Invalid icon name")
+        return aboutRepository.updateBlockIcon(id, name)
     }
 
     override fun updateCanvasBackground(id: UUID, mimeType: String, imageBase64: String): AboutPage {
@@ -181,8 +202,11 @@ class AboutServiceImpl(
         return aboutRepository.find()
     }
 
-    private fun requireGalleryBlock(id: UUID) {
-        if (!aboutRepository.isGalleryBlock(id)) throw AuthException("Block $id is not a gallery")
+    private fun requireGalleryBlock(id: UUID) =
+        requireBlockType(id, AboutPageBlockType.GALLERY, "Block $id is not a gallery")
+
+    private fun requireBlockType(id: UUID, type: AboutPageBlockType, message: String) {
+        if (aboutRepository.findBlockType(id) != type) throw AuthException(message)
     }
 
     private fun requireValidSlideInterval(seconds: Double) {
