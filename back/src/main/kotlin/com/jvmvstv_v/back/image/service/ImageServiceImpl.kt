@@ -34,6 +34,12 @@ class ImageServiceImpl(private val imageRepository: ImageRepository) : ImageServ
         logger.debug("Deleted image {}", id)
     }
 
+    override fun duplicate(id: UUID, ownerId: UUID): UUID {
+        val copyId = imageRepository.duplicate(id, ownerId) ?: throw AuthException("Image not found")
+        logger.info("Duplicated image {} as {} for owner {}", id, copyId, ownerId)
+        return copyId
+    }
+
     private fun decode(base64Data: String): ByteArray =
         try {
             Base64.getDecoder().decode(base64Data)

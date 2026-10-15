@@ -35,7 +35,7 @@ function ProfileBioEditor({ initialBio, onSave }: ProfileBioEditorProps) {
     <div className="flex flex-col gap-1">
       <textarea
         ref={textareaRef}
-        className="profile-bio w-full resize-y border border-[var(--color-divider)] bg-[var(--color-surface)] p-2 text-[15px] leading-normal text-[var(--color-text)] focus:border-[var(--color-accent)] focus:outline-none"
+        className="input profile-bio w-full"
         rows={3}
         value={bio}
         onChange={(e) => setBio(e.target.value)}

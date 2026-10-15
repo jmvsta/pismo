@@ -10,6 +10,7 @@ export interface AboutService {
   updateCanvasBordered(id: string, bordered: boolean): Promise<AboutPage>
   updateBlockHighlighted(id: string, highlighted: boolean): Promise<AboutPage>
   updateBlockIcon(id: string, icon: string | null): Promise<AboutPage>
+  updateBlockFont(id: string, fontSize: number | null, fontFamily: string | null): Promise<AboutPage>
   updateCanvasBackground(id: string, mimeType: string, imageBase64: string): Promise<AboutPage>
   removeCanvasBackground(id: string): Promise<AboutPage>
   removeCanvas(id: string): Promise<AboutPage>
@@ -50,6 +51,7 @@ export interface AboutService {
   addGalleryPhoto(blockId: string, mimeType: string, imageBase64: string): Promise<AboutPage>
   removeGalleryPhoto(blockId: string, imageId: string): Promise<AboutPage>
   updateGalleryInterval(id: string, slideIntervalSeconds: number): Promise<AboutPage>
+  copyBlock(blockId: string, canvasId: string): Promise<AboutPage>
   updateBlockLayout(id: string, x: number, y: number, width: number, height: number): Promise<AboutPage>
   updateBlockAlign(id: string, align: AboutPageBlockAlign): Promise<AboutPage>
   updateBlockLayer(id: string, layer: number): Promise<AboutPage>

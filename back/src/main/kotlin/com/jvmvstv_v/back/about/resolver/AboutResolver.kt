@@ -44,6 +44,13 @@ class AboutResolver(private val aboutService: AboutService) {
         aboutService.updateBlockHighlighted(id, highlighted)
 
     @MutationMapping
+    fun updateAboutPageBlockFont(
+        @Argument id: UUID,
+        @Argument fontSize: Double?,
+        @Argument fontFamily: String?,
+    ): AboutPage = aboutService.updateBlockFont(id, fontSize, fontFamily)
+
+    @MutationMapping
     fun updateAboutPageBlockIcon(@Argument id: UUID, @Argument icon: String?): AboutPage =
         aboutService.updateBlockIcon(id, icon)
 
@@ -116,6 +123,10 @@ class AboutResolver(private val aboutService: AboutService) {
     @MutationMapping
     fun updateAboutPageGalleryInterval(@Argument id: UUID, @Argument slideIntervalSeconds: Double): AboutPage =
         aboutService.updateGalleryInterval(id, slideIntervalSeconds)
+
+    @MutationMapping
+    fun copyAboutPageBlock(@Argument blockId: UUID, @Argument canvasId: UUID): AboutPage =
+        aboutService.copyBlock(blockId, canvasId)
 
     @MutationMapping
     fun updateAboutPageBlockLayout(

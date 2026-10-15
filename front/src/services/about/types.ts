@@ -22,6 +22,8 @@ export interface AboutPageBlock {
   rounded: boolean
   highlighted: boolean
   icon: string | null
+  fontSize: number | null
+  fontFamily: string | null
 }
 
 export interface AboutPageCanvas {

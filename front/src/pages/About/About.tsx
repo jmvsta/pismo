@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { aboutService } from '../../services/about/index.ts'
 import type { AboutPage, AboutPageBlockAlign } from '../../services/about/index.ts'
@@ -7,6 +7,8 @@ import { useLanguageStore } from '../../store/languageStore.ts'
 import AboutCanvas from './AboutCanvas.tsx'
 import { aboutEditText } from './aboutEditText.ts'
 import { uiText } from '../../i18n/uiText.ts'
+
+const FIELD_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT'])
 
 function About() {
   const currentUser = useUserStore((state) => state.currentUser)
@@ -17,6 +19,63 @@ function About() {
   const [page, setPage] = useState<AboutPage | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editMode, setEditMode] = useState(false)
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null)
+  const [clipboardBlockId, setClipboardBlockId] = useState<string | null>(null)
+  const [activeCanvasId, setActiveCanvasId] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+
+  const handleBlockSelected = useCallback((blockId: string) => {
+    setSelectedBlockId(blockId)
+    // A toolbar field left focused would swallow Ctrl+C / Ctrl+V; selecting a block takes focus off it.
+    const focused = document.activeElement
+    if (focused instanceof HTMLElement && FIELD_TAGS.has(focused.tagName)) focused.blur()
+  }, [])
+
+  useEffect(() => {
+    if (!notice) return
+    const timer = window.setTimeout(() => setNotice(null), 5000)
+    return () => window.clearTimeout(timer)
+  }, [notice])
+
+  // Ctrl/Cmd+C copies the selected block; Ctrl/Cmd+V pastes it onto the canvas last clicked in
+  // (falling back to the selected block's canvas, then the source's). Typing in a field and
+  // copying highlighted text keep their normal behavior.
+  useEffect(() => {
+    if (!editMode || !page) return
+    const canvasOf = (blockId: string | null) =>
+      blockId ? page.canvases.find((canvas) => canvas.blocks.some((block) => block.id === blockId))?.id ?? null : null
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey) return
+      const key = event.key.toLowerCase()
+      if (key !== 'c' && key !== 'v') return
+      const target = event.target as HTMLElement | null
+      if (target && (target.isContentEditable || FIELD_TAGS.has(target.tagName))) return
+
+      if (key === 'c') {
+        if (window.getSelection()?.toString() || !canvasOf(selectedBlockId)) return
+        event.preventDefault()
+        setClipboardBlockId(selectedBlockId)
+        setNotice(aboutEditText('blockCopied', language))
+        return
+      }
+
+      const targetCanvasId = activeCanvasId ?? canvasOf(selectedBlockId) ?? canvasOf(clipboardBlockId)
+      if (!clipboardBlockId || !targetCanvasId) return
+      event.preventDefault()
+      setError(null)
+      aboutService
+        .copyBlock(clipboardBlockId, targetCanvasId)
+        .then((result) => {
+          setPage(result)
+          setNotice(null)
+        })
+        .catch((err) => setError(err instanceof Error ? err.message : 'Could not paste the block.'))
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [editMode, page, selectedBlockId, clipboardBlockId, activeCanvasId, language])
 
   useEffect(() => {
     let cancelled = false
@@ -53,6 +112,7 @@ function About() {
         )}
       </div>
 
+      {notice && <p className="text-muted text-sm">{notice}</p>}
       {error && <p className="text-muted">{error}</p>}
       {!error && !page && <p className="text-muted">Loading…</p>}
 
@@ -70,6 +130,8 @@ function About() {
               language={language}
               canMoveUp={index > 0}
               canMoveDown={index < page.canvases.length - 1}
+              onActivate={() => setActiveCanvasId(canvas.id)}
+              onBlockSelected={handleBlockSelected}
               onMove={async (direction) => setPage(await aboutService.moveCanvas(canvas.id, direction))}
               onAddText={async (text, x, y, width, height) =>
                 setPage(await aboutService.addTextBlock(canvas.id, text, x, y, width, height))
@@ -110,6 +172,9 @@ function About() {
                 setPage(await aboutService.updateBlockHighlighted(id, highlighted))
               }
               onUpdateBlockIcon={async (id, icon) => setPage(await aboutService.updateBlockIcon(id, icon))}
+              onUpdateBlockFont={async (id, fontSize, fontFamily) =>
+                setPage(await aboutService.updateBlockFont(id, fontSize, fontFamily))
+              }
               onUpdateText={async (id, text, textLanguage) =>
                 setPage(await aboutService.updateBlockText(id, text, textLanguage))
               }

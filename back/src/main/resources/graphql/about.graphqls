@@ -11,6 +11,8 @@ extend type Mutation {
     updateAboutPageCanvasBordered(id: ID!, bordered: Boolean!): AboutPage!
     updateAboutPageBlockHighlighted(id: ID!, highlighted: Boolean!): AboutPage!
     updateAboutPageBlockIcon(id: ID!, icon: String): AboutPage!
+    """Sets a TEXT block's font size (px at desktop width, 8-120) and family (serif, handwriting or mono); null restores the default."""
+    updateAboutPageBlockFont(id: ID!, fontSize: Float, fontFamily: String): AboutPage!
     updateAboutPageCanvasBackground(id: ID!, mimeType: String!, imageBase64: String!): AboutPage!
     removeAboutPageCanvasBackground(id: ID!): AboutPage!
     removeAboutPageCanvas(id: ID!): AboutPage!
@@ -51,6 +53,8 @@ extend type Mutation {
     addAboutPageGalleryPhoto(blockId: ID!, mimeType: String!, imageBase64: String!): AboutPage!
     removeAboutPageGalleryPhoto(blockId: ID!, imageId: ID!): AboutPage!
     updateAboutPageGalleryInterval(id: ID!, slideIntervalSeconds: Float!): AboutPage!
+    """Copies a block (including its own duplicates of any photos) onto a canvas -- the same one or another."""
+    copyAboutPageBlock(blockId: ID!, canvasId: ID!): AboutPage!
     updateAboutPageBlockLayout(id: ID!, x: Float!, y: Float!, width: Float!, height: Float!): AboutPage!
     updateAboutPageBlockAlign(id: ID!, align: AboutPageBlockAlign!): AboutPage!
     updateAboutPageBlockLayer(id: ID!, layer: Int!): AboutPage!
@@ -129,4 +133,6 @@ type AboutPageBlock {
     rounded: Boolean!
     highlighted: Boolean!
     icon: String
+    fontSize: Float
+    fontFamily: String
 }

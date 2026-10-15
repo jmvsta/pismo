@@ -10,21 +10,28 @@ import com.jvmvstv_v.back.common.AuthException
 import com.jvmvstv_v.back.common.CurrentUser
 import com.jvmvstv_v.back.image.model.ImageOwnerType
 import com.jvmvstv_v.back.image.service.ImageService
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.UUID
 
+private const val PASTE_OFFSET = 3.0
 private const val MIN_CANVAS_HEIGHT = 10.0
 private const val MAX_CANVAS_HEIGHT = 300.0
 private const val MIN_SLIDE_INTERVAL = 1.0
 private const val MAX_SLIDE_INTERVAL = 120.0
 private const val MAX_GALLERY_PHOTOS = 30
 private val ICON_NAME_PATTERN = Regex("^[a-z0-9-]{1,40}$")
+private const val MIN_FONT_SIZE = 8.0
+private const val MAX_FONT_SIZE = 120.0
+private val FONT_FAMILIES = setOf("serif", "handwriting", "mono")
 
 @Service
 class AboutServiceImpl(
     private val aboutRepository: AboutRepository,
     private val imageService: ImageService,
 ) : AboutService {
+    private val logger = LoggerFactory.getLogger(AboutServiceImpl::class.java)
+
     override fun aboutPage(): AboutPage = aboutRepository.find()
 
     override fun addCanvas(): AboutPage {
@@ -64,6 +71,17 @@ class AboutServiceImpl(
         CurrentUser.requireModerator()
         requireBlockType(id, AboutPageBlockType.TEXT, "Only text blocks can be highlighted")
         return aboutRepository.updateBlockHighlighted(id, highlighted)
+    }
+
+    override fun updateBlockFont(id: UUID, fontSize: Double?, fontFamily: String?): AboutPage {
+        CurrentUser.requireModerator()
+        requireBlockType(id, AboutPageBlockType.TEXT, "Only text blocks have a font")
+        if (fontSize != null && fontSize !in MIN_FONT_SIZE..MAX_FONT_SIZE) {
+            throw AuthException("Font size must be between $MIN_FONT_SIZE and $MAX_FONT_SIZE")
+        }
+        val family = fontFamily?.trim()?.takeIf { it.isNotEmpty() }
+        if (family != null && family !in FONT_FAMILIES) throw AuthException("Unknown font")
+        return aboutRepository.updateBlockFont(id, fontSize, family)
     }
 
     override fun updateBlockIcon(id: UUID, icon: String?): AboutPage {
@@ -166,6 +184,34 @@ class AboutServiceImpl(
         requireGalleryBlock(id)
         requireValidSlideInterval(slideIntervalSeconds)
         return aboutRepository.updateGalleryInterval(id, slideIntervalSeconds)
+    }
+
+    // Pasting into the same canvas nudges the copy so it doesn't sit exactly on top of the original;
+    // into another canvas it keeps the original's position. Images are duplicated, not shared,
+    // so deleting the copy (or the original) never takes the other one's photos with it.
+    override fun copyBlock(blockId: UUID, canvasId: UUID): AboutPage {
+        CurrentUser.requireModerator()
+        val page = aboutRepository.find()
+        val (sourceCanvasId, source) = page.canvases.firstNotNullOfOrNull { canvas ->
+            canvas.blocks.firstOrNull { it.id == blockId }?.let { canvas.id to it }
+        } ?: throw AuthException("The block to copy no longer exists")
+        if (page.canvases.none { it.id == canvasId }) throw AuthException("The canvas to paste into no longer exists")
+
+        val newId = UUID.randomUUID()
+        val sameCanvas = sourceCanvasId == canvasId
+        val x = if (sameCanvas) minOf(source.x + PASTE_OFFSET, maxOf(0.0, 100.0 - source.width)) else source.x
+        val y = if (sameCanvas) minOf(source.y + PASTE_OFFSET, maxOf(0.0, 100.0 - source.height)) else source.y
+
+        val imageId = source.imageId?.let { imageService.duplicate(it, newId) }
+        val galleryImageIds = source.galleryImageIds.map { imageService.duplicate(it, newId) }
+        try {
+            val updated = aboutRepository.copyBlock(newId, canvasId, source, x, y, imageId, galleryImageIds)
+            logger.info("Block {} ({}) copied to canvas {} as {}", blockId, source.type, canvasId, newId)
+            return updated
+        } catch (ex: Exception) {
+            (listOfNotNull(imageId) + galleryImageIds).forEach { imageService.delete(it) }
+            throw ex
+        }
     }
 
     override fun updateBlockLayout(id: UUID, x: Double, y: Double, width: Double, height: Double): AboutPage {

@@ -3,9 +3,12 @@ import type { User } from '../../services/user/index.ts'
 import type { UserBadge } from '../../services/badges/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
 import { renderRichText } from '../../lib/richText.tsx'
+import { prepareImageForUpload } from '../../lib/prepareImage.ts'
 import BadgeChips from './BadgeChips.tsx'
 import ProfileBioEditor from './ProfileBioEditor.tsx'
 import ProfileNicknameEditor from './ProfileNicknameEditor.tsx'
+
+const AVATAR_MAX_SIDE = 1024
 
 interface ProfileHeaderProps {
   user: User
@@ -23,15 +26,6 @@ function formatLocation(user: User): string {
   return [user.city, user.countryCode].filter(Boolean).join(', ')
 }
 
-function readAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve((reader.result as string).split(',')[1] ?? '')
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(file)
-  })
-}
-
 function ProfileHeader({ user, badges, onAvatarChange, onBioChange, onNicknameChange }: ProfileHeaderProps) {
   const location = formatLocation(user)
   const avatarUrl = imageUrl(user.avatarImageId)
@@ -45,8 +39,8 @@ function ProfileHeader({ user, badges, onAvatarChange, onBioChange, onNicknameCh
     setUploading(true)
     setError(null)
     try {
-      const imageBase64 = await readAsBase64(file)
-      await onAvatarChange(file.type, imageBase64)
+      const { mimeType, imageBase64 } = await prepareImageForUpload(file, { maxSide: AVATAR_MAX_SIDE })
+      await onAvatarChange(mimeType, imageBase64)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not update your avatar.')
     } finally {
