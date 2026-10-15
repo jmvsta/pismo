@@ -13,6 +13,7 @@ import com.jvmvstv_v.back.notification.model.NotificationType
 import com.jvmvstv_v.back.notification.service.NotificationService
 import com.jvmvstv_v.back.user.model.UserRole
 import com.jvmvstv_v.back.user.repository.UserRepository
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.UUID
 
@@ -24,6 +25,8 @@ class MatchingServiceImpl(
     private val notificationService: NotificationService,
     private val userRepository: UserRepository,
 ) : MatchingService {
+    private val logger = LoggerFactory.getLogger(MatchingServiceImpl::class.java)
+
     override fun myMatches(limit: Int?): List<UserMatch> =
         matchingRepository.findMatchesForUser(CurrentUser.id, limit)
 
@@ -45,9 +48,14 @@ class MatchingServiceImpl(
         }
         val incomingFromThem = pendingWithThem.find { it.requester.id == addresseeId && it.addressee.id == requesterId }
         if (incomingFromThem != null) {
+            logger.info(
+                "User {} reached out to user {} who had already reached out to them (request {}); accepting it",
+                requesterId, addresseeId, incomingFromThem.id,
+            )
             return respondToPenPalRequest(incomingFromThem.id, true)
         }
         val request = matchingRepository.createRequest(requesterId, addresseeId, message)
+        logger.info("Pen pal request {} created: user {} -> user {}", request.id, requesterId, addresseeId)
         notificationService.notify(
             addresseeId,
             NotificationType.PEN_PAL_REQUEST,
@@ -67,6 +75,10 @@ class MatchingServiceImpl(
             throw AuthException("This request is no longer pending")
         }
         val updated = matchingRepository.respondToRequest(id, accept)
+        logger.info(
+            "Pen pal request {} {} by user {} (requester {})",
+            id, if (accept) "accepted, connection created" else "declined", CurrentUser.id, request.requester.id,
+        )
         if (accept) {
             notificationService.notify(
                 request.requester.id,
@@ -87,7 +99,9 @@ class MatchingServiceImpl(
         if (request.status != PenPalRequestStatus.PENDING) {
             throw AuthException("This request is no longer pending")
         }
-        return matchingRepository.cancelRequest(id)
+        val cancelled = matchingRepository.cancelRequest(id)
+        logger.info("Pen pal request {} cancelled by its requester {}", id, CurrentUser.id)
+        return cancelled
     }
 
     override fun endConnection(id: UUID): PenPalConnection {
@@ -98,7 +112,9 @@ class MatchingServiceImpl(
         if (connection.endedAt != null) {
             throw AuthException("This connection has already ended")
         }
-        return matchingRepository.endConnection(id)
+        val ended = matchingRepository.endConnection(id)
+        logger.info("Connection {} between users {} and {} ended by user {}", id, connection.userA.id, connection.userB.id, CurrentUser.id)
+        return ended
     }
 
     override fun suggestedProfiles(search: String?, limit: Int?, offset: Int?): List<SuggestedProfile> =
@@ -116,7 +132,10 @@ class MatchingServiceImpl(
             offset ?: 0,
         )
 
-    override fun hideProfile(userId: UUID) = matchingRepository.hideProfile(CurrentUser.id, userId)
+    override fun hideProfile(userId: UUID) {
+        matchingRepository.hideProfile(CurrentUser.id, userId)
+        logger.info("User {} hid the profile of user {}", CurrentUser.id, userId)
+    }
 
     override fun pendingIncomingRequestCount(): Int = matchingRepository.countPendingIncomingRequests(CurrentUser.id)
 
@@ -124,9 +143,16 @@ class MatchingServiceImpl(
         val requesterId = CurrentUser.id
         val moderators = userRepository.findAll()
             .filter { it.role == UserRole.MODERATOR && it.id != requesterId }
+        if (moderators.isEmpty()) {
+            logger.warn("User {} asked for a letter but no user has the MODERATOR role; nothing was sent", requesterId)
+        }
         val pendingWithRequester = matchingRepository.findRequestsForUser(requesterId, PenPalRequestStatus.PENDING)
+        var reached = 0
         moderators.forEach { moderator ->
-            if (matchingRepository.isConnected(requesterId, moderator.id)) return@forEach
+            if (matchingRepository.isConnected(requesterId, moderator.id)) {
+                logger.debug("User {} is already connected to moderator {}; skipping", requesterId, moderator.id)
+                return@forEach
+            }
             val existingPending = pendingWithRequester.find {
                 (it.requester.id == requesterId && it.addressee.id == moderator.id) ||
                     (it.requester.id == moderator.id && it.addressee.id == requesterId)
@@ -146,7 +172,12 @@ class MatchingServiceImpl(
                 "${request.requester.nickname} asked to be sent a letter",
                 subjectId = requesterId,
             )
+            reached++
         }
+        logger.info(
+            "User {} asked for a letter: connected with {} of {} moderator(s)",
+            requesterId, reached, moderators.size,
+        )
         return true
     }
 }

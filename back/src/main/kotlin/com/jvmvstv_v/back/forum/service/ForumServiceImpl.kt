@@ -15,6 +15,7 @@ import com.jvmvstv_v.back.forum.model.UpdateForumReplyInput
 import com.jvmvstv_v.back.forum.repository.ForumRepository
 import com.jvmvstv_v.back.image.model.ImageOwnerType
 import com.jvmvstv_v.back.image.service.ImageService
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.UUID
 
@@ -23,6 +24,8 @@ class ForumServiceImpl(
     private val forumRepository: ForumRepository,
     private val imageService: ImageService,
 ) : ForumService {
+    private val logger = LoggerFactory.getLogger(ForumServiceImpl::class.java)
+
     override fun topics(): List<ForumTopic> = forumRepository.findTopics()
 
     override fun posts(topicId: Int?, limit: Int?, offset: Int?): List<ForumPost> =
@@ -38,7 +41,9 @@ class ForumServiceImpl(
             val image = imageService.store(ImageOwnerType.FORUM_POST_PHOTO, photoId, photo.mimeType, photo.imageBase64)
             NewForumPostPhoto(id = photoId, imageId = image.id, caption = photo.caption)
         }
-        return forumRepository.createPost(CurrentUser.id, input, photos)
+        val created = forumRepository.createPost(CurrentUser.id, input, photos)
+        logger.info("User {} created forum post {} in topic {} with {} photo(s)", CurrentUser.id, created.id, input.topicId, photos.size)
+        return created
     }
 
     override fun createReply(input: CreateForumReplyInput): ForumReply {
@@ -49,7 +54,9 @@ class ForumServiceImpl(
             val image = imageService.store(ImageOwnerType.FORUM_REPLY_PHOTO, photoId, photo.mimeType, photo.imageBase64)
             NewForumReplyPhoto(id = photoId, imageId = image.id, caption = photo.caption)
         }
-        return forumRepository.createReply(CurrentUser.id, input, photos)
+        val created = forumRepository.createReply(CurrentUser.id, input, photos)
+        logger.info("User {} replied to forum post {} (reply {}) with {} photo(s)", CurrentUser.id, input.postId, created.id, photos.size)
+        return created
     }
 
     override fun updatePost(id: UUID, input: UpdateForumPostInput): ForumPost {
@@ -68,7 +75,9 @@ class ForumServiceImpl(
             }
             forumRepository.addPostPhotos(id, newPhotos)
         }
-        return forumRepository.updatePost(id, input)
+        val updated = forumRepository.updatePost(id, input)
+        logger.info("User {} edited forum post {} (author {})", CurrentUser.id, id, post.author.id)
+        return updated
     }
 
     override fun updateReply(id: UUID, input: UpdateForumReplyInput): ForumReply {
@@ -87,7 +96,9 @@ class ForumServiceImpl(
             }
             forumRepository.addReplyPhotos(id, newPhotos)
         }
-        return forumRepository.updateReply(id, input.body)
+        val updated = forumRepository.updateReply(id, input.body)
+        logger.info("User {} edited forum reply {} (author {})", CurrentUser.id, id, reply.author.id)
+        return updated
     }
 
     override fun deletePost(id: UUID) {
@@ -96,6 +107,7 @@ class ForumServiceImpl(
             throw AuthException("You can only delete your own post")
         }
         forumRepository.deletePost(id)
+        logger.info("User {} deleted forum post {} (author {})", CurrentUser.id, id, post.author.id)
     }
 
     override fun deleteReply(id: UUID) {
@@ -107,6 +119,7 @@ class ForumServiceImpl(
             throw AuthException("Cannot delete a reply that still has replies")
         }
         forumRepository.deleteReply(id)
+        logger.info("User {} deleted forum reply {} (author {})", CurrentUser.id, id, reply.author.id)
     }
 
     override fun thankPost(postId: UUID): ForumPost {
@@ -123,17 +136,22 @@ class ForumServiceImpl(
 
     override fun createTopic(input: CreateForumTopicInput): ForumTopic {
         CurrentUser.requireModerator()
-        return forumRepository.createTopic(input)
+        val created = forumRepository.createTopic(input)
+        logger.info("User {} created forum topic {}", CurrentUser.id, created.id)
+        return created
     }
 
     override fun setTopicActive(topicId: Int, active: Boolean): ForumTopic {
         CurrentUser.requireAdmin()
-        return forumRepository.setTopicActive(topicId, active)
+        val updated = forumRepository.setTopicActive(topicId, active)
+        logger.info("Admin {} {} forum topic {}", CurrentUser.id, if (active) "unfroze" else "froze", topicId)
+        return updated
     }
 
     override fun deleteTopic(topicId: Int) {
         CurrentUser.requireAdmin()
         if (forumRepository.hasPosts(topicId)) throw AuthException("Cannot remove a topic that still has posts")
         forumRepository.deleteTopic(topicId)
+        logger.info("Admin {} deleted forum topic {}", CurrentUser.id, topicId)
     }
 }

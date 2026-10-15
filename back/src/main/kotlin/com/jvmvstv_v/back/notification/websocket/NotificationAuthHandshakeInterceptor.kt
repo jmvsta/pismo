@@ -4,6 +4,7 @@ import com.jvmvstv_v.back.user.repository.UserRepository
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
 import org.springframework.http.server.ServletServerHttpRequest
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.socket.WebSocketHandler
 import org.springframework.web.socket.server.HandshakeInterceptor
@@ -16,15 +17,26 @@ const val NOTIFICATION_SESSION_USER_ID = "userId"
 // accepting the connection and closing it later.
 @Component
 class NotificationAuthHandshakeInterceptor(private val userRepository: UserRepository) : HandshakeInterceptor {
+    private val logger = LoggerFactory.getLogger(NotificationAuthHandshakeInterceptor::class.java)
+
     override fun beforeHandshake(
         request: ServerHttpRequest,
         response: ServerHttpResponse,
         wsHandler: WebSocketHandler,
         attributes: MutableMap<String, Any>,
     ): Boolean {
-        val token = tokenFrom(request) ?: return false
-        val principal = userRepository.findActiveUserByToken(token) ?: return false
+        val token = tokenFrom(request)
+        if (token == null) {
+            logger.debug("Notification socket rejected: no token in the handshake")
+            return false
+        }
+        val principal = userRepository.findActiveUserByToken(token)
+        if (principal == null) {
+            logger.info("Notification socket rejected: token matches no active user (unknown, expired or suspended)")
+            return false
+        }
         attributes[NOTIFICATION_SESSION_USER_ID] = principal.id
+        logger.debug("Notification socket accepted for user {}", principal.id)
         return true
     }
 

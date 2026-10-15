@@ -6,6 +6,16 @@ spring:
   jooq:
     sql-dialect: postgres
 
+logging:
+  pattern:
+    # requestId ties together every line of one HTTP request (also returned to the client in the
+    # X-Request-Id response header); userId is the authenticated account, empty when anonymous.
+    level: "%5p [req=%X{requestId:-} user=%X{userId:-}]"
+  level:
+    # INFO everywhere by default. Set LOGGING_LEVEL_COM_JVMVSTV_V_BACK=DEBUG to turn on per-call
+    # service/repository tracing (see CallTraceAspect) without a code change.
+    com.jvmvstv_v.back: INFO
+
 management:
   endpoints:
     web:
