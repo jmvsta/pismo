@@ -12,6 +12,7 @@ import com.jvmvstv_v.back.wallet.model.Wallet
 import com.jvmvstv_v.back.wallet.model.WalletTransaction
 import com.jvmvstv_v.back.wallet.repository.WalletRepository
 import com.jvmvstv_v.back.wallet.stripe.StripeGateway
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.UUID
 
@@ -21,6 +22,8 @@ class WalletServiceImpl(
     private val userRepository: UserRepository,
     private val stripeGateway: StripeGateway,
 ) : WalletService {
+    private val logger = LoggerFactory.getLogger(WalletServiceImpl::class.java)
+
     override fun myWallet(): Wallet? = walletRepository.findWalletForUser(CurrentUser.id)
 
     override fun plans(): List<SubscriptionPlan> = walletRepository.findPlans()
@@ -33,26 +36,37 @@ class WalletServiceImpl(
     override fun initiateTopUp(amountMinor: Int, currency: String): WalletTransaction {
         if (amountMinor <= 0) throw AuthException("Top-up amount must be positive")
         if (!currency.matches(Regex("^[A-Z]{3}$"))) throw AuthException("Currency must be a 3-letter code, e.g. EUR")
-        return walletRepository.initiateTopUp(CurrentUser.id, amountMinor, currency)
+        val transaction = walletRepository.initiateTopUp(CurrentUser.id, amountMinor, currency)
+        logger.info("User {} initiated a top-up of {} {} (minor units), transaction {}", CurrentUser.id, amountMinor, currency, transaction.id)
+        return transaction
     }
 
-    override fun subscribeToPlan(planId: Int): PlanSubscription =
-        walletRepository.subscribeToPlan(CurrentUser.id, planId)
+    override fun subscribeToPlan(planId: Int): PlanSubscription {
+        val subscription = walletRepository.subscribeToPlan(CurrentUser.id, planId)
+        logger.info("User {} subscribed to plan {} (subscription {})", CurrentUser.id, planId, subscription.id)
+        return subscription
+    }
 
     override fun cancelSubscription(id: UUID): PlanSubscription {
         requireOwnSubscription(id)
         walletRepository.findStripeSubscriptionId(id)?.let { stripeGateway.cancelSubscription(it) }
-        return walletRepository.cancelSubscription(id)
+        val cancelled = walletRepository.cancelSubscription(id)
+        logger.info("User {} cancelled subscription {}", CurrentUser.id, id)
+        return cancelled
     }
 
     override fun addSubscriptionMember(subscriptionId: UUID, userId: UUID, isMinor: Boolean): SubscriptionMember {
         requireOwnSubscription(subscriptionId)
-        return walletRepository.addSubscriptionMember(subscriptionId, userId, isMinor)
+        val member = walletRepository.addSubscriptionMember(subscriptionId, userId, isMinor)
+        logger.info("User {} added user {} to subscription {} (minor={})", CurrentUser.id, userId, subscriptionId, isMinor)
+        return member
     }
 
     override fun removeSubscriptionMember(subscriptionId: UUID, userId: UUID): SubscriptionMember {
         requireOwnSubscription(subscriptionId)
-        return walletRepository.removeSubscriptionMember(subscriptionId, userId)
+        val member = walletRepository.removeSubscriptionMember(subscriptionId, userId)
+        logger.info("User {} removed user {} from subscription {}", CurrentUser.id, userId, subscriptionId)
+        return member
     }
 
     override fun setAutoRenew(subscriptionId: UUID, autoRenew: Boolean): PlanSubscription {
@@ -60,7 +74,9 @@ class WalletServiceImpl(
         walletRepository.findStripeSubscriptionId(subscriptionId)?.let {
             stripeGateway.setCancelAtPeriodEnd(it, cancelAtPeriodEnd = !autoRenew)
         }
-        return walletRepository.updateAutoRenew(subscriptionId, autoRenew)
+        val updated = walletRepository.updateAutoRenew(subscriptionId, autoRenew)
+        logger.info("User {} set auto-renew={} on subscription {}", CurrentUser.id, autoRenew, subscriptionId)
+        return updated
     }
 
     private fun requireOwnSubscription(subscriptionId: UUID) {
@@ -79,16 +95,20 @@ class WalletServiceImpl(
     override fun addCard(paymentMethodId: String): PaymentMethod {
         val customerId = ensureStripeCustomerId()
         val details = stripeGateway.attachPaymentMethod(customerId, paymentMethodId)
-        return walletRepository.savePaymentMethod(
+        val saved = walletRepository.savePaymentMethod(
             CurrentUser.id, paymentMethodId, details.brand, details.last4, details.expMonth, details.expYear,
         )
+        logger.info("User {} added payment method {}", CurrentUser.id, saved.id)
+        return saved
     }
 
     override fun removeCard(id: UUID): Boolean {
         val owned = walletRepository.findPaymentMethodsForUser(CurrentUser.id).any { it.id == id }
         if (!owned) throw AuthException("This isn't your payment method")
         walletRepository.findStripePaymentMethodId(id)?.let { stripeGateway.detachPaymentMethod(it) }
-        return walletRepository.removePaymentMethod(id)
+        val removed = walletRepository.removePaymentMethod(id)
+        logger.info("User {} removed payment method {}", CurrentUser.id, id)
+        return removed
     }
 
     private fun ensureStripeCustomerId(): String =

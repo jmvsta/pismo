@@ -14,6 +14,7 @@ import com.jvmvstv_v.back.user.model.User
 import com.jvmvstv_v.back.user.model.UserRole
 import com.jvmvstv_v.back.user.model.UserStatus
 import com.jvmvstv_v.back.user.repository.UserRepository
+import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
@@ -33,6 +34,8 @@ class UserServiceImpl(
     private val imageService: ImageService,
     private val emailGateway: EmailGateway,
 ) : UserService {
+    private val logger = LoggerFactory.getLogger(UserServiceImpl::class.java)
+
     override fun currentUser(): User? = CurrentUser.idOrNull?.let { userRepository.findById(it) }
 
     override fun findById(id: UUID): User? = userRepository.findById(id)
@@ -76,18 +79,24 @@ class UserServiceImpl(
             throw AuthException("Email or nickname is already taken")
         }
         issueVerificationCode(user.id, user.email)
+        logger.info("Registered user {}", user.id)
         return user.copy(authToken = issueToken(user.id))
     }
 
     override fun login(input: LoginInput): User {
         val credentials = userRepository.findCredentialsByEmailOrNickname(input.email)
-            ?: throw AuthException("Invalid email/username or password")
+        if (credentials == null) {
+            logger.info("Login rejected: no account matches the given email/username")
+            throw AuthException("Invalid email/username or password")
+        }
         val passwordHash = credentials.passwordHash
         if (passwordHash == null || !passwordEncoder.matches(input.password, passwordHash)) {
+            logger.info("Login rejected for user {}: {}", credentials.id, if (passwordHash == null) "account has no password" else "wrong password")
             throw AuthException("Invalid email/username or password")
         }
         val user = userRepository.findById(credentials.id) ?: error("User ${credentials.id} not found")
         requireActiveStatus(user)
+        logger.info("User {} logged in", user.id)
         return user.copy(authToken = issueToken(user.id))
     }
 
@@ -109,6 +118,7 @@ class UserServiceImpl(
                 val existingId = userRepository.findCredentialsByEmail(email)?.id
                 if (existingId != null) {
                     userRepository.linkOauthAccount(existingId, provider, providerUserId, email)
+                    logger.info("Linked {} sign-in to existing user {}", provider, existingId)
                     existingId
                 } else {
                     val created = userRepository.createOauthUser(
@@ -117,21 +127,33 @@ class UserServiceImpl(
                         provider = provider,
                         providerUserId = providerUserId,
                     )
+                    logger.info("Created user {} from {} sign-in", created.id, provider)
                     return created.copy(authToken = issueToken(created.id))
                 }
             }
         }
         val user = userRepository.findById(userId) ?: error("User $userId not found")
         requireActiveStatus(user)
+        logger.info("User {} signed in with {}", user.id, provider)
         return user.copy(authToken = issueToken(user.id))
     }
 
-    override fun logout() = userRepository.clearAuthToken(CurrentUser.id)
+    override fun logout() {
+        val userId = CurrentUser.id
+        userRepository.clearAuthToken(userId)
+        logger.info("User {} logged out", userId)
+    }
 
     private fun requireActiveStatus(user: User) {
         when (user.status) {
-            UserStatus.DELETED -> throw AuthException("This account has been deleted")
-            UserStatus.SUSPENDED -> throw AuthException("This account has been suspended")
+            UserStatus.DELETED -> {
+                logger.info("Sign-in rejected for user {}: account is deleted", user.id)
+                throw AuthException("This account has been deleted")
+            }
+            UserStatus.SUSPENDED -> {
+                logger.info("Sign-in rejected for user {}: account is suspended", user.id)
+                throw AuthException("This account has been suspended")
+            }
             UserStatus.ACTIVE -> Unit
         }
     }
@@ -145,6 +167,7 @@ class UserServiceImpl(
         }
         if (storedCode != code) throw AuthException("Incorrect code")
         userRepository.markEmailVerified(userId)
+        logger.info("User {} verified their email", userId)
         return userRepository.findById(userId) ?: error("User $userId not found")
     }
 
@@ -153,6 +176,7 @@ class UserServiceImpl(
         val user = userRepository.findById(userId) ?: error("User $userId not found")
         if (user.emailVerifiedAt != null) throw AuthException("Your email is already verified")
         issueVerificationCode(userId, user.email)
+        logger.info("Verification code re-issued for user {}", userId)
     }
 
     override fun listUsers(): List<User> {
@@ -162,18 +186,23 @@ class UserServiceImpl(
 
     override fun setUserStatus(userId: UUID, status: UserStatus): User {
         CurrentUser.requireAdmin()
-        return userRepository.setStatus(userId, status)
+        val updated = userRepository.setStatus(userId, status)
+        logger.info("Admin {} set status of user {} to {}", CurrentUser.id, userId, status)
+        return updated
     }
 
     override fun setUserRole(userId: UUID, role: UserRole): User {
         CurrentUser.requireAdmin()
-        return userRepository.setRole(userId, role)
+        val updated = userRepository.setRole(userId, role)
+        logger.info("Admin {} set role of user {} to {}", CurrentUser.id, userId, role)
+        return updated
     }
 
     private fun issueVerificationCode(userId: UUID, email: String) {
         val code = Random.nextInt(0, 1_000_000).toString().padStart(6, '0')
         userRepository.setEmailVerificationCode(userId, code, OffsetDateTime.now().plus(VERIFICATION_CODE_LIFETIME))
         emailGateway.sendVerificationCode(email, code)
+        logger.debug("Verification code issued for user {}", userId)
     }
 
     private fun issueToken(userId: UUID): String {

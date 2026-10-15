@@ -10,6 +10,13 @@
   padding: clamp(1px, 1cqw, 8px);
 }
 
+/* "Highlight": an accent bar down the left of a text block, scaled with the canvas like the
+   padding above so it stays proportionate on narrow screens. */
+.about-canvas-block-text.is-highlighted {
+  border-left: clamp(2px, 0.3cqw, 4px) solid var(--color-accent);
+  padding-left: clamp(5px, 1.4cqw, 16px);
+}
+
 /* The floors here are only a last-resort safety net against zero/negative font-size --
    they must stay well below any font-size these blocks reach at realistic phone widths,
    or they reintroduce the same overflow they're meant to prevent (a block that fits

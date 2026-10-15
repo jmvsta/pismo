@@ -2,6 +2,7 @@ package com.jvmvstv_v.back.about.repository
 
 import com.jvmvstv_v.back.about.model.AboutPage
 import com.jvmvstv_v.back.about.model.AboutPageBlockAlign
+import com.jvmvstv_v.back.about.model.AboutPageBlockType
 import com.jvmvstv_v.back.about.model.AboutPageLanguage
 import com.jvmvstv_v.back.about.model.AboutPageMoveDirection
 import java.util.UUID
@@ -14,6 +15,7 @@ interface AboutRepository {
     fun moveCanvas(id: UUID, direction: AboutPageMoveDirection): AboutPage
     fun updateCanvasHeight(id: UUID, height: Double): AboutPage
     fun updateCanvasRounded(id: UUID, rounded: Boolean): AboutPage
+    fun updateCanvasBordered(id: UUID, bordered: Boolean): AboutPage
 
     /** Sets the canvas's background image, returning the previous one's id (if any) so the caller can delete its blob. */
     fun setCanvasBackground(id: UUID, imageId: UUID?): UUID?
@@ -42,7 +44,6 @@ interface AboutRepository {
         height: Double,
         slideIntervalSeconds: Double,
     ): AboutPage
-    fun isGalleryBlock(id: UUID): Boolean
     fun countGalleryPhotos(blockId: UUID): Int
     fun addGalleryPhoto(blockId: UUID, imageId: UUID): AboutPage
 
@@ -52,6 +53,11 @@ interface AboutRepository {
     fun updateBlockLayout(id: UUID, x: Double, y: Double, width: Double, height: Double): AboutPage
     fun updateBlockAlign(id: UUID, align: AboutPageBlockAlign): AboutPage
     fun updateBlockRounded(id: UUID, rounded: Boolean): AboutPage
+    fun updateBlockHighlighted(id: UUID, highlighted: Boolean): AboutPage
+
+    /** Sets the block's icon name, or clears it when null. */
+    fun updateBlockIcon(id: UUID, icon: String?): AboutPage
+    fun findBlockType(id: UUID): AboutPageBlockType?
 
     /** Moves the block to the given 1-based layer within its canvas (1 = backmost), shifting the others. */
     fun updateBlockLayer(id: UUID, layer: Int): AboutPage

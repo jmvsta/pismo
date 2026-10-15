@@ -13,6 +13,9 @@ interface AboutService {
     fun updateCanvasHeight(id: UUID, height: Double): AboutPage
     fun updateCanvasRounded(id: UUID, rounded: Boolean): AboutPage
     fun updateBlockRounded(id: UUID, rounded: Boolean): AboutPage
+    fun updateCanvasBordered(id: UUID, bordered: Boolean): AboutPage
+    fun updateBlockHighlighted(id: UUID, highlighted: Boolean): AboutPage
+    fun updateBlockIcon(id: UUID, icon: String?): AboutPage
     fun updateCanvasBackground(id: UUID, mimeType: String, imageBase64: String): AboutPage
     fun removeCanvasBackground(id: UUID): AboutPage
     fun removeCanvas(id: UUID): AboutPage

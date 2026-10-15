@@ -14,6 +14,7 @@ import com.jvmvstv_v.back.matching.model.PenPalRequestSource
 import com.jvmvstv_v.back.matching.repository.MatchingRepository
 import com.jvmvstv_v.back.notification.model.NotificationType
 import com.jvmvstv_v.back.notification.service.NotificationService
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.UUID
 
@@ -26,6 +27,8 @@ class LetterServiceImpl(
     private val letterRankBadgeService: LetterRankBadgeService,
     private val notificationService: NotificationService,
 ) : LetterService {
+    private val logger = LoggerFactory.getLogger(LetterServiceImpl::class.java)
+
     override fun findById(id: UUID): Letter? = letterRepository.findById(id)
 
     override fun forConnection(connectionId: UUID): List<Letter> = letterRepository.findForConnection(connectionId)
@@ -44,7 +47,9 @@ class LetterServiceImpl(
         val otherId = if (connection.userA.id == senderId) connection.userB.id else connection.userA.id
         if (input.recipientId != otherId) throw AuthException("Recipient must be the other person in this connection")
         requireSendersTurn(connection, senderId)
-        return letterRepository.create(senderId, input)
+        val letter = letterRepository.create(senderId, input)
+        logger.info("Letter {} created by user {} for user {} in connection {}", letter.id, senderId, otherId, connection.id)
+        return letter
     }
 
     private fun requireSendersTurn(connection: PenPalConnection, senderId: UUID) {
@@ -68,6 +73,7 @@ class LetterServiceImpl(
 
     override fun updateStatus(id: UUID, status: LetterStatus, location: String?, note: String?): Letter {
         val updated = letterRepository.updateStatus(id, status, location, note)
+        logger.info("Letter {} moved to {} (acting user {})", id, status, CurrentUser.idOrNull)
         letterRankBadgeService.awardForLetterCount(updated.sender.id, letterRepository.countSentByUser(updated.sender.id))
         notifyStatusChange(updated, status)
         return updated
@@ -101,6 +107,9 @@ class LetterServiceImpl(
         return updateStatus(id, LetterStatus.DELIVERED, null, null)
     }
 
-    override fun submitFeedback(input: SubmitLetterFeedbackInput): LetterFeedback =
-        letterRepository.submitFeedback(CurrentUser.id, input)
+    override fun submitFeedback(input: SubmitLetterFeedbackInput): LetterFeedback {
+        val feedback = letterRepository.submitFeedback(CurrentUser.id, input)
+        logger.info("User {} submitted feedback on a letter", CurrentUser.id)
+        return feedback
+    }
 }

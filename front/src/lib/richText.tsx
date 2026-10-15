@@ -56,10 +56,11 @@ function parseInline(text: string): ReactNode[] {
   return nodes
 }
 
-function renderParagraph(block: string, key: number): ReactNode {
+function renderParagraph(block: string, key: number, prefix?: ReactNode): ReactNode {
   const lines = block.split('\n')
   return (
     <p key={key}>
+      {prefix}
       {lines.map((line, lineIndex) => (
         <span key={lineIndex}>
           {parseInline(line)}
@@ -77,19 +78,25 @@ function renderParagraph(block: string, key: number): ReactNode {
  * elements (never dangerouslySetInnerHTML) so user-authored text can't inject markup.
  * Links are only rendered when their href is http(s) or mailto; anything else falls
  * back to plain text. Shared by the About page and the forum.
+ *
+ * `prefix`, when given, is placed inline at the very start of the first block (e.g. an icon
+ * before a button's label) so it sizes and aligns with that text.
  */
-export function renderRichText(source: string): ReactNode {
+export function renderRichText(source: string, prefix?: ReactNode): ReactNode {
   const normalized = source.replace(/\r\n/g, '\n')
   const blocks = normalized.split(/\n{2,}/).map((block) => block.trim()).filter(Boolean)
+
+  if (blocks.length === 0) return prefix ? <p>{prefix}</p> : null
 
   return (
     <>
       {blocks.map((block, index) => {
-        if (block.startsWith('#### ')) return <h5 key={index}>{parseInline(block.slice(5))}</h5>
-        if (block.startsWith('### ')) return <h3 key={index}>{parseInline(block.slice(4))}</h3>
-        if (block.startsWith('## ')) return <h2 key={index}>{parseInline(block.slice(3))}</h2>
-        if (block.startsWith('# ')) return <h1 key={index}>{parseInline(block.slice(2))}</h1>
-        return renderParagraph(block, index)
+        const lead = index === 0 ? prefix : undefined
+        if (block.startsWith('#### ')) return <h5 key={index}>{lead}{parseInline(block.slice(5))}</h5>
+        if (block.startsWith('### ')) return <h3 key={index}>{lead}{parseInline(block.slice(4))}</h3>
+        if (block.startsWith('## ')) return <h2 key={index}>{lead}{parseInline(block.slice(3))}</h2>
+        if (block.startsWith('# ')) return <h1 key={index}>{lead}{parseInline(block.slice(2))}</h1>
+        return renderParagraph(block, index, lead)
       })}
     </>
   )

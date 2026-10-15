@@ -20,6 +20,8 @@ export interface AboutPageBlock {
   align: AboutPageBlockAlign
   layer: number
   rounded: boolean
+  highlighted: boolean
+  icon: string | null
 }
 
 export interface AboutPageCanvas {
@@ -27,6 +29,7 @@ export interface AboutPageCanvas {
   height: number
   backgroundImageId: string | null
   rounded: boolean
+  bordered: boolean
   blocks: AboutPageBlock[]
 }
 

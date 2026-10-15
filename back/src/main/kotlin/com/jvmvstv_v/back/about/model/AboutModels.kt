@@ -24,6 +24,8 @@ data class AboutPageBlock(
     val align: AboutPageBlockAlign,
     val layer: Int,
     val rounded: Boolean,
+    val highlighted: Boolean,
+    val icon: String?,
 )
 
 data class AboutPageCanvas(
@@ -31,6 +33,7 @@ data class AboutPageCanvas(
     val height: Double,
     val backgroundImageId: UUID?,
     val rounded: Boolean,
+    val bordered: Boolean,
     val blocks: List<AboutPageBlock>,
 )
 
