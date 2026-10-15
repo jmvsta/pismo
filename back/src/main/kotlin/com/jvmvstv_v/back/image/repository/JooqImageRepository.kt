@@ -38,6 +38,19 @@ class JooqImageRepository(private val dsl: DSLContext) : ImageRepository {
         dsl.deleteFrom(IMAGES).where(ID.eq(id)).execute()
     }
 
+    override fun duplicate(sourceId: UUID, ownerId: UUID): UUID? {
+        val newId = UUID.randomUUID()
+        val copied = dsl.insertInto(IMAGES)
+            .columns(ID, OWNER_TYPE, OWNER_ID, MIME_TYPE, DATA)
+            .select(
+                dsl.select(DSL.inline(newId, SQLDataType.UUID), OWNER_TYPE, DSL.inline(ownerId, SQLDataType.UUID), MIME_TYPE, DATA)
+                    .from(IMAGES)
+                    .where(ID.eq(sourceId)),
+            )
+            .execute()
+        return if (copied > 0) newId else null
+    }
+
     private fun toImage(record: Record): Image = Image(
         id = record[ID]!!,
         ownerType = ImageOwnerType.valueOf(record[OWNER_TYPE]!!),

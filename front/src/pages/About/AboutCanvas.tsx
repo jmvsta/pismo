@@ -1,5 +1,10 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './AboutCanvas.css'
+import '@fontsource/caveat/400.css'
+import '@fontsource/caveat/700.css'
+import '@fontsource/lora/400.css'
+import '@fontsource/lora/700.css'
+import '@fontsource/lora/400-italic.css'
 import type {
   AboutPageBlock,
   AboutPageBlockAlign,
@@ -9,6 +14,7 @@ import type {
 import { pickTranslation } from '../../services/about/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
 import { renderRichText } from '../../lib/richText.tsx'
+import { prepareImageForUpload } from '../../lib/prepareImage.ts'
 import RichTextLinkPrompt from '../../components/RichTextLinkPrompt/RichTextLinkPrompt.tsx'
 import EmojiPicker from '../../components/EmojiPicker/EmojiPicker.tsx'
 import GallerySlideshow from './GallerySlideshow.tsx'
@@ -16,14 +22,14 @@ import AboutIconPicker from './AboutIconPicker.tsx'
 import { renderAboutIcon } from './aboutIcons.ts'
 import { aboutEditText } from './aboutEditText.ts'
 
-function readAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve((reader.result as string).split(',')[1] ?? '')
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(file)
-  })
-}
+const IMAGE_MAX_SIDE = 2400
+const MIN_FONT_SIZE = 8
+const MAX_FONT_SIZE = 120
+const FONT_FAMILY_OPTIONS = [
+  { value: 'serif', label: 'fontSerif' },
+  { value: 'handwriting', label: 'fontHandwriting' },
+  { value: 'mono', label: 'fontMono' },
+] as const
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max)
@@ -81,6 +87,8 @@ interface AboutCanvasProps {
   language: AboutPageLanguage
   canMoveUp: boolean
   canMoveDown: boolean
+  onActivate: () => void
+  onBlockSelected: (id: string) => void
   onMove: (direction: AboutPageMoveDirection) => Promise<void>
   onAddText: (text: string, x: number, y: number, width: number, height: number) => Promise<void>
   onAddPhoto: (
@@ -111,6 +119,7 @@ interface AboutCanvasProps {
   onUpdateBordered: (bordered: boolean) => Promise<void>
   onUpdateBlockHighlighted: (id: string, highlighted: boolean) => Promise<void>
   onUpdateBlockIcon: (id: string, icon: string | null) => Promise<void>
+  onUpdateBlockFont: (id: string, fontSize: number | null, fontFamily: string | null) => Promise<void>
   onUpdateText: (id: string, text: string, language: AboutPageLanguage) => Promise<void>
   onUpdateLink: (id: string, linkUrl: string) => Promise<void>
   onRemove: (id: string) => Promise<void>
@@ -130,6 +139,8 @@ function AboutCanvas({
   language,
   canMoveUp,
   canMoveDown,
+  onActivate,
+  onBlockSelected,
   onMove,
   onAddText,
   onAddPhoto,
@@ -146,6 +157,7 @@ function AboutCanvas({
   onUpdateBordered,
   onUpdateBlockHighlighted,
   onUpdateBlockIcon,
+  onUpdateBlockFont,
   onUpdateText,
   onUpdateLink,
   onRemove,
@@ -172,7 +184,12 @@ function AboutCanvas({
   const [uploadingGallery, setUploadingGallery] = useState(false)
   const [intervalDraft, setIntervalDraft] = useState<string | null>(null)
   const [layerDraft, setLayerDraft] = useState<string | null>(null)
+  const [fontSizeDraft, setFontSizeDraft] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (selectedId) onBlockSelected(selectedId)
+  }, [selectedId, onBlockSelected])
 
   if (!editable && blocks.length === 0) return null
 
@@ -396,6 +413,26 @@ function AboutCanvas({
     }
   }
 
+  const saveFont = async (block: AboutPageBlock, fontSize: number | null, fontFamily: string | null) => {
+    setError(null)
+    try {
+      await onUpdateBlockFont(block.id, fontSize, fontFamily)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not change the font.')
+    }
+  }
+
+  const commitFontSize = async (block: AboutPageBlock) => {
+    const raw = fontSizeDraft
+    setFontSizeDraft(null)
+    if (raw === null) return
+    const trimmed = raw.trim()
+    const value = trimmed === '' ? null : clamp(Math.round(Number(trimmed)), MIN_FONT_SIZE, MAX_FONT_SIZE)
+    if (value !== null && !Number.isFinite(value)) return
+    if (value === block.fontSize) return
+    await saveFont(block, value, block.fontFamily)
+  }
+
   const commitLayer = async (block: AboutPageBlock) => {
     const raw = layerDraft
     setLayerDraft(null)
@@ -434,7 +471,8 @@ function AboutCanvas({
     setError(null)
     try {
       for (const file of files) {
-        await onAddGalleryPhoto(blockId, file.type, await readAsBase64(file))
+        const { mimeType, imageBase64 } = await prepareImageForUpload(file, { maxSide: IMAGE_MAX_SIDE })
+        await onAddGalleryPhoto(blockId, mimeType, imageBase64)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not upload these photos.')
@@ -476,9 +514,9 @@ function AboutCanvas({
     setUploadingPhoto(true)
     setError(null)
     try {
-      const imageBase64 = await readAsBase64(file)
+      const { mimeType, imageBase64 } = await prepareImageForUpload(file, { maxSide: IMAGE_MAX_SIDE })
       await onAddPhoto(
-        file.type,
+        mimeType,
         imageBase64,
         DEFAULT_PHOTO_LAYOUT.x,
         DEFAULT_PHOTO_LAYOUT.y,
@@ -501,8 +539,8 @@ function AboutCanvas({
     setUploadingBackground(true)
     setError(null)
     try {
-      const imageBase64 = await readAsBase64(file)
-      await onUpdateBackground(file.type, imageBase64)
+      const { mimeType, imageBase64 } = await prepareImageForUpload(file, { maxSide: IMAGE_MAX_SIDE })
+      await onUpdateBackground(mimeType, imageBase64)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not set the background image.')
     } finally {
@@ -531,7 +569,7 @@ function AboutCanvas({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2" onPointerDownCapture={editable ? onActivate : undefined}>
       {editable && (
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -727,8 +765,13 @@ function AboutCanvas({
                   <div
                     className={`about-canvas-block-text h-full w-full overflow-hidden text-sm leading-relaxed [&_*]:m-0${
                       block.highlighted ? ' is-highlighted' : ''
-                    }`}
-                    style={{ textAlign: textAlignFor(block.align) }}
+                    }${block.fontSize ? ' has-font-size' : ''}${block.fontFamily ? ` about-font-${block.fontFamily}` : ''}`}
+                    style={
+                      {
+                        textAlign: textAlignFor(block.align),
+                        ...(block.fontSize ? { '--text-size': block.fontSize } : {}),
+                      } as React.CSSProperties
+                    }
                     onDoubleClick={() => editable && startEditingText(block)}
                   >
                     {renderRichText(displayTextFor(block, language))}
@@ -829,14 +872,47 @@ function AboutCanvas({
                 />
               )}
               {selectedBlock.type === 'TEXT' && (
-                <label className="flex items-center gap-1 text-[11px]">
-                  <input
-                    type="checkbox"
-                    checked={selectedBlock.highlighted}
-                    onChange={(e) => handleBlockHighlighted(selectedBlock, e.target.checked)}
-                  />
-                  {aboutEditText('highlighted', language)}
-                </label>
+                <>
+                  <label className="flex items-center gap-1 text-[11px]" title={aboutEditText('fontSizeHint', language)}>
+                    {aboutEditText('fontSize', language)}
+                    <input
+                      type="number"
+                      className="w-14 border border-[var(--color-divider)] bg-transparent px-1 py-0.5 text-[11px]"
+                      min={MIN_FONT_SIZE}
+                      max={MAX_FONT_SIZE}
+                      placeholder="auto"
+                      value={fontSizeDraft ?? (selectedBlock.fontSize ? String(selectedBlock.fontSize) : '')}
+                      onChange={(e) => setFontSizeDraft(e.target.value)}
+                      onBlur={() => commitFontSize(selectedBlock)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') e.currentTarget.blur()
+                      }}
+                    />
+                  </label>
+                  <label className="flex items-center gap-1 text-[11px]">
+                    {aboutEditText('fontFamily', language)}
+                    <select
+                      className="border border-[var(--color-divider)] bg-[var(--color-bg)] px-1 py-0.5 text-[11px]"
+                      value={selectedBlock.fontFamily ?? ''}
+                      onChange={(e) => saveFont(selectedBlock, selectedBlock.fontSize, e.target.value || null)}
+                    >
+                      <option value="">{aboutEditText('fontDefault', language)}</option>
+                      {FONT_FAMILY_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {aboutEditText(option.label, language)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="flex items-center gap-1 text-[11px]">
+                    <input
+                      type="checkbox"
+                      checked={selectedBlock.highlighted}
+                      onChange={(e) => handleBlockHighlighted(selectedBlock, e.target.checked)}
+                    />
+                    {aboutEditText('highlighted', language)}
+                  </label>
+                </>
               )}
               <label className="flex items-center gap-1 text-[11px]">
                 <input

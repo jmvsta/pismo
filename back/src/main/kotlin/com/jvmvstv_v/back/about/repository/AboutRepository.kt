@@ -1,6 +1,7 @@
 package com.jvmvstv_v.back.about.repository
 
 import com.jvmvstv_v.back.about.model.AboutPage
+import com.jvmvstv_v.back.about.model.AboutPageBlock
 import com.jvmvstv_v.back.about.model.AboutPageBlockAlign
 import com.jvmvstv_v.back.about.model.AboutPageBlockType
 import com.jvmvstv_v.back.about.model.AboutPageLanguage
@@ -50,10 +51,26 @@ interface AboutRepository {
     /** Removes the photo from the gallery. Returns its image id if it was in it, so the caller can delete its blob. */
     fun removeGalleryPhoto(blockId: UUID, imageId: UUID): UUID?
     fun updateGalleryInterval(id: UUID, slideIntervalSeconds: Double): AboutPage
+    /**
+     * Inserts a copy of [source] onto [canvasId] at the top layer, at ([x], [y]). [imageId] and
+     * [galleryImageIds] are already-duplicated images the copy owns (never the source's own).
+     */
+    fun copyBlock(
+        id: UUID,
+        canvasId: UUID,
+        source: AboutPageBlock,
+        x: Double,
+        y: Double,
+        imageId: UUID?,
+        galleryImageIds: List<UUID>,
+    ): AboutPage
     fun updateBlockLayout(id: UUID, x: Double, y: Double, width: Double, height: Double): AboutPage
     fun updateBlockAlign(id: UUID, align: AboutPageBlockAlign): AboutPage
     fun updateBlockRounded(id: UUID, rounded: Boolean): AboutPage
     fun updateBlockHighlighted(id: UUID, highlighted: Boolean): AboutPage
+
+    /** Sets the block's font size and family; null for either restores the site default. */
+    fun updateBlockFont(id: UUID, fontSize: Double?, fontFamily: String?): AboutPage
 
     /** Sets the block's icon name, or clears it when null. */
     fun updateBlockIcon(id: UUID, icon: String?): AboutPage

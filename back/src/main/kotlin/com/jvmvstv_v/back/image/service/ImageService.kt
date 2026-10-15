@@ -8,4 +8,7 @@ interface ImageService {
     fun get(id: UUID): Image?
     fun store(ownerType: ImageOwnerType, ownerId: UUID, mimeType: String, base64Data: String): Image
     fun delete(id: UUID)
+
+    /** Makes an independent copy of the image (so deleting either one never affects the other) and returns the copy's id. */
+    fun duplicate(id: UUID, ownerId: UUID): UUID
 }

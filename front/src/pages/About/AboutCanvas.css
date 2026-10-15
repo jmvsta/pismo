@@ -10,6 +10,47 @@
   padding: clamp(1px, 1cqw, 8px);
 }
 
+/* Custom font size: --text-size is the size in px on a wide screen. 0.1286cqw per px is the
+   same ratio the default text uses (1.8cqw for 14px), so a custom size shrinks with the canvas
+   exactly like the default does and stops growing once the canvas is wide enough. Headings keep
+   their usual proportions to the body size. */
+.about-canvas-block-text.has-font-size {
+  font-size: clamp(6px, calc(var(--text-size) * 0.1286cqw), calc(var(--text-size) * 1px));
+}
+.about-canvas-block-text.has-font-size p {
+  font-size: 1em;
+}
+.about-canvas-block-text.has-font-size h1 {
+  font-size: 3em;
+}
+.about-canvas-block-text.has-font-size h2 {
+  font-size: 2.3em;
+}
+.about-canvas-block-text.has-font-size h3 {
+  font-size: 1.8em;
+}
+.about-canvas-block-text.has-font-size h5 {
+  font-size: 1.15em;
+}
+
+/* Font choices. Headings inside the block follow the chosen family instead of the site's
+   heading font. */
+.about-font-serif {
+  font-family: 'Lora', Georgia, 'Times New Roman', serif;
+}
+.about-font-handwriting {
+  font-family: 'Caveat', 'Segoe Script', 'Bradley Hand', cursive;
+}
+.about-font-mono {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
+}
+.about-font-serif :is(h1, h2, h3, h5),
+.about-font-handwriting :is(h1, h2, h3, h5),
+.about-font-mono :is(h1, h2, h3, h5) {
+  font-family: inherit;
+  font-weight: 700;
+}
+
 /* "Highlight": an accent bar down the left of a text block, scaled with the canvas like the
    padding above so it stays proportionate on narrow screens. */
 .about-canvas-block-text.is-highlighted {

@@ -29,6 +29,8 @@ const ABOUT_PAGE_FIELDS = `
       rounded
       highlighted
       icon
+      fontSize
+      fontFamily
     }
   }
 `
@@ -100,6 +102,14 @@ const UPDATE_ABOUT_PAGE_BLOCK_HIGHLIGHTED_MUTATION = `
 const UPDATE_ABOUT_PAGE_BLOCK_ICON_MUTATION = `
   mutation UpdateAboutPageBlockIcon($id: ID!, $icon: String) {
     updateAboutPageBlockIcon(id: $id, icon: $icon) {
+      ${ABOUT_PAGE_FIELDS}
+    }
+  }
+`
+
+const UPDATE_ABOUT_PAGE_BLOCK_FONT_MUTATION = `
+  mutation UpdateAboutPageBlockFont($id: ID!, $fontSize: Float, $fontFamily: String) {
+    updateAboutPageBlockFont(id: $id, fontSize: $fontSize, fontFamily: $fontFamily) {
       ${ABOUT_PAGE_FIELDS}
     }
   }
@@ -238,6 +248,14 @@ const UPDATE_ABOUT_PAGE_GALLERY_INTERVAL_MUTATION = `
   }
 `
 
+const COPY_ABOUT_PAGE_BLOCK_MUTATION = `
+  mutation CopyAboutPageBlock($blockId: ID!, $canvasId: ID!) {
+    copyAboutPageBlock(blockId: $blockId, canvasId: $canvasId) {
+      ${ABOUT_PAGE_FIELDS}
+    }
+  }
+`
+
 const UPDATE_ABOUT_PAGE_BLOCK_LAYOUT_MUTATION = `
   mutation UpdateAboutPageBlockLayout($id: ID!, $x: Float!, $y: Float!, $width: Float!, $height: Float!) {
     updateAboutPageBlockLayout(id: $id, x: $x, y: $y, width: $width, height: $height) {
@@ -357,6 +375,14 @@ export class GraphqlAboutService implements AboutService {
       { id: string; icon: string | null }
     >(UPDATE_ABOUT_PAGE_BLOCK_ICON_MUTATION, { id, icon })
     return data.updateAboutPageBlockIcon
+  }
+
+  async updateBlockFont(id: string, fontSize: number | null, fontFamily: string | null): Promise<AboutPage> {
+    const data = await this.client.request<
+      { updateAboutPageBlockFont: AboutPage },
+      { id: string; fontSize: number | null; fontFamily: string | null }
+    >(UPDATE_ABOUT_PAGE_BLOCK_FONT_MUTATION, { id, fontSize, fontFamily })
+    return data.updateAboutPageBlockFont
   }
 
   async updateCanvasBackground(id: string, mimeType: string, imageBase64: string): Promise<AboutPage> {
@@ -483,6 +509,14 @@ export class GraphqlAboutService implements AboutService {
       { id: string; slideIntervalSeconds: number }
     >(UPDATE_ABOUT_PAGE_GALLERY_INTERVAL_MUTATION, { id, slideIntervalSeconds })
     return data.updateAboutPageGalleryInterval
+  }
+
+  async copyBlock(blockId: string, canvasId: string): Promise<AboutPage> {
+    const data = await this.client.request<
+      { copyAboutPageBlock: AboutPage },
+      { blockId: string; canvasId: string }
+    >(COPY_ABOUT_PAGE_BLOCK_MUTATION, { blockId, canvasId })
+    return data.copyAboutPageBlock
   }
 
   async updateBlockLayout(id: string, x: number, y: number, width: number, height: number): Promise<AboutPage> {

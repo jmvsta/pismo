@@ -72,6 +72,7 @@ export class GraphqlClient {
     })
 
     if (!response.ok) {
+      if (response.status === 413) throw new Error('This file is too large to upload. Please choose a smaller photo.')
       throw new Error(`GraphQL request failed with status ${response.status}`)
     }
 

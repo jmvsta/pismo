@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent } from 'react'
+import { prepareImageForUpload } from '../../lib/prepareImage.ts'
 
 export interface PendingPhoto {
   mimeType: string
@@ -7,15 +8,7 @@ export interface PendingPhoto {
 }
 
 const ACCEPTED_TYPES = 'image/png, image/jpeg, image/webp, image/gif'
-
-function readAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve((reader.result as string).split(',')[1] ?? '')
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(file)
-  })
-}
+const PHOTO_MAX_SIDE = 1600
 
 interface PhotoAttachmentsProps {
   photos: PendingPhoto[]
@@ -33,11 +26,10 @@ function PhotoAttachments({ photos, onChange, disabled }: PhotoAttachmentsProps)
     setError(null)
     try {
       const added = await Promise.all(
-        files.map(async (file) => ({
-          mimeType: file.type,
-          imageBase64: await readAsBase64(file),
-          previewUrl: URL.createObjectURL(file),
-        })),
+        files.map(async (file) => {
+          const { mimeType, imageBase64 } = await prepareImageForUpload(file, { maxSide: PHOTO_MAX_SIDE })
+          return { mimeType, imageBase64, previewUrl: URL.createObjectURL(file) }
+        }),
       )
       onChange([...photos, ...added])
     } catch {

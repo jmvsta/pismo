@@ -15,6 +15,7 @@ interface AboutService {
     fun updateBlockRounded(id: UUID, rounded: Boolean): AboutPage
     fun updateCanvasBordered(id: UUID, bordered: Boolean): AboutPage
     fun updateBlockHighlighted(id: UUID, highlighted: Boolean): AboutPage
+    fun updateBlockFont(id: UUID, fontSize: Double?, fontFamily: String?): AboutPage
     fun updateBlockIcon(id: UUID, icon: String?): AboutPage
     fun updateCanvasBackground(id: UUID, mimeType: String, imageBase64: String): AboutPage
     fun removeCanvasBackground(id: UUID): AboutPage
@@ -49,6 +50,7 @@ interface AboutService {
     fun addGalleryPhoto(blockId: UUID, mimeType: String, imageBase64: String): AboutPage
     fun removeGalleryPhoto(blockId: UUID, imageId: UUID): AboutPage
     fun updateGalleryInterval(id: UUID, slideIntervalSeconds: Double): AboutPage
+    fun copyBlock(blockId: UUID, canvasId: UUID): AboutPage
     fun updateBlockLayout(id: UUID, x: Double, y: Double, width: Double, height: Double): AboutPage
     fun updateBlockAlign(id: UUID, align: AboutPageBlockAlign): AboutPage
     fun updateBlockLayer(id: UUID, layer: Int): AboutPage

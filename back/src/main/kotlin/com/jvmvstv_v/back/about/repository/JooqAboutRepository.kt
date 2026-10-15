@@ -51,6 +51,8 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
     private val B_ROUNDED = DSL.field("rounded", SQLDataType.BOOLEAN)
     private val B_HIGHLIGHTED = DSL.field("highlighted", SQLDataType.BOOLEAN)
     private val B_ICON = DSL.field("icon", SQLDataType.VARCHAR)
+    private val B_FONT_SIZE = DSL.field("font_size", SQLDataType.DOUBLE)
+    private val B_FONT_FAMILY = DSL.field("font_family", SQLDataType.VARCHAR)
     private val B_CREATED_AT = DSL.field("created_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
     private val B_UPDATED_AT = DSL.field("updated_at", SQLDataType.TIMESTAMPWITHTIMEZONE)
 
@@ -230,6 +232,42 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
         return find()
     }
 
+    override fun copyBlock(
+        id: UUID,
+        canvasId: UUID,
+        source: AboutPageBlock,
+        x: Double,
+        y: Double,
+        imageId: UUID?,
+        galleryImageIds: List<UUID>,
+    ): AboutPage {
+        dsl.transaction { configuration ->
+            val tx = DSL.using(configuration)
+            val nextZIndex = (tx.select(DSL.max(B_Z_INDEX)).from(BLOCKS).where(B_CANVAS_ID.eq(canvasId))
+                .fetchOne(0, Int::class.java) ?: 0) + 1
+            tx.insertInto(BLOCKS)
+                .columns(
+                    B_ID, B_CANVAS_ID, B_TYPE, B_TEXT_EN, B_TEXT_RU, B_TEXT_SRB, B_IMAGE_ID, B_LINK_URL, B_X, B_Y,
+                    B_WIDTH, B_HEIGHT, B_ALIGN, B_Z_INDEX, B_SLIDE_INTERVAL, B_ROUNDED, B_HIGHLIGHTED, B_ICON,
+                    B_FONT_SIZE, B_FONT_FAMILY,
+                )
+                .values(
+                    id, canvasId, source.type.name, source.textEn, source.textRu, source.textSrb, imageId,
+                    source.linkUrl, x, y, source.width, source.height, source.align.name, nextZIndex,
+                    source.slideIntervalSeconds, source.rounded, source.highlighted, source.icon,
+                    source.fontSize, source.fontFamily,
+                )
+                .execute()
+            galleryImageIds.forEachIndexed { position, galleryImageId ->
+                tx.insertInto(GALLERY_PHOTOS)
+                    .columns(G_ID, G_BLOCK_ID, G_IMAGE_ID, G_POSITION)
+                    .values(UUID.randomUUID(), id, galleryImageId, position)
+                    .execute()
+            }
+        }
+        return find()
+    }
+
     override fun updateBlockLayout(id: UUID, x: Double, y: Double, width: Double, height: Double): AboutPage {
         dsl.update(BLOCKS)
             .set(B_X, x)
@@ -263,6 +301,16 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
     override fun updateBlockHighlighted(id: UUID, highlighted: Boolean): AboutPage {
         dsl.update(BLOCKS)
             .set(B_HIGHLIGHTED, highlighted)
+            .set(B_UPDATED_AT, OffsetDateTime.now())
+            .where(B_ID.eq(id))
+            .execute()
+        return find()
+    }
+
+    override fun updateBlockFont(id: UUID, fontSize: Double?, fontFamily: String?): AboutPage {
+        dsl.update(BLOCKS)
+            .set(B_FONT_SIZE, fontSize)
+            .set(B_FONT_FAMILY, fontFamily)
             .set(B_UPDATED_AT, OffsetDateTime.now())
             .where(B_ID.eq(id))
             .execute()
@@ -363,7 +411,7 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
         val blockRecordsByCanvas = dsl
             .select(
                 B_ID, B_CANVAS_ID, B_TYPE, B_TEXT_EN, B_TEXT_RU, B_TEXT_SRB, B_IMAGE_ID, B_LINK_URL, B_X, B_Y, B_WIDTH,
-                B_HEIGHT, B_ALIGN, B_SLIDE_INTERVAL, B_ROUNDED, B_HIGHLIGHTED, B_ICON,
+                B_HEIGHT, B_ALIGN, B_SLIDE_INTERVAL, B_ROUNDED, B_HIGHLIGHTED, B_ICON, B_FONT_SIZE, B_FONT_FAMILY,
             )
             .from(BLOCKS)
             .orderBy(B_Z_INDEX, B_CREATED_AT, B_ID)
@@ -401,6 +449,8 @@ class JooqAboutRepository(private val dsl: DSLContext) : AboutRepository {
                             rounded = block[B_ROUNDED]!!,
                             highlighted = block[B_HIGHLIGHTED]!!,
                             icon = block[B_ICON],
+                            fontSize = block[B_FONT_SIZE],
+                            fontFamily = block[B_FONT_FAMILY],
                         )
                     },
                 )

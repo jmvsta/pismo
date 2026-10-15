@@ -26,6 +26,8 @@ data class AboutPageBlock(
     val rounded: Boolean,
     val highlighted: Boolean,
     val icon: String?,
+    val fontSize: Double?,
+    val fontFamily: String?,
 )
 
 data class AboutPageCanvas(
