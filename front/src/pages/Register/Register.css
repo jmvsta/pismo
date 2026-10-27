@@ -1,9 +1,17 @@
 .register-page {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--space-6);
+}
+
+.register-page-lang {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 10;
 }
 
 .register-card {

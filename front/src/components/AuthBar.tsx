@@ -1,16 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useUserStore } from '../store/userStore.ts'
 import { useNotificationStore } from '../store/notificationStore.ts'
 import { useLanguageStore } from '../store/languageStore.ts'
-import type { Language } from '../store/languageStore.ts'
 import { uiText } from '../i18n/uiText.ts'
 import { imageUrl } from '../services/imageUrl.ts'
 import NotificationBell from './NotificationBell/NotificationBell.tsx'
 import ThemeToggle from './ThemeToggle/ThemeToggle.tsx'
+import LanguageSwitcher from './LanguageSwitcher/LanguageSwitcher.tsx'
 import './AuthBar.css'
-
-const LANGUAGES: Language[] = ['EN', 'RU', 'SRB']
 
 function AuthBar() {
   const currentUser = useUserStore((state) => state.currentUser)
@@ -18,32 +16,12 @@ function AuthBar() {
   const connectNotifications = useNotificationStore((state) => state.connect)
   const disconnectNotifications = useNotificationStore((state) => state.disconnect)
   const language = useLanguageStore((state) => state.language)
-  const setLanguage = useLanguageStore((state) => state.setLanguage)
-
-  const [langOpen, setLangOpen] = useState(false)
-  const langRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!currentUser) return
     connectNotifications()
     return () => disconnectNotifications()
   }, [currentUser, connectNotifications, disconnectNotifications])
-
-  useEffect(() => {
-    if (!langOpen) return
-    const onPointerDown = (event: PointerEvent) => {
-      if (langRef.current && !langRef.current.contains(event.target as Node)) setLangOpen(false)
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setLangOpen(false)
-    }
-    document.addEventListener('pointerdown', onPointerDown)
-    document.addEventListener('keydown', onKeyDown)
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown)
-      document.removeEventListener('keydown', onKeyDown)
-    }
-  }, [langOpen])
 
   const handleLogout = async () => {
     await logout()
@@ -79,37 +57,7 @@ function AuthBar() {
       </Link>
       <div className="auth-bar-actions">
         <ThemeToggle />
-        <div className="auth-bar-lang" ref={langRef}>
-          <button
-            type="button"
-            className="auth-bar-lang-btn is-active auth-bar-lang-toggle"
-            aria-haspopup="listbox"
-            aria-expanded={langOpen}
-            onClick={() => setLangOpen((open) => !open)}
-          >
-            {language}
-            <span className="auth-bar-lang-caret" aria-hidden="true" />
-          </button>
-          {langOpen && (
-            <div className="auth-bar-lang-menu" role="listbox">
-              {LANGUAGES.filter((lang) => lang !== language).map((lang) => (
-                <button
-                  key={lang}
-                  type="button"
-                  role="option"
-                  aria-selected="false"
-                  className="auth-bar-lang-btn"
-                  onClick={() => {
-                    setLanguage(lang)
-                    setLangOpen(false)
-                  }}
-                >
-                  {lang}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <LanguageSwitcher className="auth-bar-lang" />
         {currentUser ? (
           <>
             <NotificationBell />

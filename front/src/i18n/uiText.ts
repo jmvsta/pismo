@@ -133,6 +133,55 @@ const UI_TEXT = {
   confirmDeliveryCode: { EN: 'Code', RU: 'Код', SRB: 'Kod' },
   confirmDeliveryConfirming: { EN: 'Confirming…', RU: 'Подтверждение…', SRB: 'Potvrđivanje…' },
   confirmDeliverySubmit: { EN: 'Confirm delivery →', RU: 'Подтвердить доставку →', SRB: 'Potvrdi dostavu →' },
+
+  authPitch: {
+    EN: 'Handwritten letters, sent by real post, between people matched by what they actually care about. A deliberate anti-social-network.',
+    RU: 'Письма от руки, отправленные настоящей почтой, между людьми, подобранными по тому, что их действительно интересует. Осознанная анти-социальная сеть.',
+    SRB: 'Rukom pisana pisma, poslata pravom poštom, između ljudi uparenih po tome šta ih zaista interesuje. Namerna anti-društvena mreža.',
+  },
+  authOr: { EN: 'or', RU: 'или', SRB: 'ili' },
+  authContinueWithGoogle: { EN: 'Continue with Google', RU: 'Продолжить с Google', SRB: 'Nastavi sa Google' },
+
+  loginWelcomeBack: { EN: 'Welcome back', RU: 'С возвращением', SRB: 'Dobrodošao/la nazad' },
+  loginSignIn: { EN: 'Sign in', RU: 'Войти', SRB: 'Prijava' },
+  loginEmailOrUsername: { EN: 'Email or username', RU: 'Email или имя пользователя', SRB: 'Email ili korisničko ime' },
+  loginPassword: { EN: 'Password', RU: 'Пароль', SRB: 'Lozinka' },
+  loginSigningIn: { EN: 'Signing in…', RU: 'Выполняется вход…', SRB: 'Prijavljivanje…' },
+  loginSignInSubmit: { EN: 'Sign in →', RU: 'Войти →', SRB: 'Prijavi se →' },
+  loginNewHere: { EN: 'New here?', RU: 'Впервые здесь?', SRB: 'Novi/a si ovde?' },
+  loginCreateAccount: { EN: 'Create an account', RU: 'Создать аккаунт', SRB: 'Napravi nalog' },
+  loginFailed: { EN: 'Login failed.', RU: 'Не удалось войти.', SRB: 'Prijava nije uspela.' },
+
+  registerStep01: { EN: '01 — Register', RU: '01 — Регистрация', SRB: '01 — Registracija' },
+  registerStep02: { EN: '02 — Verify email', RU: '02 — Подтвердить email', SRB: '02 — Potvrdi email' },
+  registerStep03: { EN: '03 — Bio', RU: '03 — О себе', SRB: '03 — Biografija' },
+  registerStep04: { EN: '04 — Address', RU: '04 — Адрес', SRB: '04 — Adresa' },
+  registerStep05: { EN: '05 — Fill the questionnaire', RU: '05 — Заполнить анкету', SRB: '05 — Popuni upitnik' },
+  registerStep06: { EN: '06 — Get matched. Write.', RU: '06 — Найти пару. Писать.', SRB: '06 — Upari se. Piši.' },
+
+  registerStepLabel: { EN: 'Step 01', RU: 'Шаг 01', SRB: 'Korak 01' },
+  registerCreateAccount: { EN: 'Create account', RU: 'Создать аккаунт', SRB: 'Napravi nalog' },
+  registerUploadAvatar: { EN: 'Upload avatar', RU: 'Загрузить аватар', SRB: 'Dodaj avatar' },
+  registerAvatarUpload: { EN: 'avatar upload', RU: 'загрузить аватар', SRB: 'dodaj avatar' },
+  registerNickname: { EN: 'Nickname', RU: 'Никнейм', SRB: 'Nadimak' },
+  registerDateOfBirth: { EN: 'Date of birth', RU: 'Дата рождения', SRB: 'Datum rođenja' },
+  registerEmail: { EN: 'Email', RU: 'Email', SRB: 'Email' },
+  registerPassword: { EN: 'Password', RU: 'Пароль', SRB: 'Lozinka' },
+  registerPasswordHint: {
+    EN: 'Min. 8 characters, at least one number',
+    RU: 'Минимум 8 символов, хотя бы одна цифра',
+    SRB: 'Min. 8 karaktera, bar jedan broj',
+  },
+  registerAcceptRules: {
+    EN: 'I accept the community rules and privacy policy',
+    RU: 'Я принимаю правила сообщества и политику конфиденциальности',
+    SRB: 'Prihvatam pravila zajednice i politiku privatnosti',
+  },
+  registerCreatingAccount: { EN: 'Creating account…', RU: 'Создание аккаунта…', SRB: 'Pravljenje naloga…' },
+  registerCreateAccountSubmit: { EN: 'Create account →', RU: 'Создать аккаунт →', SRB: 'Napravi nalog →' },
+  registerAlreadyMember: { EN: 'Already a member?', RU: 'Уже есть аккаунт?', SRB: 'Već imaš nalog?' },
+  registerSignIn: { EN: 'Sign in', RU: 'Войти', SRB: 'Prijavi se' },
+  registerFailed: { EN: 'Registration failed.', RU: 'Не удалось зарегистрироваться.', SRB: 'Registracija nije uspela.' },
 } as const
 
 export type UiTextKey = keyof typeof UI_TEXT

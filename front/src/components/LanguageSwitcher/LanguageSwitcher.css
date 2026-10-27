@@ -1,0 +1,55 @@
+.lang-switcher {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.lang-switcher-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+}
+.lang-switcher-caret {
+  width: 0;
+  height: 0;
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  border-top: 4px solid currentColor;
+}
+.lang-switcher-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  padding: 2px;
+  z-index: 70;
+}
+.lang-switcher-menu .lang-switcher-btn {
+  text-align: left;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+.lang-switcher-btn {
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--color-neutral-500);
+  cursor: pointer;
+  padding: 4px 5px;
+  border-radius: var(--radius-md);
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+.lang-switcher-btn:hover {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+.lang-switcher-btn.is-active {
+  color: var(--color-accent);
+}
