@@ -3,47 +3,21 @@ import { Link } from 'react-router-dom'
 import { useUserStore } from '../../store/userStore.ts'
 import { matchingService } from '../../services/matching/index.ts'
 import type { PenPalConnection } from '../../services/matching/index.ts'
-import { lettersService } from '../../services/letters/index.ts'
-import type { Letter } from '../../services/letters/index.ts'
 import { addressService } from '../../services/address/index.ts'
-import type { ConnectionAddressConsent, UserAddress } from '../../services/address/index.ts'
+import type { UserAddress } from '../../services/address/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
 import SendLetterDialog from './SendLetterDialog.tsx'
-import ConfirmDeliveryDialog from './ConfirmDeliveryDialog.tsx'
+import { formatAddress } from './formatAddress.ts'
 import { useLanguageStore } from '../../store/languageStore.ts'
 import { uiText, uiTextWithName } from '../../i18n/uiText.ts'
 
-const OPEN_STATUSES = new Set(['DRAFT', 'SENT', 'IN_TRANSIT'])
-
 interface ConnectionRow {
   connection: PenPalConnection
-  letters: Letter[]
-  myConsent: ConnectionAddressConsent | null
-  otherConsent: ConnectionAddressConsent | null
-}
-
-function otherUserId(connection: PenPalConnection, userId: string): string {
-  return connection.userA.id === userId ? connection.userB.id : connection.userA.id
+  otherAddress: UserAddress | null
 }
 
 function formatEstablished(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
-}
-
-function formatAddress(address: UserAddress): string {
-  return [address.recipientName, address.streetLine1, address.streetLine2, address.city, address.region, address.postalCode, address.countryCode]
-    .filter(Boolean)
-    .join(', ')
-}
-
-async function loadRow(connection: PenPalConnection, currentUserId: string): Promise<ConnectionRow> {
-  const [letters, consents] = await Promise.all([
-    lettersService.lettersForConnection(connection.id),
-    addressService.addressConsentsForConnection(connection.id),
-  ])
-  const myConsent = consents.find((consent) => consent.grantor.id === currentUserId) ?? null
-  const otherConsent = consents.find((consent) => consent.grantor.id !== currentUserId) ?? null
-  return { connection, letters, myConsent, otherConsent }
 }
 
 interface ProfilePenPalsProps {
@@ -55,11 +29,10 @@ function ProfilePenPals({ onGoToAddressTab, onLetterChanged }: ProfilePenPalsPro
   const currentUserId = useUserStore((state) => state.currentUser?.id)
   const language = useLanguageStore((state) => state.language)
   const [rows, setRows] = useState<ConnectionRow[]>([])
-  const [myAddress, setMyAddress] = useState<UserAddress | null>(null)
+  const [hasOwnAddress, setHasOwnAddress] = useState(true)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [letterDialogFor, setLetterDialogFor] = useState<{ connection: PenPalConnection; existing: Letter | null } | null>(null)
-  const [confirmDialogFor, setConfirmDialogFor] = useState<{ connectionId: string; letter: Letter } | null>(null)
+  const [letterDialogFor, setLetterDialogFor] = useState<ConnectionRow | null>(null)
 
   useEffect(() => {
     if (!currentUserId) return
@@ -72,10 +45,15 @@ function ProfilePenPals({ onGoToAddressTab, onLetterChanged }: ProfilePenPalsPro
           addressService.myAddresses(),
         ])
         const active = connections.filter((connection) => !connection.endedAt)
-        const loadedRows = await Promise.all(active.map((connection) => loadRow(connection, currentUserId!)))
+        const loadedRows = await Promise.all(
+          active.map(async (connection) => ({
+            connection,
+            otherAddress: await addressService.penPalAddress(connection.id),
+          })),
+        )
         if (cancelled) return
         setRows(loadedRows)
-        setMyAddress(addresses.find((address) => address.isPrimary) ?? addresses[0] ?? null)
+        setHasOwnAddress(addresses.length > 0)
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load your pen pals.')
       } finally {
@@ -88,36 +66,6 @@ function ProfilePenPals({ onGoToAddressTab, onLetterChanged }: ProfilePenPalsPro
       cancelled = true
     }
   }, [currentUserId])
-
-  const updateRow = (connectionId: string, patch: Partial<ConnectionRow>) => {
-    setRows((prev) => prev.map((row) => (row.connection.id === connectionId ? { ...row, ...patch } : row)))
-  }
-
-  const replaceLetter = (connectionId: string, letter: Letter) => {
-    setRows((prev) =>
-      prev.map((row) =>
-        row.connection.id === connectionId
-          ? { ...row, letters: [letter, ...row.letters.filter((existing) => existing.id !== letter.id)] }
-          : row,
-      ),
-    )
-    onLetterChanged?.()
-  }
-
-  const handleToggleShare = async (row: ConnectionRow) => {
-    if (!myAddress) return
-    try {
-      if (row.myConsent?.status === 'GRANTED') {
-        const consent = await addressService.revokeAddressConsent(row.connection.id)
-        updateRow(row.connection.id, { myConsent: consent })
-      } else {
-        const consent = await addressService.grantAddressConsent(row.connection.id, myAddress.id)
-        updateRow(row.connection.id, { myConsent: consent })
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not update address sharing.')
-    }
-  }
 
   if (loading) return <p className="text-muted profile-empty">Loading your pen pals…</p>
   if (error) return <p className="text-muted profile-empty">{error}</p>
@@ -134,21 +82,6 @@ function ProfilePenPals({ onGoToAddressTab, onLetterChanged }: ProfilePenPalsPro
       {rows.map((row) => {
         const other = row.connection.userA.id === currentUserId ? row.connection.userB : row.connection.userA
         const avatarUrl = imageUrl(other.avatarImageId)
-        const hasEverSentFirstLetter = row.letters.some((letter) => letter.status !== 'DRAFT')
-        const otherAddressVisible =
-          hasEverSentFirstLetter && row.otherConsent?.status === 'GRANTED' && Boolean(row.otherConsent.address)
-
-        const openLetter = row.letters.find((letter) => OPEN_STATUSES.has(letter.status)) ?? null
-        const deliveredLetters = row.letters.filter((letter) => letter.status === 'DELIVERED')
-        const lastDelivered = deliveredLetters[0] ?? null
-        const isModeratorLetterRequest = row.connection.request?.source === 'MODERATOR_LETTER_REQUEST'
-        const moderatorId = row.connection.request?.addressee.id
-        const eligibleSenderId = lastDelivered
-          ? otherUserId(row.connection, lastDelivered.sender.id)
-          : isModeratorLetterRequest && moderatorId
-            ? moderatorId
-            : currentUserId
-        const isMyTurnToSend = !openLetter && eligibleSenderId === currentUserId
 
         return (
           <div
@@ -168,16 +101,7 @@ function ProfilePenPals({ onGoToAddressTab, onLetterChanged }: ProfilePenPalsPro
             </div>
 
             <div className="mt-3 flex flex-col gap-2">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={row.myConsent?.status === 'GRANTED'}
-                  disabled={!myAddress}
-                  onChange={() => handleToggleShare(row)}
-                />
-                {uiText('letterAddressSharePrompt', language)}
-              </label>
-              {!myAddress && (
+              {!hasOwnAddress && (
                 <span className="text-muted text-sm">
                   <button type="button" className="btn btn-ghost" onClick={onGoToAddressTab}>
                     {uiText('letterAddAddress', language)}
@@ -186,63 +110,24 @@ function ProfilePenPals({ onGoToAddressTab, onLetterChanged }: ProfilePenPalsPro
                 </span>
               )}
 
-              {openLetter && openLetter.sender.id === currentUserId && (
-                <span className="text-muted text-sm">
-                  {openLetter.status === 'DRAFT' ? (
-                    <button
-                      type="button"
-                      className="btn btn-ghost"
-                      onClick={() => setLetterDialogFor({ connection: row.connection, existing: openLetter })}
-                    >
-                      {uiText('letterResumeSending', language)}
-                    </button>
-                  ) : (
-                    <>
-                      {uiTextWithName('letterSentWaiting', language, other.nickname)}{' '}
-                      <strong>{openLetter.trackingCode}</strong>
-                    </>
-                  )}
-                </span>
-              )}
-
-              {openLetter && openLetter.recipient.id === currentUserId && openLetter.status === 'DRAFT' && (
-                <span className="text-muted text-sm">
-                  {uiTextWithName('letterWaitingToFinish', language, other.nickname)}
-                </span>
-              )}
-              {openLetter && openLetter.recipient.id === currentUserId && openLetter.status !== 'DRAFT' && (
-                <button
-                  type="button"
-                  className="btn btn-primary self-start"
-                  onClick={() => setConfirmDialogFor({ connectionId: row.connection.id, letter: openLetter })}
-                >
-                  {uiText('letterConfirmDelivery', language)}
-                </button>
-              )}
-
-              {!openLetter && isMyTurnToSend && (
-                <button
-                  type="button"
-                  className="btn btn-primary self-start"
-                  onClick={() => setLetterDialogFor({ connection: row.connection, existing: null })}
-                >
-                  {deliveredLetters.length === 0 ? uiText('letterSendFirst', language) : uiText('letterReply', language)}
-                </button>
-              )}
-              {!openLetter && !isMyTurnToSend && (
-                <span className="text-muted text-sm">{uiTextWithName('letterWaitingToWrite', language, other.nickname)}</span>
-              )}
-
-              {otherAddressVisible && row.otherConsent?.address && (
-                <div className="text-sm">
-                  <span className="font-semibold">
-                    {other.nickname}
-                    {uiText('letterAddressLabel', language)}{' '}
-                  </span>
-                  {formatAddress(row.otherConsent.address)}
-                </div>
-              )}
-              {hasEverSentFirstLetter && !otherAddressVisible && (
+              {row.otherAddress ? (
+                <>
+                  <div className="text-sm">
+                    <span className="font-semibold">
+                      {other.nickname}
+                      {uiText('letterAddressLabel', language)}{' '}
+                    </span>
+                    {formatAddress(row.otherAddress)}
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-primary min-w-[13rem] self-start"
+                    onClick={() => setLetterDialogFor(row)}
+                  >
+                    {uiText('letterSendNew', language)}
+                  </button>
+                </>
+              ) : (
                 <span className="text-muted text-sm">{uiTextWithName('letterWaitingForAddress', language, other.nickname)}</span>
               )}
             </div>
@@ -250,36 +135,22 @@ function ProfilePenPals({ onGoToAddressTab, onLetterChanged }: ProfilePenPalsPro
         )
       })}
 
-      {letterDialogFor &&
-        (() => {
-          const row = rows.find((r) => r.connection.id === letterDialogFor.connection.id)
-          const recipientId = otherUserId(letterDialogFor.connection, currentUserId!)
-          const recipientNickname =
+      {letterDialogFor && letterDialogFor.otherAddress && (
+        <SendLetterDialog
+          connectionId={letterDialogFor.connection.id}
+          recipientId={
+            letterDialogFor.connection.userA.id === currentUserId
+              ? letterDialogFor.connection.userB.id
+              : letterDialogFor.connection.userA.id
+          }
+          recipientNickname={
             letterDialogFor.connection.userA.id === currentUserId
               ? letterDialogFor.connection.userB.nickname
               : letterDialogFor.connection.userA.nickname
-          const recipientAddress =
-            row?.otherConsent?.status === 'GRANTED' ? row.otherConsent.address : null
-          return (
-            <SendLetterDialog
-              connectionId={letterDialogFor.connection.id}
-              recipientId={recipientId}
-              recipientNickname={recipientNickname}
-              recipientAddress={recipientAddress}
-              existingLetter={letterDialogFor.existing}
-              onClose={() => setLetterDialogFor(null)}
-              onDraftCreated={(letter) => replaceLetter(letterDialogFor.connection.id, letter)}
-              onSent={(letter) => replaceLetter(letterDialogFor.connection.id, letter)}
-            />
-          )
-        })()}
-
-      {confirmDialogFor && (
-        <ConfirmDeliveryDialog
-          letterId={confirmDialogFor.letter.id}
-          senderNickname={confirmDialogFor.letter.sender.nickname}
-          onClose={() => setConfirmDialogFor(null)}
-          onConfirmed={(letter) => replaceLetter(confirmDialogFor.connectionId, letter)}
+          }
+          recipientAddress={letterDialogFor.otherAddress}
+          onClose={() => setLetterDialogFor(null)}
+          onSent={() => onLetterChanged?.()}
         />
       )}
     </div>

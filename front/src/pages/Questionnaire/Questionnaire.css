@@ -132,20 +132,48 @@
   gap: 10px;
   align-items: center;
 }
+.questionnaire-finish-later {
+  margin-left: auto;
+}
 .questionnaire-more {
+  margin-left: 0;
   font-size: 12px;
   margin-left: auto;
 }
 
 @media (max-width: 900px) {
+  .questionnaire-page {
+    padding: 0;
+  }
   .questionnaire-card {
     flex-direction: column;
+    min-height: calc(100dvh - 49px);
+    border: none;
   }
   .questionnaire-sidebar {
     width: 100%;
     border-right: none;
-    border-bottom: 2px solid var(--color-divider);
-    padding: var(--space-4) 20px;
+    border-bottom: none;
+    padding: var(--space-4) 16px 0;
+  }
+  .questionnaire-body {
+    padding: var(--space-4) 16px var(--space-6);
+  }
+  .questionnaire-actions {
+    border-top: none;
+    padding-top: 0;
+    flex-wrap: wrap;
+  }
+  .questionnaire-actions .btn {
+    flex: 1 1 0;
+    justify-content: center;
+    text-align: center;
+  }
+  .questionnaire-finish-later {
+    margin-left: 0;
+  }
+  .questionnaire-more {
+    flex-basis: 100%;
   }
   .questionnaire-sections {
     flex-direction: row;

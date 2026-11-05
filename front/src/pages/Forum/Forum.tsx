@@ -10,12 +10,12 @@ import type { SuggestedProfile } from '../../services/matching/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
 import { renderRichText } from '../../lib/richText.tsx'
 import ForumPostCard from './ForumPostCard.tsx'
+import ForumMailboxBox from './ForumMailboxBox.tsx'
+import type { LetterRequestState } from './ForumMailboxBox.tsx'
 import ForumNewPostDialog from './ForumNewPostDialog.tsx'
 import ForumNewTopicDialog from './ForumNewTopicDialog.tsx'
 import ForumPostDetail from './ForumPostDetail.tsx'
 import './Forum.css'
-
-type SortMode = 'latest' | 'top' | 'unanswered'
 
 const PAGE_SIZE = 10
 
@@ -23,7 +23,6 @@ function Forum() {
     const language = useLanguageStore((state) => state.language)
     const [topics, setTopics] = useState<ForumTopic[]>([])
     const [activeTopic, setActiveTopic] = useState<string | 'all'>('all')
-    const [sortMode, setSortMode] = useState<SortMode>('latest')
     const [posts, setPosts] = useState<ForumPost[]>([])
     const [offset, setOffset] = useState(0)
     const [hasMore, setHasMore] = useState(true)
@@ -35,7 +34,7 @@ function Forum() {
     const [isTopicsOpen, setIsTopicsOpen] = useState(false)
     const currentUser = useUserStore((state) => state.currentUser)
     const [suggestedProfiles, setSuggestedProfiles] = useState<SuggestedProfile[]>([])
-    const [letterRequestState, setLetterRequestState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+    const [letterRequestState, setLetterRequestState] = useState<LetterRequestState>('idle')
     const [showScrollTop, setShowScrollTop] = useState(false)
     const selectedPost = posts.find((post) => post.id === selectedPostId) ?? null
 
@@ -170,20 +169,17 @@ function Forum() {
     const activeTopics = useMemo(() => topics.filter((topic) => topic.active), [topics])
     const frozenTopics = useMemo(() => topics.filter((topic) => !topic.active), [topics])
 
-    const visiblePosts = useMemo(() => {
-        if (sortMode === 'top') {
-            return [...posts].sort((a, b) => b.replyCount - a.replyCount)
-        }
-        if (sortMode === 'unanswered') {
-            return posts.filter((post) => post.replyCount === 0)
-        }
-        return posts
-    }, [posts, sortMode])
-
     return (
         <div className="forum-page">
             <div className="forum-body">
                 <aside className="forum-sidebar-left">
+                    {currentUser && (
+                        <ForumMailboxBox
+                            className="forum-mailbox-mobile"
+                            state={letterRequestState}
+                            onRequest={handleRequestLetter}
+                        />
+                    )}
                     {currentUser && (
                         <button
                             type="button"
@@ -239,28 +235,13 @@ function Forum() {
                 </aside>
 
                 <main className="forum-feed">
-                    <div className="forum-sort">
-            <span className={sortMode === 'latest' ? 'is-active' : undefined} onClick={() => setSortMode('latest')}>
-              {uiText('forumLatest', language)}
-            </span>
-                        <span className={sortMode === 'top' ? 'is-active' : undefined} onClick={() => setSortMode('top')}>
-              {uiText('forumTopThisWeek', language)}
-            </span>
-                        <span
-                            className={sortMode === 'unanswered' ? 'is-active' : undefined}
-                            onClick={() => setSortMode('unanswered')}
-                        >
-              {uiText('forumUnanswered', language)}
-            </span>
-                    </div>
-
                     {feedError && <p className="text-muted forum-empty">{feedError}</p>}
 
-                    {!feedError && visiblePosts.length === 0 && (
+                    {!feedError && posts.length === 0 && (
                         <p className="text-muted forum-empty">{uiText('forumNothingHere', language)}</p>
                     )}
 
-                    {visiblePosts.map((post) => (
+                    {posts.map((post) => (
                         <ForumPostCard
                             key={post.id}
                             post={post}
@@ -269,7 +250,7 @@ function Forum() {
                         />
                     ))}
 
-                    {hasMore && sortMode !== 'unanswered' && (
+                    {hasMore && (
                         <div className="forum-load-more">
                             <button type="button" className="btn btn-ghost" onClick={handleLoadMore} disabled={loadingMore}>
                                 {loadingMore ? uiText('forumLoading', language) : uiText('forumLoadMore', language)}
@@ -314,39 +295,7 @@ function Forum() {
                                 {uiText('forumSeeAllRecommended', language)}
                             </Link>
                         </div>
-
-                        <button
-                            type="button"
-                            className="forum-mailbox-box"
-                            onClick={handleRequestLetter}
-                            disabled={letterRequestState === 'sending' || letterRequestState === 'sent'}
-                        >
-                            <svg
-                                className="forum-mailbox-icon"
-                                viewBox="0 0 24 24"
-                                width="36"
-                                height="36"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="1.6"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden="true"
-                            >
-                                <path d="M4 11a5 5 0 0 1 10 0v7H4z" />
-                                <rect x="14" y="9" width="4" height="4" />
-                                <line x1="9" y1="18" x2="9" y2="22" />
-                                <line x1="5" y1="22" x2="13" y2="22" />
-                            </svg>
-                            <div className="forum-mailbox-title">{uiText('forumMailboxTitle', language)}</div>
-                            {letterRequestState === 'sent' ? (
-                                <div className="forum-mailbox-copy">{uiText('forumMailboxSent', language)}</div>
-                            ) : letterRequestState === 'error' ? (
-                                <div className="forum-mailbox-copy">{uiText('forumMailboxError', language)}</div>
-                            ) : (
-                                <div className="forum-mailbox-copy">{uiText('forumMailboxCopy', language)}</div>
-                            )}
-                        </button>
+                        <ForumMailboxBox state={letterRequestState} onRequest={handleRequestLetter} />
                     </aside>
                 )}
             </div>
@@ -390,7 +339,20 @@ function Forum() {
                     onClick={scrollToTop}
                     aria-label="Scroll to top"
                 >
-                    ↑
+                    <svg
+                        viewBox="0 0 24 24"
+                        width="28"
+                        height="28"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                    >
+                        <path d="M12 20V4" />
+                        <path d="M4 11l8-8 8 8" />
+                    </svg>
                 </button>
             )}
         </div>

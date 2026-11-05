@@ -15,6 +15,7 @@ interface LetterService {
     fun pendingIncomingLetterCount(): Int
     fun createLetter(input: CreateLetterInput): Letter
     fun updateStatus(id: UUID, status: LetterStatus, location: String?, note: String?): Letter
-    fun confirmDelivery(id: UUID, code: String): Letter
+    fun confirmDelivery(id: UUID): Letter
+    fun cancelLetter(id: UUID): Boolean
     fun submitFeedback(input: SubmitLetterFeedbackInput): LetterFeedback
 }

@@ -32,11 +32,10 @@ function ProfileBioEditor({ initialBio, onSave }: ProfileBioEditorProps) {
   }
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="profile-bio-editor">
       <textarea
         ref={textareaRef}
         className="input profile-bio w-full"
-        rows={3}
         value={bio}
         onChange={(e) => setBio(e.target.value)}
         placeholder="Tell your future pen pal about yourself…"

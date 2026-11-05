@@ -97,10 +97,16 @@ const PENDING_INCOMING_LETTER_COUNT_QUERY = `
 `
 
 const CONFIRM_LETTER_DELIVERY_MUTATION = `
-  mutation ConfirmLetterDelivery($id: ID!, $code: String!) {
-    confirmLetterDelivery(id: $id, code: $code) {
+  mutation ConfirmLetterDelivery($id: ID!) {
+    confirmLetterDelivery(id: $id) {
       ${LETTER_FIELDS}
     }
+  }
+`
+
+const CANCEL_LETTER_MUTATION = `
+  mutation CancelLetter($id: ID!) {
+    cancelLetter(id: $id)
   }
 `
 
@@ -188,12 +194,20 @@ export class GraphqlLettersService implements LettersService {
     return data.updateLetterStatus
   }
 
-  async confirmLetterDelivery(id: string, code: string): Promise<Letter> {
-    const data = await this.client.request<{ confirmLetterDelivery: Letter }, { id: string; code: string }>(
+  async confirmLetterDelivery(id: string): Promise<Letter> {
+    const data = await this.client.request<{ confirmLetterDelivery: Letter }, { id: string }>(
       CONFIRM_LETTER_DELIVERY_MUTATION,
-      { id, code },
+      { id },
     )
     return data.confirmLetterDelivery
+  }
+
+  async cancelLetter(id: string): Promise<boolean> {
+    const data = await this.client.request<{ cancelLetter: boolean }, { id: string }>(
+      CANCEL_LETTER_MUTATION,
+      { id },
+    )
+    return data.cancelLetter
   }
 
   async submitLetterFeedback(input: SubmitLetterFeedbackInput): Promise<LetterFeedback> {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { forumService } from '../../services/forum/index.ts'
 import type { ForumPost } from '../../services/forum/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
@@ -26,9 +26,11 @@ function formatRelativeTime(iso: string): string {
 }
 
 const EXCERPT_TRUNCATE_LENGTH = 220
+const SWIPE_MIN_DISTANCE = 40
 
 function ForumPostCard({ post, onOpen, onThanked }: ForumPostCardProps) {
   const [photoIndex, setPhotoIndex] = useState(0)
+  const swipeStartX = useRef<number | null>(null)
   const activePhoto = post.photos[photoIndex]
   const activePhotoUrl = activePhoto ? imageUrl(activePhoto.imageId) : null
   const hasMultiplePhotos = post.photos.length > 1
@@ -50,6 +52,16 @@ function ForumPostCard({ post, onOpen, onThanked }: ForumPostCardProps) {
     setPhotoIndex((i) => (i === post.photos.length - 1 ? 0 : i + 1))
   }
 
+  const handleSwipeEnd = (e: React.TouchEvent) => {
+    const startX = swipeStartX.current
+    swipeStartX.current = null
+    if (startX === null || !hasMultiplePhotos) return
+    const deltaX = e.changedTouches[0].clientX - startX
+    if (Math.abs(deltaX) < SWIPE_MIN_DISTANCE) return
+    e.stopPropagation()
+    setPhotoIndex((i) => (deltaX < 0 ? (i === post.photos.length - 1 ? 0 : i + 1) : i === 0 ? post.photos.length - 1 : i - 1))
+  }
+
   return (
     <article className="forum-post" onClick={() => onOpen(post)}>
       <div className="forum-post-header">
@@ -65,7 +77,11 @@ function ForumPostCard({ post, onOpen, onThanked }: ForumPostCardProps) {
       </div>
       <div className="forum-post-title">{post.title}</div>
       {activePhoto && (
-        <div className={`forum-post-photo${activePhotoUrl ? '' : ' photo-placeholder'}`}>
+        <div
+          className={`forum-post-photo${activePhotoUrl ? '' : ' photo-placeholder'}`}
+          onTouchStart={(e) => (swipeStartX.current = e.touches[0].clientX)}
+          onTouchEnd={handleSwipeEnd}
+        >
           {activePhotoUrl ? <img src={activePhotoUrl} alt={activePhoto.caption ?? ''} /> : <span>letter photo</span>}
           {hasMultiplePhotos && (
             <>

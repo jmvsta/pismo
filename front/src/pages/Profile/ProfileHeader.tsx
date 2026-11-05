@@ -1,10 +1,11 @@
 import { useState, type ChangeEvent } from 'react'
 import type { User } from '../../services/user/index.ts'
-import type { UserBadge } from '../../services/badges/index.ts'
+import type { UserBadge, UserLetterRankBadge } from '../../services/badges/index.ts'
 import { imageUrl } from '../../services/imageUrl.ts'
 import { renderRichText } from '../../lib/richText.tsx'
 import { prepareImageForUpload } from '../../lib/prepareImage.ts'
 import BadgeChips from './BadgeChips.tsx'
+import LetterRankBadgeChips from './LetterRankBadgeChips.tsx'
 import ProfileBioEditor from './ProfileBioEditor.tsx'
 import ProfileNicknameEditor from './ProfileNicknameEditor.tsx'
 
@@ -13,6 +14,7 @@ const AVATAR_MAX_SIDE = 1024
 interface ProfileHeaderProps {
   user: User
   badges: UserBadge[]
+  letterRankBadges?: UserLetterRankBadge[]
   onAvatarChange?: (mimeType: string, imageBase64: string) => Promise<void>
   onBioChange?: (bio: string) => Promise<void>
   onNicknameChange?: (nickname: string) => Promise<void>
@@ -26,7 +28,7 @@ function formatLocation(user: User): string {
   return [user.city, user.countryCode].filter(Boolean).join(', ')
 }
 
-function ProfileHeader({ user, badges, onAvatarChange, onBioChange, onNicknameChange }: ProfileHeaderProps) {
+function ProfileHeader({ user, badges, letterRankBadges = [], onAvatarChange, onBioChange, onNicknameChange }: ProfileHeaderProps) {
   const location = formatLocation(user)
   const avatarUrl = imageUrl(user.avatarImageId)
   const [uploading, setUploading] = useState(false)
@@ -54,6 +56,12 @@ function ProfileHeader({ user, badges, onAvatarChange, onBioChange, onNicknameCh
         className={`profile-avatar profile-avatar-hero${avatarUrl ? '' : ' photo-placeholder'}${onAvatarChange ? ' profile-avatar-editable' : ''}`}
       >
         {avatarUrl ? <img src={avatarUrl} alt={user.nickname} /> : <span>avatar</span>}
+        {(badges.length > 0 || letterRankBadges.length > 0) && (
+          <div className="profile-avatar-badges">
+            <BadgeChips badges={badges.slice(0, 3)} />
+            <LetterRankBadgeChips badges={letterRankBadges} />
+          </div>
+        )}
         {onAvatarChange && (
           <label className="profile-avatar-edit">
             <span>{uploading ? 'Uploading…' : 'Change photo'}</span>
@@ -86,7 +94,6 @@ function ProfileHeader({ user, badges, onAvatarChange, onBioChange, onNicknameCh
           <p className="profile-bio">No bio yet.</p>
         )}
         {error && <p className="text-muted profile-avatar-error">{error}</p>}
-        <BadgeChips badges={badges.slice(0, 3)} />
       </div>
     </div>
   )

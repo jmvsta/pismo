@@ -1,17 +1,16 @@
 extend type Query {
     myAddresses: [UserAddress!]!
-    addressConsentsForConnection(connectionId: ID!): [ConnectionAddressConsent!]!
+    """The other person's address in a connection (shared by default). Null when they haven't entered one."""
+    penPalAddress(connectionId: ID!): UserAddress
 }
 
 extend type Mutation {
     createAddress(input: CreateAddressInput!): UserAddress!
     updateAddress(id: ID!, input: UpdateAddressInput!): UserAddress!
     deleteAddress(id: ID!): Boolean!
-    grantAddressConsent(connectionId: ID!, addressId: ID!): ConnectionAddressConsent!
-    revokeAddressConsent(connectionId: ID!): ConnectionAddressConsent!
 }
 
-"""Confidential. Never exposed for another user directly -- only through a GRANTED ConnectionAddressConsent."""
+"""Confidential. Exposed to another user only through penPalAddress, for people they are connected with."""
 type UserAddress {
     id: ID!
     recipientName: String!
@@ -25,22 +24,6 @@ type UserAddress {
     verifiedAt: String
     createdAt: String!
     updatedAt: String!
-}
-
-"""One row per user per connection: has this user shared their address with the other side? No row, or REVOKED, means letters go through the team relay."""
-type ConnectionAddressConsent {
-    id: ID!
-    connection: PenPalConnection!
-    grantor: User!
-    address: UserAddress
-    status: AddressConsentStatus!
-    grantedAt: String!
-    revokedAt: String
-}
-
-enum AddressConsentStatus {
-    GRANTED
-    REVOKED
 }
 
 input CreateAddressInput {

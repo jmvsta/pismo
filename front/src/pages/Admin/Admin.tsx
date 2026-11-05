@@ -33,10 +33,6 @@ function Admin() {
   return (
     <div className="admin-page">
       <div className="admin-card">
-        <Link to="/" className="admin-back">
-          {uiText('backToFeed', language)}
-        </Link>
-
         <div className="admin-header">
           <h6>{uiText('adminEyebrow', language)}</h6>
           <h2>{uiText('adminModeration', language)}</h2>

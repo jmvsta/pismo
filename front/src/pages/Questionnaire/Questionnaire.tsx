@@ -123,7 +123,7 @@ function Questionnaire() {
             <button type="button" className="btn btn-primary" onClick={handleContinue}>
               {isLastSection ? 'Submit →' : 'Save and continue →'}
             </button>
-            <button type="button" className="btn btn-ghost" onClick={handleFinishLater}>
+            <button type="button" className="btn btn-ghost questionnaire-finish-later" onClick={handleFinishLater}>
               Finish later
             </button>
             {actionError && <span className="text-muted questionnaire-more">{actionError}</span>}

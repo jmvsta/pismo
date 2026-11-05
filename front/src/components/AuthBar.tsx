@@ -1,16 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { useUserStore } from '../store/userStore.ts'
 import { useNotificationStore } from '../store/notificationStore.ts'
 import { useLanguageStore } from '../store/languageStore.ts'
-import type { Language } from '../store/languageStore.ts'
 import { uiText } from '../i18n/uiText.ts'
 import { imageUrl } from '../services/imageUrl.ts'
 import NotificationBell from './NotificationBell/NotificationBell.tsx'
 import ThemeToggle from './ThemeToggle/ThemeToggle.tsx'
+import LanguageSwitcher from './LanguageSwitcher/LanguageSwitcher.tsx'
 import './AuthBar.css'
-
-const LANGUAGES: Language[] = ['EN', 'RU', 'SRB']
 
 function AuthBar() {
   const currentUser = useUserStore((state) => state.currentUser)
@@ -18,32 +16,13 @@ function AuthBar() {
   const connectNotifications = useNotificationStore((state) => state.connect)
   const disconnectNotifications = useNotificationStore((state) => state.disconnect)
   const language = useLanguageStore((state) => state.language)
-  const setLanguage = useLanguageStore((state) => state.setLanguage)
-
-  const [langOpen, setLangOpen] = useState(false)
-  const langRef = useRef<HTMLDivElement>(null)
+  const onProfilePage = useLocation().pathname.startsWith('/profile')
 
   useEffect(() => {
     if (!currentUser) return
     connectNotifications()
     return () => disconnectNotifications()
   }, [currentUser, connectNotifications, disconnectNotifications])
-
-  useEffect(() => {
-    if (!langOpen) return
-    const onPointerDown = (event: PointerEvent) => {
-      if (langRef.current && !langRef.current.contains(event.target as Node)) setLangOpen(false)
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setLangOpen(false)
-    }
-    document.addEventListener('pointerdown', onPointerDown)
-    document.addEventListener('keydown', onKeyDown)
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown)
-      document.removeEventListener('keydown', onKeyDown)
-    }
-  }, [langOpen])
 
   const handleLogout = async () => {
     await logout()
@@ -54,69 +33,22 @@ function AuthBar() {
   const avatarUrl = currentUser ? imageUrl(currentUser.avatarImageId) : null
 
   return (
-    <div className="auth-bar">
+    <div className={`auth-bar${currentUser ? '' : ' auth-bar-guest'}`}>
       <nav className="auth-bar-nav">
-        <Link to="/" className="auth-bar-feed-link">
-          {uiText('navFeed', language)}
-        </Link>
-        <Link to="/about">{uiText('navAbout', language)}</Link>
-        {currentUser && (
-          <>
-            <Link to="/matches">
-              <span className="nav-full">{uiText('navFindPenPal', language)}</span>
-              <span className="nav-short">{uiText('navFind', language)}</span>
-            </Link>
-            <Link to="/profile?tab=penpals">
-              <span className="nav-full">{uiText('navMyPenPals', language)}</span>
-              <span className="nav-short">{uiText('navPenPals', language)}</span>
-            </Link>
-          </>
-        )}
+        <Link to="/about" className="auth-bar-about-link">{uiText('navAbout', language)}</Link>
+        {currentUser && <Link to="/matches" className="auth-bar-penpals-link">{uiText('navPenPals', language)}</Link>}
       </nav>
-      <Link to="/" className="auth-bar-brand">
-        <span className="brand-full">PISMO NA DAR</span>
-        <span className="brand-short">{uiText('navHome', language)}</span>
-      </Link>
+      <Link to="/" className="auth-bar-brand">PISMO NA DAR</Link>
       <div className="auth-bar-actions">
         <ThemeToggle />
-        <div className="auth-bar-lang" ref={langRef}>
-          <button
-            type="button"
-            className="auth-bar-lang-btn is-active auth-bar-lang-toggle"
-            aria-haspopup="listbox"
-            aria-expanded={langOpen}
-            onClick={() => setLangOpen((open) => !open)}
-          >
-            {language}
-            <span className="auth-bar-lang-caret" aria-hidden="true" />
-          </button>
-          {langOpen && (
-            <div className="auth-bar-lang-menu" role="listbox">
-              {LANGUAGES.filter((lang) => lang !== language).map((lang) => (
-                <button
-                  key={lang}
-                  type="button"
-                  role="option"
-                  aria-selected="false"
-                  className="auth-bar-lang-btn"
-                  onClick={() => {
-                    setLanguage(lang)
-                    setLangOpen(false)
-                  }}
-                >
-                  {lang}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <LanguageSwitcher className="auth-bar-lang" />
         {currentUser ? (
           <>
             <NotificationBell />
             {canModerate && (
               <Link
                 to="/admin"
-                className="btn btn-icon auth-bar-icon"
+                className="btn btn-icon auth-bar-icon auth-bar-pen"
                 aria-label={uiText('navModerate', language)}
                 title={uiText('navModerate', language)}
               >
@@ -135,42 +67,44 @@ function AuthBar() {
                 </svg>
               </Link>
             )}
-            <Link
-              to="/profile?tab=penpals"
-              className="auth-bar-avatar"
-              aria-label="My profile"
-              title={currentUser.nickname}
-            >
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" />
-              ) : (
-                <span className="auth-bar-avatar-placeholder">{currentUser.nickname.charAt(0).toUpperCase()}</span>
-              )}
-            </Link>
-            <button
-              type="button"
-              className="btn btn-ghost auth-bar-icon"
-              onClick={handleLogout}
-              aria-label={uiText('navLogOut', language)}
-              title={uiText('navLogOut', language)}
-            >
-              <span className="nav-full">{uiText('navLogOut', language)}</span>
-              <svg
-                className="nav-short"
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+            {onProfilePage ? (
+              <button
+                type="button"
+                className="btn btn-ghost auth-bar-icon auth-bar-logout"
+                onClick={handleLogout}
+                aria-label={uiText('navLogOut', language)}
+                title={uiText('navLogOut', language)}
               >
-                <path d="M12 2v10" />
-                <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
-              </svg>
-            </button>
+                <svg
+                  viewBox="1.5 1 21 21"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  style={{ overflow: 'visible' }}
+                >
+                  <path d="M12 2v10" />
+                  <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+                </svg>
+              </button>
+            ) : (
+              <Link
+                to="/profile?tab=penpals"
+                className="auth-bar-avatar"
+                aria-label="My profile"
+                title={currentUser.nickname}
+              >
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" />
+                ) : (
+                  <span className="auth-bar-avatar-placeholder">{currentUser.nickname.charAt(0).toUpperCase()}</span>
+                )}
+              </Link>
+            )}
           </>
         ) : (
           <>

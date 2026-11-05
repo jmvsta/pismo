@@ -18,6 +18,7 @@ import { prepareImageForUpload } from '../../lib/prepareImage.ts'
 import RichTextLinkPrompt from '../../components/RichTextLinkPrompt/RichTextLinkPrompt.tsx'
 import EmojiPicker from '../../components/EmojiPicker/EmojiPicker.tsx'
 import GallerySlideshow from './GallerySlideshow.tsx'
+import FitText from './FitText.tsx'
 import AboutIconPicker from './AboutIconPicker.tsx'
 import { renderAboutIcon } from './aboutIcons.ts'
 import { aboutEditText } from './aboutEditText.ts'
@@ -689,7 +690,7 @@ function AboutCanvas({
                 width: `${layout.width}%`,
                 height: `${layout.height}%`,
                 zIndex: isEditingText || editingLinkId === block.id ? EDITING_Z_INDEX : block.layer,
-                touchAction: 'none',
+                touchAction: editable ? 'none' : undefined,
                 cursor: editable && !isEditingText ? 'move' : undefined,
                 borderRadius: block.rounded ? BLOCK_RADIUS : undefined,
               }}
@@ -741,7 +742,9 @@ function AboutCanvas({
                     </div>
                   </div>
                 ) : block.type === 'BUTTON' ? (
-                  <a
+                  <FitText
+                    as="a"
+                    fitKey={`${language}|${displayTextFor(block, language)}`}
                     href={block.linkUrl ?? undefined}
                     target="_blank"
                     rel="noreferrer"
@@ -760,9 +763,11 @@ function AboutCanvas({
                         style: { display: 'inline-block', verticalAlign: '-0.12em', marginRight: '0.4em' },
                       }),
                     )}
-                  </a>
+                  </FitText>
                 ) : (
-                  <div
+                  <FitText
+                    as="div"
+                    fitKey={`${language}|${displayTextFor(block, language)}|${block.fontSize}|${block.fontFamily}|${block.highlighted}`}
                     className={`about-canvas-block-text h-full w-full overflow-hidden text-sm leading-relaxed [&_*]:m-0${
                       block.highlighted ? ' is-highlighted' : ''
                     }${block.fontSize ? ' has-font-size' : ''}${block.fontFamily ? ` about-font-${block.fontFamily}` : ''}`}
@@ -775,7 +780,7 @@ function AboutCanvas({
                     onDoubleClick={() => editable && startEditingText(block)}
                   >
                     {renderRichText(displayTextFor(block, language))}
-                  </div>
+                  </FitText>
                 )}
               </div>
 
@@ -956,7 +961,7 @@ function AboutCanvas({
         {editable && (
           <div
             className="absolute inset-x-0 bottom-0 flex h-3 cursor-ns-resize items-center justify-center"
-            style={{ touchAction: 'none', zIndex: CANVAS_RESIZE_Z_INDEX }}
+            style={{ touchAction: editable ? 'none' : undefined, zIndex: CANVAS_RESIZE_Z_INDEX }}
             onPointerDown={beginCanvasResize}
           >
             <div className="h-1 w-10 bg-[var(--color-accent)]" />

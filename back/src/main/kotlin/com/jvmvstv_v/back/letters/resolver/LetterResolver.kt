@@ -41,8 +41,10 @@ class LetterResolver(private val letterService: LetterService) {
     ): Letter = letterService.updateStatus(id, status, location, note)
 
     @MutationMapping
-    fun confirmLetterDelivery(@Argument id: UUID, @Argument code: String): Letter =
-        letterService.confirmDelivery(id, code)
+    fun confirmLetterDelivery(@Argument id: UUID): Letter = letterService.confirmDelivery(id)
+
+    @MutationMapping
+    fun cancelLetter(@Argument id: UUID): Boolean = letterService.cancelLetter(id)
 
     @MutationMapping
     fun submitLetterFeedback(@Argument input: SubmitLetterFeedbackInput): LetterFeedback =

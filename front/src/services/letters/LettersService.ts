@@ -19,6 +19,7 @@ export interface LettersService {
     location?: string,
     note?: string,
   ): Promise<Letter>
-  confirmLetterDelivery(id: string, code: string): Promise<Letter>
+  confirmLetterDelivery(id: string): Promise<Letter>
+  cancelLetter(id: string): Promise<boolean>
   submitLetterFeedback(input: SubmitLetterFeedbackInput): Promise<LetterFeedback>
 }

@@ -1,6 +1,5 @@
 package com.jvmvstv_v.back.address.resolver
 
-import com.jvmvstv_v.back.address.model.ConnectionAddressConsent
 import com.jvmvstv_v.back.address.model.CreateAddressInput
 import com.jvmvstv_v.back.address.model.UpdateAddressInput
 import com.jvmvstv_v.back.address.model.UserAddress
@@ -17,8 +16,7 @@ class AddressResolver(private val addressService: AddressService) {
     fun myAddresses(): List<UserAddress> = addressService.myAddresses()
 
     @QueryMapping
-    fun addressConsentsForConnection(@Argument connectionId: UUID): List<ConnectionAddressConsent> =
-        addressService.consentsForConnection(connectionId)
+    fun penPalAddress(@Argument connectionId: UUID): UserAddress? = addressService.penPalAddress(connectionId)
 
     @MutationMapping
     fun createAddress(@Argument input: CreateAddressInput): UserAddress = addressService.createAddress(input)
@@ -29,12 +27,4 @@ class AddressResolver(private val addressService: AddressService) {
 
     @MutationMapping
     fun deleteAddress(@Argument id: UUID): Boolean = addressService.deleteAddress(id)
-
-    @MutationMapping
-    fun grantAddressConsent(@Argument connectionId: UUID, @Argument addressId: UUID): ConnectionAddressConsent =
-        addressService.grantConsent(connectionId, addressId)
-
-    @MutationMapping
-    fun revokeAddressConsent(@Argument connectionId: UUID): ConnectionAddressConsent =
-        addressService.revokeConsent(connectionId)
 }

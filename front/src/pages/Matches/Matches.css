@@ -9,17 +9,6 @@
   margin-bottom: var(--space-6);
 }
 
-.matches-back {
-  display: inline-block;
-  font-size: 13px;
-  text-decoration: none;
-  color: var(--color-text);
-  margin-bottom: var(--space-3);
-}
-.matches-back:hover {
-  color: var(--color-accent);
-}
-
 .matches-tabs {
   display: flex;
   width: 100%;

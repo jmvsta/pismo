@@ -62,7 +62,6 @@ function MatchedTab() {
               currentUserId && (
                 <PenPalLetterAction
                   connection={connection}
-                  currentUserId={currentUserId}
                   otherId={other.id}
                   otherNickname={other.nickname}
                 />

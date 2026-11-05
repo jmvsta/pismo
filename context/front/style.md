@@ -48,6 +48,30 @@ Stack: React 19, Vite, TypeScript, React Router, Zustand, Tailwind CSS.
 - Reach for a shared component (see DRY above) before reaching for a
   one-off utility combination that's really "the app's button" again.
 
+## Text fit
+
+- Font size must never exceed the element it sits in. Text in a button,
+  badge, tab, input or any other fixed-size control must fit inside that
+  control's width and height at every viewport size — no clipped glyphs, no
+  overflow, no text taller than its box.
+- Size the font from the element, not the other way round: scale it with the
+  container (container query units like `cqw`, or `clamp()` with a ceiling),
+  or grow the element to fit the text. Never pick a font size first and let
+  the control overflow.
+- When checking a change, look at the narrowest supported viewport (phone
+  width), not just desktop — that is where text outgrows its box first.
+
+## About page
+
+- A text block fills its full height: the text stretches to use the whole
+  block rather than leaving empty space at the bottom.
+- Exception: a text block that has a "show more" / "show less" toggle is
+  collapsed to a fixed height by default. Once the user presses "show more",
+  it also takes its full (expanded) height, and "show less" returns it to the
+  collapsed height.
+- Blocks without a toggle never get one just to meet the full-height rule —
+  size the text to the block instead (see Text fit above).
+
 ## Layout
 
 - `src/pages/<Page>/<Page>.tsx` — route-level components (existing

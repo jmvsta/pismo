@@ -9,32 +9,25 @@ import { badgesService } from '../../services/badges/index.ts'
 import type { UserBadge, UserLetterRankBadge } from '../../services/badges/index.ts'
 import { lettersService } from '../../services/letters/index.ts'
 import { matchingService } from '../../services/matching/index.ts'
-import { forumService } from '../../services/forum/index.ts'
-import type { ForumPost } from '../../services/forum/index.ts'
 import { questionnaireService } from '../../services/questionnaire/index.ts'
 import type { QuestionnaireKind } from '../../services/questionnaire/index.ts'
 import type { QuestionnaireAnswers, QuestionnaireDefinition } from '../../store/questionnaireDefinition.ts'
 import ProfileHeader from './ProfileHeader.tsx'
 import ProfileLettersTable from './ProfileLettersTable.tsx'
-import ProfileForumActivity from './ProfileForumActivity.tsx'
 import ProfileQuestionnaireAnswers from './ProfileQuestionnaireAnswers.tsx'
 import ProfileAddressForm from './ProfileAddressForm.tsx'
 import ProfilePenPals from './ProfilePenPals.tsx'
 import ProfileVerifyEmailBanner from './ProfileVerifyEmailBanner.tsx'
 import { toLetterRows, type LetterRow } from './letterRows.ts'
-import BadgeChips from './BadgeChips.tsx'
-import LetterRankBadgeChips from './LetterRankBadgeChips.tsx'
 import './Profile.css'
 
-type TabId = 'penpals' | 'letters' | 'forum' | 'questionnaire' | 'address' | 'badges'
+type TabId = 'penpals' | 'letters' | 'questionnaire' | 'address'
 
 const TABS: { id: TabId; key: UiTextKey }[] = [
   { id: 'penpals', key: 'profileTabPenPals' },
   { id: 'letters', key: 'profileTabLetters' },
-  { id: 'forum', key: 'profileTabPosts' },
   { id: 'questionnaire', key: 'profileTabQuestionnaire' },
   { id: 'address', key: 'profileTabAddress' },
-  { id: 'badges', key: 'profileTabBadges' },
 ]
 
 const QUESTIONNAIRE_KINDS: { kind: QuestionnaireKind; label: string }[] = [
@@ -64,7 +57,6 @@ function MyProfile() {
   const [letterRows, setLetterRows] = useState<LetterRow[]>([])
   const [activePenPalCount, setActivePenPalCount] = useState(0)
   const [activityError, setActivityError] = useState<string | null>(null)
-  const [allForumPosts, setAllForumPosts] = useState<ForumPost[]>([])
   const [questionnaireSlots, setQuestionnaireSlots] = useState<QuestionnaireSlot[]>([])
   const notifications = useNotificationStore((state) => state.notifications)
   const lastNotificationIdRef = useRef<string | null>(null)
@@ -72,6 +64,16 @@ function MyProfile() {
   useEffect(() => {
     loadCurrentUser()
   }, [loadCurrentUser])
+
+  const changeLetter = async (action: () => Promise<unknown>) => {
+    try {
+      await action()
+      setActivityError(null)
+    } catch (err) {
+      setActivityError(err instanceof Error ? err.message : 'Could not update this letter.')
+    }
+    refreshLetters()
+  }
 
   const refreshLetters = () => {
     Promise.all([lettersService.sentLetters(), lettersService.receivedLetters()])
@@ -115,13 +117,12 @@ function MyProfile() {
 
     async function loadActivity() {
       try {
-        const [sent, received, connections, myBadges, myLetterRankBadges, posts, slots] = await Promise.all([
+        const [sent, received, connections, myBadges, myLetterRankBadges, slots] = await Promise.all([
           lettersService.sentLetters(),
           lettersService.receivedLetters(),
           matchingService.myConnections(),
           badgesService.myBadges(),
           badgesService.myLetterRankBadges(),
-          forumService.forumPosts(),
           loadQuestionnaireSlots(),
         ])
         if (cancelled) return
@@ -129,7 +130,6 @@ function MyProfile() {
         setActivePenPalCount(connections.filter((connection) => !connection.endedAt).length)
         setBadges(myBadges)
         setLetterRankBadges(myLetterRankBadges)
-        setAllForumPosts(posts)
         setQuestionnaireSlots(slots)
       } catch (err) {
         if (!cancelled) {
@@ -166,24 +166,24 @@ function MyProfile() {
   const lettersReceivedCount = letterRows.filter(
     (row) => row.direction === 'incoming' && row.status === 'DELIVERED',
   ).length
-  const myForumPosts = allForumPosts.filter((post) => post.author.id === currentUser.id)
 
   return (
     <div className="profile-page">
       <div className="profile-card">
-        <Link to="/" className="profile-back">
-          {uiText('backToFeed', language)}
-        </Link>
-
         <ProfileHeader
           user={currentUser}
           badges={badges}
+          letterRankBadges={letterRankBadges}
           onAvatarChange={updateAvatar}
           onBioChange={(bio) => updateProfile({ bio })}
           onNicknameChange={(nickname) => updateProfile({ nickname })}
         />
 
-        {!currentUser.emailVerifiedAt && <ProfileVerifyEmailBanner />}
+        {!currentUser.emailVerifiedAt && (
+          <div className="profile-verify-banner">
+            <ProfileVerifyEmailBanner />
+          </div>
+        )}
 
         <div className="profile-stats">
           <div className="profile-stat">
@@ -218,8 +218,13 @@ function MyProfile() {
           {activeTab === 'penpals' && (
             <ProfilePenPals onGoToAddressTab={() => setActiveTab('address')} onLetterChanged={refreshLetters} />
           )}
-          {activeTab === 'letters' && <ProfileLettersTable rows={letterRows} />}
-          {activeTab === 'forum' && <ProfileForumActivity posts={myForumPosts} />}
+          {activeTab === 'letters' && (
+            <ProfileLettersTable
+              rows={letterRows}
+              onCancel={(letterId) => changeLetter(() => lettersService.cancelLetter(letterId))}
+              onReceive={(letterId) => changeLetter(() => lettersService.confirmLetterDelivery(letterId))}
+            />
+          )}
           {activeTab === 'questionnaire' && (
             <div className="flex flex-col gap-6">
               {questionnaireSlots.map((slot) => (
@@ -243,21 +248,6 @@ function MyProfile() {
             </div>
           )}
           {activeTab === 'address' && <ProfileAddressForm />}
-          {activeTab === 'badges' && (
-            <div className="flex flex-col gap-6">
-              {badges.length === 0 ? (
-                <p className="text-muted profile-empty">No badges earned yet.</p>
-              ) : (
-                <BadgeChips badges={badges} />
-              )}
-              {letterRankBadges.length > 0 && (
-                <div>
-                  <h6>Letter-writing rank</h6>
-                  <LetterRankBadgeChips badges={letterRankBadges} />
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>

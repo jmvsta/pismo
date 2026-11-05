@@ -1,10 +1,6 @@
 package com.jvmvstv_v.back.address.model
 
-import com.jvmvstv_v.back.matching.model.PenPalConnection
-import com.jvmvstv_v.back.user.model.User
 import java.util.UUID
-
-enum class AddressConsentStatus { GRANTED, REVOKED }
 
 data class UserAddress(
     val id: UUID,
@@ -19,16 +15,6 @@ data class UserAddress(
     val verifiedAt: String?,
     val createdAt: String,
     val updatedAt: String,
-)
-
-data class ConnectionAddressConsent(
-    val id: UUID,
-    val connection: PenPalConnection,
-    val grantor: User,
-    val address: UserAddress?,
-    val status: AddressConsentStatus,
-    val grantedAt: String,
-    val revokedAt: String?,
 )
 
 data class CreateAddressInput(
