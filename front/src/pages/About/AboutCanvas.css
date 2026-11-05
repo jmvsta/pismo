@@ -15,7 +15,7 @@
    exactly like the default does and stops growing once the canvas is wide enough. Headings keep
    their usual proportions to the body size. */
 .about-canvas-block-text.has-font-size {
-  font-size: clamp(6px, calc(var(--text-size) * 0.1286cqw), calc(var(--text-size) * 1px));
+  font-size: calc(clamp(6px, calc(var(--text-size) * 0.1286cqw), calc(var(--text-size) * 1px)) * var(--fit, 1));
 }
 .about-canvas-block-text.has-font-size p {
   font-size: 1em;
@@ -63,26 +63,30 @@
    or they reintroduce the same overflow they're meant to prevent (a block that fits
    exactly at its authored width relies on every element shrinking at the *same* rate as
    the block itself; a floor that kicks in early makes text shrink slower than its box). */
-.about-canvas-block-text h1 {
-  font-size: clamp(8px, 5cqw, 42px);
+.about-canvas-block-text h1,
+.about-canvas-button-block h1 {
+  font-size: calc(clamp(8px, 5cqw, 42px) * var(--fit, 1));
 }
-.about-canvas-block-text h2 {
-  font-size: clamp(8px, 3.8cqw, 32px);
+.about-canvas-block-text h2,
+.about-canvas-button-block h2 {
+  font-size: calc(clamp(8px, 3.8cqw, 32px) * var(--fit, 1));
 }
-.about-canvas-block-text h3 {
-  font-size: clamp(8px, 3cqw, 25px);
+.about-canvas-block-text h3,
+.about-canvas-button-block h3 {
+  font-size: calc(clamp(8px, 3cqw, 25px) * var(--fit, 1));
 }
-.about-canvas-block-text h5 {
-  font-size: clamp(7px, 2cqw, 16px);
+.about-canvas-block-text h5,
+.about-canvas-button-block h5 {
+  font-size: calc(clamp(7px, 2cqw, 16px) * var(--fit, 1));
 }
 .about-canvas-block-text p {
-  font-size: clamp(7px, 1.8cqw, 14px);
+  font-size: calc(clamp(7px, 1.8cqw, 14px) * var(--fit, 1));
 }
 
 .about-canvas-button-block {
   background: var(--color-accent);
   color: var(--color-bg);
-  font-size: clamp(7px, 1.8cqw, 15px);
+  font-size: calc(clamp(7px, 1.8cqw, 15px) * var(--fit, 1));
   font-weight: 700;
   padding: clamp(1px, 1cqw, 8px);
   overflow: hidden;
@@ -93,4 +97,13 @@
 }
 .about-canvas-button-block:hover {
   background: var(--color-accent-600);
+}
+
+.about-fit-content {
+  display: block;
+  max-width: 100%;
+}
+.about-canvas-button-block .about-fit-content {
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }

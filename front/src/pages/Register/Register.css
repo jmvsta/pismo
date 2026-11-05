@@ -166,10 +166,13 @@
 
 @media (max-width: 640px) {
   .register-page {
-    padding: var(--space-4);
+    padding: 0;
+    align-items: stretch;
   }
   .register-card {
     flex-direction: column;
+    min-height: 100dvh;
+    border: none;
   }
   .register-side {
     width: 100%;

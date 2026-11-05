@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { aboutService } from '../../services/about/index.ts'
 import type { AboutPage, AboutPageBlockAlign } from '../../services/about/index.ts'
 import { useUserStore } from '../../store/userStore.ts'
 import { useLanguageStore } from '../../store/languageStore.ts'
 import AboutCanvas from './AboutCanvas.tsx'
 import { aboutEditText } from './aboutEditText.ts'
-import { uiText } from '../../i18n/uiText.ts'
 
 const FIELD_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT'])
 
@@ -94,13 +92,7 @@ function About() {
 
   return (
     <div className="mx-auto flex max-w-[1200px] flex-col gap-6 px-6 pt-6 pb-12 sm:px-10 sm:pt-12">
-      <div className="flex items-center justify-between gap-4">
-        <Link
-          to="/"
-          className="mb-0 inline-block text-[13px] text-[var(--color-text)] no-underline hover:text-[var(--color-accent)]"
-        >
-          {uiText('backToFeed', language)}
-        </Link>
+      <div className="flex items-center justify-end gap-4">
         {canModerate && (
           <button
             type="button"

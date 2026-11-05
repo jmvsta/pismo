@@ -9,7 +9,8 @@ extend type Query {
 extend type Mutation {
     createLetter(input: CreateLetterInput!): Letter!
     updateLetterStatus(id: ID!, status: LetterStatus!, location: String, note: String): Letter!
-    confirmLetterDelivery(id: ID!, code: String!): Letter!
+    confirmLetterDelivery(id: ID!): Letter!
+    cancelLetter(id: ID!): Boolean!
     submitLetterFeedback(input: SubmitLetterFeedbackInput!): LetterFeedback!
 }
 

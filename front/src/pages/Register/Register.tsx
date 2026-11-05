@@ -3,12 +3,16 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useUserStore } from '../../store/userStore.ts'
 import { useLanguageStore } from '../../store/languageStore.ts'
 import { uiText } from '../../i18n/uiText.ts'
+import { prepareImageForUpload } from '../../lib/prepareImage.ts'
 import LanguageSwitcher from '../../components/LanguageSwitcher/LanguageSwitcher.tsx'
 import './Register.css'
+
+const AVATAR_MAX_SIDE = 1024
 
 function Register() {
   const navigate = useNavigate()
   const register = useUserStore((state) => state.register)
+  const updateAvatar = useUserStore((state) => state.updateAvatar)
   const language = useLanguageStore((state) => state.language)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -17,6 +21,7 @@ function Register() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [acceptedRules, setAcceptedRules] = useState(false)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -27,6 +32,7 @@ function Register() {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    setAvatarFile(file)
     setAvatarPreview(URL.createObjectURL(file))
   }
 
@@ -43,6 +49,10 @@ function Register() {
         dateOfBirth: dob || undefined,
         acceptedRules,
       })
+      if (avatarFile) {
+        const { mimeType, imageBase64 } = await prepareImageForUpload(avatarFile, { maxSide: AVATAR_MAX_SIDE })
+        await updateAvatar(mimeType, imageBase64).catch(() => undefined)
+      }
       navigate('/register/verify-email')
     } catch (err) {
       setError(err instanceof Error ? err.message : uiText('registerFailed', language))

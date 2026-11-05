@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { useUserStore } from '../../store/userStore.ts'
 import { useLanguageStore } from '../../store/languageStore.ts'
 import { uiText } from '../../i18n/uiText.ts'
@@ -42,9 +42,6 @@ function Matches() {
   return (
     <div className="matches-page">
       <div className="matches-header">
-        <Link to="/" className="matches-back">
-          {uiText('backToFeed', language)}
-        </Link>
         <h2>{uiText('matchesTitle', language)}</h2>
         <p className="text-muted">{uiText('matchesDescription', language)}</p>
       </div>

@@ -9,8 +9,6 @@ import com.jvmvstv_v.back.letters.model.LetterFeedback
 import com.jvmvstv_v.back.letters.model.LetterStatus
 import com.jvmvstv_v.back.letters.model.SubmitLetterFeedbackInput
 import com.jvmvstv_v.back.letters.repository.LetterRepository
-import com.jvmvstv_v.back.matching.model.PenPalConnection
-import com.jvmvstv_v.back.matching.model.PenPalRequestSource
 import com.jvmvstv_v.back.matching.repository.MatchingRepository
 import com.jvmvstv_v.back.notification.model.NotificationType
 import com.jvmvstv_v.back.notification.service.NotificationService
@@ -18,7 +16,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.UUID
 
-private val OPEN_STATUSES = setOf(LetterStatus.DRAFT, LetterStatus.SENT, LetterStatus.IN_TRANSIT)
+private val IN_PROGRESS_STATUSES = setOf(LetterStatus.DRAFT, LetterStatus.SENT, LetterStatus.IN_TRANSIT)
 
 @Service
 class LetterServiceImpl(
@@ -46,29 +44,10 @@ class LetterServiceImpl(
         if (connection.endedAt != null) throw AuthException("This connection has ended")
         val otherId = if (connection.userA.id == senderId) connection.userB.id else connection.userA.id
         if (input.recipientId != otherId) throw AuthException("Recipient must be the other person in this connection")
-        requireSendersTurn(connection, senderId)
-        val letter = letterRepository.create(senderId, input)
-        logger.info("Letter {} created by user {} for user {} in connection {}", letter.id, senderId, otherId, connection.id)
+        val draft = letterRepository.create(senderId, input)
+        val letter = updateStatus(draft.id, LetterStatus.SENT, null, null)
+        logger.info("Letter {} sent by user {} to user {} in connection {}", letter.id, senderId, otherId, connection.id)
         return letter
-    }
-
-    private fun requireSendersTurn(connection: PenPalConnection, senderId: UUID) {
-        val letters = letterRepository.findForConnection(connection.id)
-        if (letters.any { it.status in OPEN_STATUSES }) {
-            throw AuthException("This connection already has a letter in progress")
-        }
-        val lastDelivered = letters.firstOrNull { it.status == LetterStatus.DELIVERED }
-        if (lastDelivered == null) {
-            val request = connection.request
-            if (request != null && request.source == PenPalRequestSource.MODERATOR_LETTER_REQUEST) {
-                val moderatorId = request.addressee.id
-                if (senderId != moderatorId) {
-                    throw AuthException("Wait for the moderator to send the first letter")
-                }
-            }
-        } else if (lastDelivered.sender.id == senderId) {
-            throw AuthException("Wait for your pen pal to reply first")
-        }
     }
 
     override fun updateStatus(id: UUID, status: LetterStatus, location: String?, note: String?): Letter {
@@ -97,14 +76,23 @@ class LetterServiceImpl(
         }
     }
 
-    override fun confirmDelivery(id: UUID, code: String): Letter {
+    override fun confirmDelivery(id: UUID): Letter {
         val letter = letterRepository.findById(id) ?: error("Letter $id not found")
-        if (letter.recipient.id != CurrentUser.id) throw AuthException("Only the recipient can confirm delivery")
+        if (letter.recipient.id != CurrentUser.id) throw AuthException("Only the recipient can mark a letter as received")
         if (letter.status != LetterStatus.SENT && letter.status != LetterStatus.IN_TRANSIT) {
             throw AuthException("This letter isn't awaiting delivery confirmation")
         }
-        if (letter.trackingCode != code) throw AuthException("Incorrect code")
+        logger.info("User {} marked letter {} as received", CurrentUser.id, id)
         return updateStatus(id, LetterStatus.DELIVERED, null, null)
+    }
+
+    override fun cancelLetter(id: UUID): Boolean {
+        val letter = letterRepository.findById(id) ?: error("Letter $id not found")
+        if (letter.sender.id != CurrentUser.id) throw AuthException("Only the sender can cancel a letter")
+        if (letter.status !in IN_PROGRESS_STATUSES) throw AuthException("This letter has already been delivered")
+        val deleted = letterRepository.delete(id)
+        logger.info("User {} cancelled letter {} (was {}), deleted={}", CurrentUser.id, id, letter.status, deleted)
+        return deleted
     }
 
     override fun submitFeedback(input: SubmitLetterFeedbackInput): LetterFeedback {

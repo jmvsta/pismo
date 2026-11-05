@@ -12,7 +12,21 @@
   z-index: 60;
 }
 
+.auth-bar-brand {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: center;
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  font-size: 18px;
+  text-decoration: none;
+  color: inherit;
+  white-space: nowrap;
+}
+
 .auth-bar-nav {
+  grid-column: 1;
+  grid-row: 1;
   display: flex;
   align-items: center;
   gap: 1.25rem;
@@ -29,36 +43,20 @@
   color: var(--color-accent);
 }
 
-.auth-bar-brand {
-  justify-self: center;
-  font-family: var(--font-heading);
-  font-weight: var(--font-heading-weight);
-  font-size: 18px;
-  text-decoration: none;
-  color: inherit;
-  white-space: nowrap;
-}
-
 .auth-bar-actions {
+  grid-column: 3;
+  grid-row: 1;
   display: flex;
   align-items: center;
   gap: 0.75rem;
   justify-self: end;
 }
 
-.auth-bar-lang .lang-switcher-toggle {
+.auth-bar .auth-bar-lang .lang-switcher-toggle {
   height: var(--auth-bar-icon-size);
-}
-
-.auth-bar-wallet-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--color-divider);
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
+  padding: 0 6px;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .auth-bar .btn.auth-bar-icon,
@@ -74,10 +72,20 @@
   display: flex;
 }
 .auth-bar .notification-bell > .btn {
-  font-size: 15px;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.auth-bar .btn.auth-bar-logout {
+  border: 1px solid var(--color-divider);
+  box-sizing: border-box;
+}
+.auth-bar .btn.auth-bar-logout svg {
+  display: block;
 }
 
 .auth-bar-avatar {
+  box-sizing: border-box;
   display: inline-flex;
   width: var(--auth-bar-icon-size);
   height: var(--auth-bar-icon-size);
@@ -103,80 +111,57 @@
   color: var(--color-text);
 }
 
-.nav-full {
-  display: none;
-}
-.nav-short {
-  display: inline;
-}
-.auth-bar-feed-link {
-  display: none;
-}
-.brand-full {
-  display: inline;
-}
-.brand-short {
-  display: none;
-}
 
 @media (max-width: 900px) {
   .auth-bar {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
-    justify-content: center;
-    row-gap: 0.5rem;
-    column-gap: 0.85rem;
-    text-align: center;
+    gap: 0.4rem;
+    padding: 0.6rem 0.6rem;
   }
-  .auth-bar-brand {
-    order: -1;
-    font-size: 15px;
+  .auth-bar > * {
+    min-width: 0;
   }
-  .brand-full {
-    display: none;
-  }
-  .brand-short {
-    display: inline;
-  }
-  .auth-bar-nav,
-  .auth-bar-actions {
-    display: contents;
+  .auth-bar-nav {
+    gap: 0.4rem;
   }
   .auth-bar-nav a {
-    font-size: 15px;
-    padding: 6px 4px;
+    font-size: 12px;
+    padding: 4px 0;
+  }
+  .auth-bar-brand {
+    margin: 0 auto;
+    font-size: 18px;
+  }
+  .auth-bar-actions {
+    gap: 0.3rem;
+  }
+  .auth-bar .auth-bar-lang .lang-switcher-toggle {
+    font-size: 13px;
+    padding: 0 3px;
+  }
+  .auth-bar-guest .auth-bar-nav,
+  .auth-bar-guest .auth-bar-brand {
+    display: none;
+  }
+  .auth-bar-guest .auth-bar-actions {
+    flex: 1;
+  }
+  .auth-bar-guest .auth-bar-actions .btn-ghost {
+    margin-left: auto;
   }
   .auth-bar .btn {
-    font-size: 14px;
-    padding: 8px 14px;
+    font-size: 13px;
+    padding: 7px 11px;
+  }
+  .auth-bar .btn.auth-bar-icon {
+    padding: 0;
   }
 }
 
-@media (max-width: 480px) {
-  .auth-bar {
-    justify-content: center;
-    padding: 0.5rem 0.6rem;
-    column-gap: 0.5rem;
-  }
+@media (max-width: 400px) {
   .auth-bar-brand {
-    font-size: 14px;
-  }
-  .auth-bar-nav {
-    gap: 0.6rem;
-  }
-  .auth-bar-nav a {
-    font-size: 14px;
-  }
-  .auth-bar-actions {
-    gap: 0.5rem;
-  }
-  .auth-bar .btn {
-    padding: 7px 11px;
-    font-size: 13px;
-  }
-  .auth-bar-wallet-pill {
-    padding: 5px 10px;
-    font-size: 12px;
+    font-size: 16px;
   }
 }

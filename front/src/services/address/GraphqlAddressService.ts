@@ -1,8 +1,5 @@
 import type { GraphqlClient } from '../graphqlClient.ts'
-import { PEN_PAL_CONNECTION_SUMMARY_FIELDS } from '../matching/GraphqlMatchingService.ts'
-import { USER_SUMMARY_FIELDS } from '../user/GraphqlUserService.ts'
 import type {
-  ConnectionAddressConsent,
   CreateAddressInput,
   UpdateAddressInput,
   UserAddress,
@@ -24,16 +21,6 @@ const ADDRESS_FIELDS = `
   updatedAt
 `
 
-const CONSENT_FIELDS = `
-  id
-  connection { ${PEN_PAL_CONNECTION_SUMMARY_FIELDS} }
-  grantor { ${USER_SUMMARY_FIELDS} }
-  address { ${ADDRESS_FIELDS} }
-  status
-  grantedAt
-  revokedAt
-`
-
 const MY_ADDRESSES_QUERY = `
   query MyAddresses {
     myAddresses {
@@ -42,10 +29,10 @@ const MY_ADDRESSES_QUERY = `
   }
 `
 
-const ADDRESS_CONSENTS_FOR_CONNECTION_QUERY = `
-  query AddressConsentsForConnection($connectionId: ID!) {
-    addressConsentsForConnection(connectionId: $connectionId) {
-      ${CONSENT_FIELDS}
+const PEN_PAL_ADDRESS_QUERY = `
+  query PenPalAddress($connectionId: ID!) {
+    penPalAddress(connectionId: $connectionId) {
+      ${ADDRESS_FIELDS}
     }
   }
 `
@@ -72,22 +59,6 @@ const DELETE_ADDRESS_MUTATION = `
   }
 `
 
-const GRANT_ADDRESS_CONSENT_MUTATION = `
-  mutation GrantAddressConsent($connectionId: ID!, $addressId: ID!) {
-    grantAddressConsent(connectionId: $connectionId, addressId: $addressId) {
-      ${CONSENT_FIELDS}
-    }
-  }
-`
-
-const REVOKE_ADDRESS_CONSENT_MUTATION = `
-  mutation RevokeAddressConsent($connectionId: ID!) {
-    revokeAddressConsent(connectionId: $connectionId) {
-      ${CONSENT_FIELDS}
-    }
-  }
-`
-
 export class GraphqlAddressService implements AddressService {
   private readonly client: GraphqlClient
 
@@ -100,12 +71,12 @@ export class GraphqlAddressService implements AddressService {
     return data.myAddresses
   }
 
-  async addressConsentsForConnection(connectionId: string): Promise<ConnectionAddressConsent[]> {
-    const data = await this.client.request<
-      { addressConsentsForConnection: ConnectionAddressConsent[] },
-      { connectionId: string }
-    >(ADDRESS_CONSENTS_FOR_CONNECTION_QUERY, { connectionId })
-    return data.addressConsentsForConnection
+  async penPalAddress(connectionId: string): Promise<UserAddress | null> {
+    const data = await this.client.request<{ penPalAddress: UserAddress | null }, { connectionId: string }>(
+      PEN_PAL_ADDRESS_QUERY,
+      { connectionId },
+    )
+    return data.penPalAddress
   }
 
   async createAddress(input: CreateAddressInput): Promise<UserAddress> {
@@ -132,22 +103,4 @@ export class GraphqlAddressService implements AddressService {
     return data.deleteAddress
   }
 
-  async grantAddressConsent(
-    connectionId: string,
-    addressId: string,
-  ): Promise<ConnectionAddressConsent> {
-    const data = await this.client.request<
-      { grantAddressConsent: ConnectionAddressConsent },
-      { connectionId: string; addressId: string }
-    >(GRANT_ADDRESS_CONSENT_MUTATION, { connectionId, addressId })
-    return data.grantAddressConsent
-  }
-
-  async revokeAddressConsent(connectionId: string): Promise<ConnectionAddressConsent> {
-    const data = await this.client.request<
-      { revokeAddressConsent: ConnectionAddressConsent },
-      { connectionId: string }
-    >(REVOKE_ADDRESS_CONSENT_MUTATION, { connectionId })
-    return data.revokeAddressConsent
-  }
 }

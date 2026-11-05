@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useUserStore } from '../store/userStore.ts'
 import { useNotificationStore } from '../store/notificationStore.ts'
 import { useLanguageStore } from '../store/languageStore.ts'
@@ -16,6 +16,7 @@ function AuthBar() {
   const connectNotifications = useNotificationStore((state) => state.connect)
   const disconnectNotifications = useNotificationStore((state) => state.disconnect)
   const language = useLanguageStore((state) => state.language)
+  const onProfilePage = useLocation().pathname.startsWith('/profile')
 
   useEffect(() => {
     if (!currentUser) return
@@ -32,29 +33,12 @@ function AuthBar() {
   const avatarUrl = currentUser ? imageUrl(currentUser.avatarImageId) : null
 
   return (
-    <div className="auth-bar">
+    <div className={`auth-bar${currentUser ? '' : ' auth-bar-guest'}`}>
       <nav className="auth-bar-nav">
-        <Link to="/" className="auth-bar-feed-link">
-          {uiText('navFeed', language)}
-        </Link>
-        <Link to="/about">{uiText('navAbout', language)}</Link>
-        {currentUser && (
-          <>
-            <Link to="/matches">
-              <span className="nav-full">{uiText('navFindPenPal', language)}</span>
-              <span className="nav-short">{uiText('navFind', language)}</span>
-            </Link>
-            <Link to="/profile?tab=penpals">
-              <span className="nav-full">{uiText('navMyPenPals', language)}</span>
-              <span className="nav-short">{uiText('navPenPals', language)}</span>
-            </Link>
-          </>
-        )}
+        <Link to="/about" className="auth-bar-about-link">{uiText('navAbout', language)}</Link>
+        {currentUser && <Link to="/matches" className="auth-bar-penpals-link">{uiText('navPenPals', language)}</Link>}
       </nav>
-      <Link to="/" className="auth-bar-brand">
-        <span className="brand-full">PISMO NA DAR</span>
-        <span className="brand-short">{uiText('navHome', language)}</span>
-      </Link>
+      <Link to="/" className="auth-bar-brand">PISMO NA DAR</Link>
       <div className="auth-bar-actions">
         <ThemeToggle />
         <LanguageSwitcher className="auth-bar-lang" />
@@ -64,7 +48,7 @@ function AuthBar() {
             {canModerate && (
               <Link
                 to="/admin"
-                className="btn btn-icon auth-bar-icon"
+                className="btn btn-icon auth-bar-icon auth-bar-pen"
                 aria-label={uiText('navModerate', language)}
                 title={uiText('navModerate', language)}
               >
@@ -83,42 +67,44 @@ function AuthBar() {
                 </svg>
               </Link>
             )}
-            <Link
-              to="/profile?tab=penpals"
-              className="auth-bar-avatar"
-              aria-label="My profile"
-              title={currentUser.nickname}
-            >
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" />
-              ) : (
-                <span className="auth-bar-avatar-placeholder">{currentUser.nickname.charAt(0).toUpperCase()}</span>
-              )}
-            </Link>
-            <button
-              type="button"
-              className="btn btn-ghost auth-bar-icon"
-              onClick={handleLogout}
-              aria-label={uiText('navLogOut', language)}
-              title={uiText('navLogOut', language)}
-            >
-              <span className="nav-full">{uiText('navLogOut', language)}</span>
-              <svg
-                className="nav-short"
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+            {onProfilePage ? (
+              <button
+                type="button"
+                className="btn btn-ghost auth-bar-icon auth-bar-logout"
+                onClick={handleLogout}
+                aria-label={uiText('navLogOut', language)}
+                title={uiText('navLogOut', language)}
               >
-                <path d="M12 2v10" />
-                <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
-              </svg>
-            </button>
+                <svg
+                  viewBox="1.5 1 21 21"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  style={{ overflow: 'visible' }}
+                >
+                  <path d="M12 2v10" />
+                  <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+                </svg>
+              </button>
+            ) : (
+              <Link
+                to="/profile?tab=penpals"
+                className="auth-bar-avatar"
+                aria-label="My profile"
+                title={currentUser.nickname}
+              >
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" />
+                ) : (
+                  <span className="auth-bar-avatar-placeholder">{currentUser.nickname.charAt(0).toUpperCase()}</span>
+                )}
+              </Link>
+            )}
           </>
         ) : (
           <>

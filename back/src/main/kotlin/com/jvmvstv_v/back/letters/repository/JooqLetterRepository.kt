@@ -99,24 +99,16 @@ class JooqLetterRepository(
     override fun create(senderId: UUID, input: CreateLetterInput): Letter {
         val id = UUID.randomUUID()
         val now = OffsetDateTime.now()
-        val trackingCode = generateUniqueTrackingCode()
         dsl.insertInto(LETTERS)
-            .columns(L_ID, L_CONNECTION_ID, L_SENDER_ID, L_RECIPIENT_ID, L_STATUS, L_TRACKING_CODE, L_LANGUAGE_CODE,
+            .columns(L_ID, L_CONNECTION_ID, L_SENDER_ID, L_RECIPIENT_ID, L_STATUS, L_LANGUAGE_CODE,
                 L_NOTE, L_CREATED_AT, L_UPDATED_AT)
-            .values(id, input.connectionId, senderId, input.recipientId, LetterStatus.DRAFT.name, trackingCode,
+            .values(id, input.connectionId, senderId, input.recipientId, LetterStatus.DRAFT.name,
                 input.languageCode, input.note, now, now)
             .execute()
         return findById(id) ?: error("Letter $id not found")
     }
 
-    private fun generateUniqueTrackingCode(): String {
-        repeat(10) {
-            val code = (0..999999).random().toString().padStart(6, '0')
-            val exists = dsl.fetchExists(dsl.selectOne().from(LETTERS).where(L_TRACKING_CODE.eq(code)))
-            if (!exists) return code
-        }
-        error("Could not generate a unique tracking code")
-    }
+    override fun delete(id: UUID): Boolean = dsl.deleteFrom(LETTERS).where(L_ID.eq(id)).execute() > 0
 
     override fun updateStatus(id: UUID, status: LetterStatus, location: String?, note: String?): Letter {
         val now = OffsetDateTime.now()

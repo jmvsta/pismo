@@ -4,8 +4,6 @@ import { GraphqlAddressService } from './GraphqlAddressService.ts'
 export type { AddressService } from './AddressService.ts'
 export type {
   UserAddress,
-  ConnectionAddressConsent,
-  AddressConsentStatus,
   CreateAddressInput,
   UpdateAddressInput,
 } from './types.ts'
